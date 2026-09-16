@@ -1,9 +1,10 @@
 export const siteConfig = {
   name: "HIPZI",
-  description: "Enterprise Web Application Built with Next.js App Router",
-  url: "https://hipzi.local",
+  description:
+    "Nền tảng giáo dục trực tuyến ứng dụng AI — Học thông minh, tiến xa hơn.",
+  url: "https://hipzi.vn",
   links: {
-    github: "https://github.com/hipzi/hipzi",
+    github: "https://github.com/ngocthach324/EduMi",
   },
 };
 
