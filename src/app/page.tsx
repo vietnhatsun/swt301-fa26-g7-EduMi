@@ -166,10 +166,10 @@ export default function HomePage() {
 
           {/* CTA */}
           <div style={{ display: "flex", gap: 12 }}>
-            <a href="/dang-nhap" className="btn-secondary" style={{ padding: "10px 20px", fontSize: "0.875rem" }}>
+            <a href="/login" className="btn-secondary" style={{ padding: "10px 20px", fontSize: "0.875rem" }}>
               Đăng nhập
             </a>
-            <a href="/dang-ky" className="btn-primary" style={{ padding: "10px 20px", fontSize: "0.875rem" }}>
+            <a href="/register" className="btn-primary" style={{ padding: "10px 20px", fontSize: "0.875rem" }}>
               Bắt đầu miễn phí
             </a>
           </div>
@@ -280,7 +280,7 @@ export default function HomePage() {
             className="animate-fade-in-up delay-300"
             style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}
           >
-            <a href="/dang-ky" className="btn-primary animate-pulse-glow">
+            <a href="/register" className="btn-primary animate-pulse-glow">
               🚀 Bắt đầu miễn phí
             </a>
             <a href="#features" className="btn-secondary">
