@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 interface SendEmailParams {
   to: string | string[];
   subject: string;
@@ -19,6 +17,13 @@ export async function sendEmail({
   replyTo = "support@edumi.vn",
 }: SendEmailParams) {
   try {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.warn("[Resend Warning]: RESEND_API_KEY chưa được cấu hình.");
+      return { success: false, error: "RESEND_API_KEY chưa được cấu hình trong biến môi trường." };
+    }
+
+    const resend = new Resend(apiKey);
     const fromAddress = process.env.EMAIL_FROM || "EduMi <support@edumi.vn>";
 
     const { data, error } = await resend.emails.send({

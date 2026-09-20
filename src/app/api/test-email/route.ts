@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { sendVerificationOtpEmail } from "@/lib/mail";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const to = searchParams.get("to") || "nguyenngocthach531@gmail.com";

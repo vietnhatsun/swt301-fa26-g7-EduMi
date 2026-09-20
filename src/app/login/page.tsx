@@ -9,12 +9,7 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Sparkles,
   ShieldCheck,
-  GraduationCap,
-  BookOpen,
-  ArrowLeft,
-  CheckCircle2,
 } from "lucide-react";
 
 import CapybaraMascot from "@/components/common/CapybaraMascot";
