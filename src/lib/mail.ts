@@ -48,51 +48,232 @@ export async function sendEmail({
 }
 
 /**
- * Template mẫu gửi mã xác thực OTP kích hoạt tài khoản
+ * Role display helper
  */
-export async function sendVerificationOtpEmail(to: string, otpCode: string) {
+const ROLE_NAMES: Record<string, string> = {
+  student: "Học sinh",
+  teacher: "Giáo viên",
+  parent: "Phụ huynh",
+  admin: "Quản trị viên",
+};
+
+/**
+ * Template gửi mã xác thực OTP kích hoạt tài khoản
+ * Thiết kế chuẩn Forest Green & White hiện đại, sang trọng
+ */
+export async function sendVerificationOtpEmail(
+  to: string,
+  otpCode: string,
+  fullName?: string,
+  role: string = "student"
+) {
+  const roleName = ROLE_NAMES[role] || "Thành viên";
+  const greetingName = fullName ? `${fullName} (${roleName})` : roleName;
+
   const html = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8faf8; margin: 0; padding: 20px; }
-          .card { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
-          .header { background: linear-gradient(135deg, #064e3b, #047857); padding: 24px; text-align: center; color: white; }
-          .header h1 { margin: 0; font-size: 22px; font-weight: bold; }
-          .body { padding: 32px 24px; color: #1e293b; line-height: 1.6; }
-          .otp-box { background: #f0fdf4; border: 1px dashed #10b981; border-radius: 12px; padding: 16px; text-align: center; margin: 24px 0; }
-          .otp-code { font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #047857; margin: 0; }
-          .footer { padding: 16px 24px; background: #f8fafc; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <div class="header">
-            <h1>EduMi — AI Education</h1>
-          </div>
-          <div class="body">
-            <h2 style="margin-top: 0; color: #0f172a; font-size: 18px;">Xác thực tài khoản EduMi của bạn 🚀</h2>
-            <p>Chào bạn,</p>
-            <p>Cảm ơn bạn đã đăng ký tài khoản trên nền tảng học tập <strong>EduMi</strong>. Đây là mã xác thực OTP của bạn:</p>
-            <div class="otp-box">
-              <p class="otp-code">${otpCode}</p>
-            </div>
-            <p style="font-size: 13px; color: #64748b;">Mã này có hiệu lực trong vòng <strong>10 phút</strong>. Vui lòng không chia sẻ mã xác thực này cho bất kỳ ai để đảm bảo an toàn tài khoản.</p>
-          </div>
-          <div class="footer">
-            <p style="margin: 0;">© ${new Date().getFullYear()} EduMi Platform. Mọi quyền được bảo lưu.</p>
-            <p style="margin: 4px 0 0;">Cần hỗ trợ? Gửi email về <a href="mailto:support@edumi.vn" style="color: #059669; text-decoration: none;">support@edumi.vn</a></p>
-          </div>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mã xác thực EduMi</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f7f4;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      width: 100%;
+      background-color: #f4f7f4;
+      padding: 40px 12px;
+    }
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(6, 78, 59, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+    .header {
+      background: linear-gradient(135deg, #064e3b 0%, #047857 60%, #059669 100%);
+      padding: 36px 28px 30px;
+      text-align: center;
+      position: relative;
+    }
+    .badge-logo {
+      display: inline-block;
+      width: 44px;
+      height: 44px;
+      line-height: 44px;
+      border-radius: 50%;
+      background: #fbbf24;
+      color: #0f172a;
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+      margin-bottom: 12px;
+    }
+    .brand-title {
+      margin: 0;
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .brand-subtitle {
+      margin: 4px 0 0;
+      color: #a7f3d0;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .content {
+      padding: 36px 28px 28px;
+    }
+    .headline {
+      margin: 0 0 16px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+    .text {
+      margin: 0 0 16px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: #475569;
+    }
+    .highlight-name {
+      color: #047857;
+      font-weight: 600;
+    }
+    .otp-container {
+      background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%);
+      border: 2px dashed #10b981;
+      border-radius: 16px;
+      padding: 24px 16px;
+      text-align: center;
+      margin: 28px 0;
+    }
+    .otp-label {
+      margin: 0 0 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #047857;
+      font-weight: 700;
+    }
+    .otp-code {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: 10px;
+      color: #064e3b;
+      margin: 0;
+      padding-left: 10px;
+    }
+    .expiry-note {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #059669;
+      background: #d1fae5;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .security-notice {
+      background: #f8fafc;
+      border-left: 4px solid #10b981;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 24px 0 0;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #64748b;
+    }
+    .security-notice strong {
+      color: #334155;
+    }
+    .footer {
+      background: #f8fafc;
+      padding: 24px 28px;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+    }
+    .footer a {
+      color: #059669;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .footer-divider {
+      margin: 12px auto;
+      width: 40px;
+      height: 2px;
+      background: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      
+      <!-- Top Brand Header -->
+      <div class="header">
+        <div class="badge-logo">EDM</div>
+        <h1 class="brand-title">EduMi Platform</h1>
+        <p class="brand-subtitle">Nền tảng học tập thông minh & đồng hành cùng phụ huynh</p>
+      </div>
+
+      <!-- Main Content -->
+      <div class="content">
+        <h2 class="headline">Xác thực tài khoản của bạn ✨</h2>
+        <p class="text">
+          Xin chào <span class="highlight-name">${greetingName}</span>,
+        </p>
+        <p class="text">
+          Cảm ơn bạn đã đăng ký tài khoản trên nền tảng <strong>EduMi</strong>. Để hoàn tất kích hoạt và bắt đầu hành trình học tập, vui lòng nhập mã OTP xác thực dưới đây vào ứng dụng:
+        </p>
+
+        <!-- OTP Display Box -->
+        <div class="otp-container">
+          <div class="otp-label">Mã xác thực của bạn</div>
+          <div class="otp-code">${otpCode}</div>
+          <div class="expiry-note">⏳ Hiệu lực trong vòng 10 phút</div>
         </div>
-      </body>
-    </html>
+
+        <!-- Security Warning -->
+        <div class="security-notice">
+          <strong>Lưu ý bảo mật:</strong> Tuyệt đối không chia sẻ mã này cho bất kỳ ai, kể cả nhân viên hỗ trợ EduMi. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div>© ${new Date().getFullYear()} EduMi Platform. All rights reserved.</div>
+        <div class="footer-divider"></div>
+        <div>
+          Cần trợ giúp? Liên hệ <a href="mailto:support@edumi.vn">support@edumi.vn</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
   `;
 
   return sendEmail({
     to,
-    subject: `[EduMi] Mã xác thực OTP: ${otpCode}`,
+    subject: `[EduMi] Mã xác thực OTP của bạn: ${otpCode}`,
     html,
   });
 }

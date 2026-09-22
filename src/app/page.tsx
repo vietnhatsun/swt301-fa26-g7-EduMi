@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "HIPZI — Học thông minh cùng AI",
@@ -119,16 +120,21 @@ export default function HomePage() {
                 width: 36,
                 height: 36,
                 borderRadius: 10,
-                background: "linear-gradient(135deg, #6c63ff, #8b5cf6)",
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.15)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 18,
-                fontWeight: 900,
-                color: "#fff",
+                background: "#000",
               }}
             >
-              H
+              <Image
+                src="/favicon.jpg"
+                alt="Logo"
+                width={36}
+                height={36}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
             </div>
             <span
               style={{

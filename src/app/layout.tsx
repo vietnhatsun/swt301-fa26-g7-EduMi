@@ -17,6 +17,14 @@ export const metadata: Metadata = {
     "Nền tảng giáo dục trực tuyến ứng dụng AI — Tài liệu học tập, luyện đề, lớp học ảo và khóa học e-learning cho học sinh Việt Nam.",
   keywords: ["học trực tuyến", "AI giáo dục", "luyện đề", "flashcard", "khóa học online", "HIPZI"],
   authors: [{ name: "HIPZI Team" }],
+  icons: {
+    icon: [
+      { url: "/favicon.jpg", type: "image/jpeg" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/favicon.jpg",
+    apple: "/favicon.jpg",
+  },
   openGraph: {
     type: "website",
     locale: "vi_VN",

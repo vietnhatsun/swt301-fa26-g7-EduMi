@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 
 interface CapybaraMascotProps {
@@ -12,25 +12,6 @@ export default function CapybaraMascot({ isPasswordFocused = false }: CapybaraMa
   const rightEyeRef = useRef<SVGEllipseElement>(null);
   const leftPupilRef = useRef<SVGGElement>(null);
   const rightPupilRef = useRef<SVGGElement>(null);
-  const [isBlinking, setIsBlinking] = useState(false);
-
-  // Natural blinking effect every 3.5 - 5 seconds
-  useEffect(() => {
-    if (isPasswordFocused) return;
-
-    let blinkTimeout: NodeJS.Timeout;
-    const triggerBlink = () => {
-      setIsBlinking(true);
-      setTimeout(() => {
-        setIsBlinking(false);
-        const nextDelay = 3000 + Math.random() * 3000;
-        blinkTimeout = setTimeout(triggerBlink, nextDelay);
-      }, 150);
-    };
-
-    blinkTimeout = setTimeout(triggerBlink, 3500);
-    return () => clearTimeout(blinkTimeout);
-  }, [isPasswordFocused]);
 
   // Eye-tracking mouse move listener (Only the 2 pupils move inside the eyes)
   useEffect(() => {
@@ -92,40 +73,36 @@ export default function CapybaraMascot({ isPasswordFocused = false }: CapybaraMa
           <ellipse
             ref={leftEyeRef}
             cx="126"
-            cy="127"
-            rx="30"
-            ry="29"
+            cy="131"
+            rx="35"
+            ry="34"
             fill="#ffffff"
           />
           <ellipse
             ref={rightEyeRef}
             cx="284"
-            cy="127"
-            rx="30"
-            ry="29"
+            cy="131"
+            rx="35"
+            ry="34"
             fill="#ffffff"
           />
 
           {/* Interactive Pupils (Move following mouse) */}
-          <g
-            className={`transition-all duration-150 ${
-              isBlinking ? "opacity-0 scale-y-10 origin-[126px_127px]" : "opacity-100 scale-y-100"
-            }`}
-          >
+          <g>
             {/* Left Pupil */}
             <g ref={leftPupilRef} className="transition-transform duration-75 ease-out">
-              <ellipse cx="126" cy="127" rx="19" ry="20" fill="#2d1a10" />
+              <ellipse cx="126" cy="131" rx="20" ry="21" fill="#2d1a10" />
               {/* Glossy sparkle highlights */}
-              <circle cx="121" cy="120" r="6.5" fill="#ffffff" />
-              <circle cx="132" cy="133" r="3.2" fill="#ffffff" opacity="0.85" />
+              <circle cx="121" cy="124" r="6.5" fill="#ffffff" />
+              <circle cx="132" cy="137" r="3.2" fill="#ffffff" opacity="0.85" />
             </g>
 
             {/* Right Pupil */}
             <g ref={rightPupilRef} className="transition-transform duration-75 ease-out">
-              <ellipse cx="284" cy="127" rx="19" ry="20" fill="#2d1a10" />
+              <ellipse cx="284" cy="131" rx="20" ry="21" fill="#2d1a10" />
               {/* Glossy sparkle highlights */}
-              <circle cx="279" cy="120" r="6.5" fill="#ffffff" />
-              <circle cx="290" cy="133" r="3.2" fill="#ffffff" opacity="0.85" />
+              <circle cx="279" cy="124" r="6.5" fill="#ffffff" />
+              <circle cx="290" cy="137" r="3.2" fill="#ffffff" opacity="0.85" />
             </g>
           </g>
         </svg>
