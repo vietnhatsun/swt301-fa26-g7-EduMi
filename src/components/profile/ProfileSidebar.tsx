@@ -5,12 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   LayoutDashboard,
+  School,
   BookMarked,
   Layers,
   Sparkles,
-  BarChart3,
   History,
   User,
+  CreditCard,
   Settings,
   LogOut,
   ChevronLeft,
@@ -20,12 +21,13 @@ import {
 
 export type ProfileTabId =
   | "overview"
+  | "classes"
   | "notes"
   | "materials"
   | "flashcards"
-  | "stats"
   | "history"
   | "personal"
+  | "transactions"
   | "settings";
 
 interface ProfileSidebarProps {
@@ -54,10 +56,10 @@ export default function ProfileSidebar({
     badge?: string;
   }[] = [
     { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
+    { id: "classes", label: "Lớp học", icon: School },
     { id: "notes", label: "Sổ ghi chú", icon: BookMarked, badge: "3" },
-    { id: "materials", label: "Bộ từ & Tài liệu", icon: Layers },
+    { id: "materials", label: "Tài liệu", icon: Layers },
     { id: "flashcards", label: "Flashcard", icon: Sparkles, badge: "Mới" },
-    { id: "stats", label: "Thống kê", icon: BarChart3 },
     { id: "history", label: "Lịch sử làm bài", icon: History },
   ];
 
@@ -67,6 +69,7 @@ export default function ProfileSidebar({
     icon: React.ComponentType<{ className?: string }>;
   }[] = [
     { id: "personal", label: "Hồ sơ cá nhân", icon: User },
+    { id: "transactions", label: "Giao dịch", icon: CreditCard },
     { id: "settings", label: "Cài đặt", icon: Settings },
   ];
 

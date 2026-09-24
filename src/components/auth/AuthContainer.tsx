@@ -19,6 +19,8 @@ import {
   RotateCcw,
   ArrowLeft,
   KeyRound,
+  AlertCircle,
+  X,
 } from "lucide-react";
 
 import CapybaraMascot from "@/components/common/CapybaraMascot";
@@ -32,28 +34,51 @@ interface AuthContainerProps {
   initialMode: AuthMode;
 }
 
-function AuthMessageBanner() {
+interface ToastState {
+  type: "error" | "success" | "warning";
+  title?: string;
+  message: string;
+}
+
+function AuthToastListener({
+  onToast,
+  onPrefillEmail,
+}: {
+  onToast: (type: "error" | "success" | "warning", message: string, title?: string) => void;
+  onPrefillEmail: (email: string) => void;
+}) {
   const searchParams = useSearchParams();
   const isVerified = searchParams.get("verified") === "true";
   const errorParam = searchParams.get("error");
+  const emailParam = searchParams.get("email");
 
-  if (isVerified) {
-    return (
-      <div className="mb-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2 animate-fade-in-up">
-        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-        <span>Tài khoản của bạn đã được xác thực thành công! Vui lòng đăng nhập.</span>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (emailParam) {
+      onPrefillEmail(emailParam);
+    }
 
-  if (errorParam === "oauth_failed") {
-    return (
-      <div className="mb-3 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-center gap-2 animate-fade-in-up">
-        <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-        <span>Đăng nhập với Google không thành công hoặc đã bị hủy. Vui lòng thử lại.</span>
-      </div>
-    );
-  }
+    if (isVerified) {
+      onToast(
+        "success",
+        "Tài khoản của bạn đã được xác thực thành công! Vui lòng đăng nhập.",
+        "Xác thực thành công 🎉"
+      );
+    } else if (errorParam === "account_exists_with_password") {
+      onToast(
+        "warning",
+        emailParam
+          ? `Email ${emailParam} đã được đăng ký bằng mật khẩu. Hệ thống không cho phép dùng chung với Google. Vui lòng nhập mật khẩu bên dưới.`
+          : "Email này đã được đăng ký bằng mật khẩu. Vui lòng nhập mật khẩu để đăng nhập.",
+        "Tài khoản đã có mật khẩu ⚠️"
+      );
+    } else if (errorParam === "oauth_failed") {
+      onToast(
+        "error",
+        "Đăng nhập với Google không thành công hoặc đã bị hủy. Vui lòng thử lại.",
+        "Đăng nhập thất bại"
+      );
+    }
+  }, [searchParams, isVerified, errorParam, emailParam, onToast, onPrefillEmail]);
 
   return null;
 }
@@ -82,9 +107,23 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
   // Status & Feedback
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [isVerifiedSuccess, setIsVerifiedSuccess] = useState(false);
+
+  // ── FLOATING TOAST NOTIFICATION STATE (Cố định góc dưới bên phải) ──
+  const [toast, setToast] = useState<ToastState | null>(null);
+
+  const showToast = (type: "error" | "success" | "warning", message: string, title?: string) => {
+    setToast({ type, message, title });
+  };
+
+  // Tự động ẩn toast sau 6 giây
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // Smooth Card Height Animation — two-phase imperative approach:
   // Phase 1 (sync, before mode changes): snapshot current height as start
@@ -175,8 +214,7 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
     }
 
     setHasSwitched(true);
-    setErrorMessage("");
-    setSuccessMessage("");
+    setToast(null);
     setStep("form");
     setMode(newMode);
 
@@ -189,7 +227,7 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
   const handleGoogleLogin = async () => {
     try {
       setIsGoogleLoading(true);
-      setErrorMessage("");
+      setToast(null);
       const supabase = createBrowserClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -199,12 +237,12 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
       });
 
       if (error) {
-        setErrorMessage("Không thể kết nối với dịch vụ đăng nhập Google: " + error.message);
+        showToast("error", "Không thể kết nối với dịch vụ đăng nhập Google: " + error.message, "Đăng nhập Google thất bại");
         setIsGoogleLoading(false);
       }
     } catch (err: unknown) {
       console.error("[Google Auth Error]:", err);
-      setErrorMessage("Đã xảy ra lỗi khi đăng nhập với Google.");
+      showToast("error", "Đã xảy ra lỗi khi đăng nhập với Google.", "Lỗi hệ thống");
       setIsGoogleLoading(false);
     }
   };
@@ -212,13 +250,12 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
   // Submit form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
+    setToast(null);
 
     if (mode === "login") {
       // ── XỬ LÝ ĐĂNG NHẬP ──
       if (!email.trim() || !password) {
-        setErrorMessage("Vui lòng nhập đầy đủ Email và Mật khẩu.");
+        showToast("warning", "Vui lòng nhập đầy đủ Email và Mật khẩu.", "Thiếu thông tin");
         return;
       }
 
@@ -238,35 +275,34 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
 
         if (!res.ok) {
           if (data.needVerification) {
-            setErrorMessage(data.error);
-            // Người dùng chưa verify OTP -> có thể chuyển sang verify nếu có email
+            showToast("warning", data.error, "Chưa xác thực tài khoản");
             setEmail(data.email || email);
           } else {
-            setErrorMessage(data.error || "Đăng nhập thất bại. Vui lòng thử lại.");
+            showToast("error", data.error || "Đăng nhập thất bại. Vui lòng thử lại.", "Đăng nhập không thành công");
           }
           setIsLoading(false);
           return;
         }
 
         // Đăng nhập thành công -> chuyển hướng sang trang cá nhân (/profile)
-        setSuccessMessage("Đăng nhập thành công! Đang chuyển hướng...");
+        showToast("success", "Đăng nhập thành công! Đang chuyển hướng vào hồ sơ học sinh...", "Đăng nhập thành công 🎉");
         setTimeout(() => {
           window.location.href = "/profile";
-        }, 400);
+        }, 600);
       } catch (err: unknown) {
         console.error("[Login Client Error]:", err);
-        setErrorMessage("Lỗi kết nối máy chủ. Vui lòng kiểm tra lại mạng.");
+        showToast("error", "Lỗi kết nối máy chủ. Vui lòng kiểm tra lại mạng.", "Mất kết nối");
         setIsLoading(false);
       }
     } else {
       // ── XỬ LÝ ĐĂNG KÝ ──
       if (!fullName.trim() || !email.trim() || !password) {
-        setErrorMessage("Vui lòng điền đầy đủ tất cả các trường thông tin.");
+        showToast("warning", "Vui lòng điền đầy đủ tất cả các trường thông tin.", "Thiếu thông tin");
         return;
       }
 
       if (password.length < 8) {
-        setErrorMessage("Mật khẩu phải có tối thiểu 8 ký tự.");
+        showToast("warning", "Mật khẩu phải có tối thiểu 8 ký tự.", "Mật khẩu quá ngắn");
         return;
       }
 
@@ -287,7 +323,7 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
         const data = await res.json();
 
         if (!res.ok) {
-          setErrorMessage(data.error || "Đăng ký thất bại. Vui lòng thử lại.");
+          showToast("error", data.error || "Đăng ký thất bại. Vui lòng thử lại.", "Đăng ký không thành công");
           setIsLoading(false);
           return;
         }
@@ -297,10 +333,10 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
         setStep("verify");
         setResendCooldown(60);
         setCanResend(false);
-        setSuccessMessage("Mã xác thực OTP đã được gửi đến hộp thư của bạn.");
+        showToast("success", "Mã xác thực OTP đã được gửi đến hộp thư của bạn.", "Mã OTP đã gửi ✉️");
       } catch (err: unknown) {
         console.error("[Register Client Error]:", err);
-        setErrorMessage("Lỗi kết nối máy chủ. Vui lòng kiểm tra lại mạng.");
+        showToast("error", "Lỗi kết nối máy chủ. Vui lòng kiểm tra lại mạng.", "Mất kết nối");
         setIsLoading(false);
       }
     }
@@ -364,12 +400,11 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
   // Xử lý gửi xác thực OTP
   const handleVerifyOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
+    setToast(null);
 
     const fullOtp = otpDigits.join("");
     if (fullOtp.length !== 6) {
-      setErrorMessage("Vui lòng nhập đủ 6 chữ số mã OTP.");
+      showToast("warning", "Vui lòng nhập đủ 6 chữ số mã OTP.", "Chưa đủ 6 số");
       return;
     }
 
@@ -388,14 +423,14 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMessage(data.error || "Mã xác thực không hợp lệ hoặc đã hết hạn.");
+        showToast("error", data.error || "Mã xác thực không hợp lệ hoặc đã hết hạn.", "Xác thực không thành công");
         setIsLoading(false);
         return;
       }
 
       setIsLoading(false);
       setIsVerifiedSuccess(true);
-      setSuccessMessage("Xác thực tài khoản thành công! Đang chuyển đến trang đăng nhập...");
+      showToast("success", "Xác thực tài khoản thành công! Đang chuyển đến trang đăng nhập...", "Xác thực thành công 🎉");
 
       setTimeout(() => {
         handleModeSwitch("login");
@@ -403,7 +438,7 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
       }, 1500);
     } catch (err: unknown) {
       console.error("[Verify OTP Error]:", err);
-      setErrorMessage("Lỗi kết nối máy chủ. Vui lòng thử lại.");
+      showToast("error", "Lỗi kết nối máy chủ. Vui lòng thử lại.", "Mất kết nối");
       setIsLoading(false);
     }
   };
@@ -413,8 +448,7 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
     if (!canResend || isResending) return;
 
     setIsResending(true);
-    setErrorMessage("");
-    setSuccessMessage("");
+    setToast(null);
 
     try {
       const res = await fetch("/api/auth/resend-otp", {
@@ -426,7 +460,7 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMessage(data.error || "Không thể gửi lại mã OTP.");
+        showToast("error", data.error || "Không thể gửi lại mã OTP.", "Gửi lại thất bại");
         setIsResending(false);
         return;
       }
@@ -435,11 +469,11 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
       setResendCooldown(60);
       setCanResend(false);
       setOtpDigits(["", "", "", "", "", ""]);
-      setSuccessMessage("Mã xác thực mới đã được gửi vào hộp thư của bạn.");
+      showToast("success", "Mã xác thực mới đã được gửi vào hộp thư của bạn.", "Đã gửi lại mã OTP ✉️");
       otpInputRefs.current[0]?.focus();
     } catch (err: unknown) {
       console.error("[Resend OTP Error]:", err);
-      setErrorMessage("Không thể kết nối máy chủ để gửi lại mã.");
+      showToast("error", "Không thể kết nối máy chủ để gửi lại mã.", "Mất kết nối");
       setIsResending(false);
     }
   };
@@ -542,8 +576,7 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
                       type="button"
                       onClick={() => {
                         setStep("form");
-                        setErrorMessage("");
-                        setSuccessMessage("");
+                        setToast(null);
                       }}
                       className="inline-flex items-center gap-1 text-xs font-semibold text-[#059669] hover:text-[#064e3b] mb-3 transition-colors cursor-pointer"
                     >
@@ -564,20 +597,6 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
                         <span className="font-semibold text-[#047857]">{email}</span>
                       </p>
                     </div>
-
-                    {successMessage && (
-                      <div className="mb-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2 animate-fade-in-up">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                        <span>{successMessage}</span>
-                      </div>
-                    )}
-
-                    {errorMessage && (
-                      <div className="mb-3 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-center gap-2 animate-fade-in-up">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-                        <span>{errorMessage}</span>
-                      </div>
-                    )}
 
                     <div className="my-5">
                       <label className="block text-xs font-semibold text-[#334155] mb-2 text-center">
@@ -675,9 +694,15 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
                       </p>
                     </div>
 
-                    {/* Banner thông báo nếu có */}
+                    {/* Lắng nghe thông báo URL và kích hoạt Floating Toast */}
                     <Suspense fallback={null}>
-                      <AuthMessageBanner />
+                      <AuthToastListener
+                        onToast={showToast}
+                        onPrefillEmail={(prefilledEmail) => {
+                          setEmail(prefilledEmail);
+                          setMode("login");
+                        }}
+                      />
                     </Suspense>
 
                     {/* Google OAuth Button */}
@@ -736,14 +761,6 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
                           </span>
                         </div>
                       </div>
-
-                      {/* Error Alert */}
-                      {errorMessage && (
-                        <div className="mb-3 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-center gap-2 animate-fade-in-up">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-                          <span>{errorMessage}</span>
-                        </div>
-                      )}
 
                       {/* Form Fields */}
                       <form onSubmit={handleSubmit} className="space-y-3">
@@ -933,6 +950,62 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
         </div>
 
       </div>
+
+      {/* ── FLOATING TOAST NOTIFICATION (GÓC DƯỚI BÊN PHẢI MÀN HÌNH) ── */}
+      {toast && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className={`fixed bottom-6 right-6 z-50 max-w-sm sm:max-w-md w-[calc(100vw-3rem)] p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18),0_4px_12px_rgba(0,0,0,0.08)] border backdrop-blur-xl bg-white/95 flex items-start gap-3.5 transition-all duration-300 animate-slide-up-fade ${
+            toast.type === "error"
+              ? "border-red-200/90"
+              : toast.type === "success"
+              ? "border-emerald-200/90"
+              : "border-amber-200/90"
+          }`}
+        >
+          {/* Icon Badge */}
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs ${
+              toast.type === "error"
+                ? "bg-red-50 text-red-600 border border-red-100"
+                : toast.type === "success"
+                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                : "bg-amber-50 text-amber-600 border border-amber-100"
+            }`}
+          >
+            {toast.type === "error" ? (
+              <AlertCircle className="w-5 h-5" />
+            ) : toast.type === "success" ? (
+              <CheckCircle2 className="w-5 h-5" />
+            ) : (
+              <AlertCircle className="w-5 h-5" />
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0 pr-1 text-left">
+            {toast.title && (
+              <h4 className="font-bold text-xs sm:text-sm tracking-tight mb-0.5 text-slate-900">
+                {toast.title}
+              </h4>
+            )}
+            <p className="text-xs text-slate-600 font-medium leading-relaxed break-words">
+              {toast.message}
+            </p>
+          </div>
+
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="p-1.5 -mr-1 -mt-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0 cursor-pointer"
+            title="Đóng thông báo"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </main>
   );
 }

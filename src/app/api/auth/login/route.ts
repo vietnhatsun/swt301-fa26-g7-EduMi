@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createServiceClient } from "@/lib/supabase";
+import {
+  createSessionToken,
+  SESSION_COOKIE_NAME,
+  DEFAULT_SESSION_DURATION,
+} from "@/lib/auth-session";
 
 export async function POST(req: NextRequest) {
   try {
@@ -127,7 +132,15 @@ export async function POST(req: NextRequest) {
       phoneNumber: user.phone_number || "",
     };
 
-    const sessionToken = Buffer.from(JSON.stringify(sessionUser)).toString("base64url");
+    // Tạo JWT Token có gắn chữ ký số HMAC-SHA256 và Claims bảo mật
+    const sessionToken = await createSessionToken({
+      sub: user.id,
+      email: user.email,
+      fullName: user.full_name,
+      role: user.role,
+      studentCode: studentProfile?.student_code || "EDM-784920",
+      avatarUrl: user.avatar_url || null,
+    });
 
     // 7. Tạo response và đính kèm Cookie HTTP-Only an toàn
     const response = NextResponse.json(
@@ -139,12 +152,12 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
 
-    response.cookies.set("edumi_session", sessionToken, {
+    response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // Lưu phiên 7 ngày
+      maxAge: DEFAULT_SESSION_DURATION,
     });
 
     return response;

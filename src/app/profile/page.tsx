@@ -7,7 +7,9 @@ import ProfileHeader from "@/components/profile/ProfileHeader";
 import OverviewTab from "@/components/profile/tabs/OverviewTab";
 import PersonalInfoTab from "@/components/profile/tabs/PersonalInfoTab";
 import NotesTab from "@/components/profile/tabs/NotesTab";
-import StatsTab from "@/components/profile/tabs/StatsTab";
+import ClassesTab from "@/components/profile/tabs/ClassesTab";
+import HistoryTab from "@/components/profile/tabs/HistoryTab";
+import TransactionsTab from "@/components/profile/tabs/TransactionsTab";
 import { createBrowserClient } from "@/lib/supabase";
 
 interface StudentSession {
@@ -121,6 +123,8 @@ export default function ProfilePage() {
             studentCode={currentStudent.studentCode}
           />
         );
+      case "classes":
+        return <ClassesTab />;
       case "personal":
         return (
           <PersonalInfoTab
@@ -131,22 +135,14 @@ export default function ProfilePage() {
         );
       case "notes":
         return <NotesTab />;
-      case "stats":
-        return (
-          <StatsTab
-            currentStreak={currentStudent.streakCount}
-            longestStreak={currentStudent.longestStreak}
-            totalPoints={currentStudent.totalPoints}
-          />
-        );
       case "materials":
         return (
           <div className="bg-white rounded-3xl p-8 border border-emerald-100 text-center py-16">
             <h2 className="text-xl font-bold text-slate-900 mb-2">
-              Bộ từ vựng & Tài liệu học tập 📚
+              Tài liệu học tập 📚
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-              Kho tài liệu số và bộ từ vựng luyện thi chuyên sâu đang được đồng bộ. Hãy quay lại sau nhé!
+              Kho tài liệu số và bộ đề luyện thi chuyên sâu đang được đồng bộ. Hãy quay lại sau nhé!
             </p>
           </div>
         );
@@ -162,16 +158,9 @@ export default function ProfilePage() {
           </div>
         );
       case "history":
-        return (
-          <div className="bg-white rounded-3xl p-8 border border-emerald-100 text-center py-16">
-            <h2 className="text-xl font-bold text-slate-900 mb-2">
-              Lịch sử làm bài & Bảng điểm 📝
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-              Xem lại chi tiết từng câu hỏi, đáp án và lời giải thích của các bài thi đã làm.
-            </p>
-          </div>
-        );
+        return <HistoryTab />;
+      case "transactions":
+        return <TransactionsTab />;
       case "settings":
         return (
           <div className="bg-white rounded-3xl p-8 border border-emerald-100 text-center py-16">
@@ -189,6 +178,7 @@ export default function ProfilePage() {
             fullName={currentStudent.fullName}
             streakCount={currentStudent.streakCount}
             studentCode={currentStudent.studentCode}
+            onNavigateTab={setActiveTab}
           />
         );
     }

@@ -10,13 +10,13 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "HIPZI — Nền tảng học tập AI",
-    template: "%s | HIPZI",
+    default: "EduMi — Nền tảng học tập AI",
+    template: "%s | EduMi",
   },
   description:
     "Nền tảng giáo dục trực tuyến ứng dụng AI — Tài liệu học tập, luyện đề, lớp học ảo và khóa học e-learning cho học sinh Việt Nam.",
-  keywords: ["học trực tuyến", "AI giáo dục", "luyện đề", "flashcard", "khóa học online", "HIPZI"],
-  authors: [{ name: "HIPZI Team" }],
+  keywords: ["học trực tuyến", "AI giáo dục", "luyện đề", "flashcard", "khóa học online", "EduMi"],
+  authors: [{ name: "EduMi Team" }],
   icons: {
     icon: [
       { url: "/favicon.jpg", type: "image/jpeg" },
@@ -28,10 +28,10 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "vi_VN",
-    url: "https://hipzi.vn",
-    title: "HIPZI — Nền tảng học tập AI",
+    url: "https://edumi.vn",
+    title: "EduMi — Nền tảng học tập AI",
     description: "Học thông minh hơn với AI. Tài liệu, luyện đề, lớp học ảo.",
-    siteName: "HIPZI",
+    siteName: "EduMi",
   },
 };
 

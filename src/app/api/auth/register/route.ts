@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     // 2. Kiểm tra email đã tồn tại chưa
     const { data: existingUser, error: checkError } = await supabase
       .from("users")
-      .select("id, email, is_verified")
+      .select("id, email, is_verified, password_hash")
       .eq("email", cleanEmail)
       .maybeSingle();
 
@@ -58,11 +58,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (existingUser && existingUser.is_verified) {
-      return NextResponse.json(
-        { error: "Email này đã được đăng ký và kích hoạt. Vui lòng chuyển sang trang Đăng nhập." },
-        { status: 409 }
-      );
+    if (existingUser) {
+      // Trường hợp 1: Email này đã được đăng ký thông qua Google (password_hash là null)
+      if (existingUser.password_hash === null) {
+        return NextResponse.json(
+          {
+            error: "Email này đã được đăng ký bằng tài khoản Google. Vui lòng sử dụng tính năng 'Tiếp tục với Google' để đăng nhập.",
+            provider: "google",
+          },
+          { status: 409 }
+        );
+      }
+
+      // Trường hợp 2: Email này đã được đăng ký và đã xác thực mật khẩu
+      if (existingUser.is_verified) {
+        return NextResponse.json(
+          {
+            error: "Email này đã được đăng ký tài khoản. Vui lòng chuyển sang trang Đăng nhập hoặc chọn Quên mật khẩu.",
+            provider: "password",
+          },
+          { status: 409 }
+        );
+      }
     }
 
     // 3. Hash mật khẩu bằng bcryptjs

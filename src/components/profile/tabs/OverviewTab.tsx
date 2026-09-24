@@ -1,21 +1,29 @@
 "use client";
 
 import React, { useState } from "react";
+import { ProfileTabId } from "../ProfileSidebar";
 import {
   Flame,
   BookOpen,
   Clock,
-  ArrowUpRight,
   Video,
   CheckCircle2,
   CalendarDays,
   TrendingUp,
+  Award,
+  Target,
+  Sparkles,
+  Layers,
+  BookMarked,
+  Bot,
+  ArrowRight,
 } from "lucide-react";
 
 interface OverviewTabProps {
   fullName?: string;
   streakCount?: number;
   studentCode?: string;
+  onNavigateTab?: (tab: ProfileTabId) => void;
 }
 
 interface ScheduleItem {
@@ -37,9 +45,126 @@ interface ScheduleItem {
 export default function OverviewTab({
   fullName = "Nguyễn Ngọc Thạch 2k3",
   streakCount = 0,
+  onNavigateTab,
 }: OverviewTabProps) {
   const [scheduleView, setScheduleView] = useState<"today" | "week">("today");
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
+
+  // Môn học được chọn trong card Tổng quan năng lực
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
+
+  const subjectList = [
+    { id: "all", label: "Tất cả", icon: "🌟" },
+    { id: "math", label: "Toán học", icon: "📐" },
+    { id: "literature", label: "Ngữ văn", icon: "📖" },
+    { id: "english", label: "Tiếng Anh", icon: "🇬🇧" },
+    { id: "physics", label: "Vật lý", icon: "⚡" },
+  ];
+
+  const subjectOverviewData: Record<
+    string,
+    {
+      name: string;
+      badge: string;
+      score: number;
+      scoreGrowth: string;
+      testsCount: number;
+      questionsCountLabel: string;
+      accuracy: number;
+      accuracyStatus: string;
+      targetGoal: string;
+      currentStatus: string;
+      keySkills: { name: string; percent: number; status: string }[];
+    }
+  > = {
+    all: {
+      name: "Tổ hợp các môn",
+      badge: "Học lực: Giỏi · Top 10%",
+      score: 8.4,
+      scoreGrowth: "+0.6 tháng này",
+      testsCount: 28,
+      questionsCountLabel: "1,420 câu đã giải",
+      accuracy: 86.5,
+      accuracyStatus: "Đạt chuẩn mục tiêu",
+      targetGoal: "Mục tiêu: 26.5 điểm",
+      currentStatus: "Hiện tại: 24.6 điểm",
+      keySkills: [
+        { name: "Toán học 12", percent: 88, status: "Xuất sắc" },
+        { name: "Tiếng Anh", percent: 82, status: "Tốt" },
+        { name: "Vật lý 12", percent: 76, status: "Khá" },
+      ],
+    },
+    math: {
+      name: "Môn Toán học 12",
+      badge: "Thế mạnh · Top 8%",
+      score: 8.8,
+      scoreGrowth: "+0.8 tháng này",
+      testsCount: 12,
+      questionsCountLabel: "600 câu đã giải",
+      accuracy: 88.0,
+      accuracyStatus: "Rất xuất sắc",
+      targetGoal: "Mục tiêu môn Toán: 9.0+ điểm",
+      currentStatus: "Đạt 97% mục tiêu",
+      keySkills: [
+        { name: "Hàm số & Khảo sát đồ thị", percent: 92, status: "Vững chắc" },
+        { name: "Mũ & Hàm số Logarit", percent: 88, status: "Tốt" },
+        { name: "Hình không gian & Oxyz", percent: 78, status: "Cần luyện thêm" },
+      ],
+    },
+    literature: {
+      name: "Môn Ngữ văn 12",
+      badge: "Tiến bộ nhanh · Top 18%",
+      score: 7.8,
+      scoreGrowth: "+0.4 tháng này",
+      testsCount: 8,
+      questionsCountLabel: "16 bài luận hoàn thành",
+      accuracy: 82.5,
+      accuracyStatus: "Phong độ ổn định",
+      targetGoal: "Mục tiêu môn Văn: 8.0+ điểm",
+      currentStatus: "Đạt 94% mục tiêu",
+      keySkills: [
+        { name: "Đọc hiểu văn bản & Tiếng Việt", percent: 88, status: "Tốt" },
+        { name: "Nghị luận xã hội", percent: 80, status: "Khá" },
+        { name: "Nghị luận văn học chuyên sâu", percent: 74, status: "Cần trau dồi" },
+      ],
+    },
+    english: {
+      name: "Môn Tiếng Anh THPT",
+      badge: "Chắc chắn · Top 12%",
+      score: 8.2,
+      scoreGrowth: "+0.5 tháng này",
+      testsCount: 10,
+      questionsCountLabel: "500 câu trắc nghiệm",
+      accuracy: 84.0,
+      accuracyStatus: "Đạt chuẩn kỳ thi",
+      targetGoal: "Mục tiêu Tiếng Anh: 8.5+ điểm",
+      currentStatus: "Đạt 96% mục tiêu",
+      keySkills: [
+        { name: "Ngữ pháp & Trắc nghiệm câu", percent: 90, status: "Vững chắc" },
+        { name: "Kỹ năng đọc hiểu (Reading)", percent: 80, status: "Khá" },
+        { name: "Từ vựng chuyên đề & Điền từ", percent: 85, status: "Tốt" },
+      ],
+    },
+    physics: {
+      name: "Môn Vật lý 12",
+      badge: "Đang tăng tốc · Top 15%",
+      score: 7.6,
+      scoreGrowth: "+0.3 tháng này",
+      testsCount: 8,
+      questionsCountLabel: "320 câu đã giải",
+      accuracy: 78.0,
+      accuracyStatus: "Cần đẩy mạnh",
+      targetGoal: "Mục tiêu Vật lý: 8.5+ điểm",
+      currentStatus: "Đạt 89% mục tiêu",
+      keySkills: [
+        { name: "Dao động cơ học", percent: 84, status: "Tốt" },
+        { name: "Sóng cơ & Sóng âm", percent: 78, status: "Khá" },
+        { name: "Dòng điện xoay chiều", percent: 70, status: "Cần cải thiện" },
+      ],
+    },
+  };
+
+  const currentSubjectData = subjectOverviewData[selectedSubject] || subjectOverviewData.all;
 
   // Weekly study time data (hours per day)
   const weeklyStudyData = [
@@ -195,58 +320,437 @@ export default function OverviewTab({
     { label: "CN", active: false, current: true },
   ];
 
-  // Recent test history
-  const recentTests = [
-    {
-      id: "1",
-      title: "Đề thi thử THPT Quốc Gia môn Tiếng Anh - Đề số 04",
-      date: "20/09/2026",
-      score: "8.5 / 10",
-      status: "Đã hoàn thành",
-      badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    },
-    {
-      id: "2",
-      title: "Quiz từ vựng Unit 3: Environmental Protection",
-      date: "19/09/2026",
-      score: "18 / 20",
-      status: "Đạt",
-      badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    },
-    {
-      id: "3",
-      title: "Mini-test Đọc hiểu: Reading Passage 2 (Academic)",
-      date: "17/09/2026",
-      score: "11 / 13",
-      status: "Đạt",
-      badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
-    },
-  ];
-
   return (
     <div className="space-y-6">
       {/* ── Top Header Greeting ── */}
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800/80 mb-1">
-          TỔNG QUAN · TIẾN ĐỘ LUYỆN ĐỀ
+          TỔNG QUAN HỌC TẬP
         </p>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-          Chào {fullName.split(" ").pop() || "bạn"}, hôm nay luyện đề nhé! 🚀
+          Chào {fullName.split(" ").pop() || "bạn"}, mừng bạn trở lại! 👋
         </h1>
       </div>
 
       {/* ── Row 1: Khoảng trống chờ thêm các card mới ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Khoảng trống vị trí Lịch học cũ (Col span 7) */}
-        <div className="hidden lg:flex lg:col-span-7 rounded-2xl sm:rounded-3xl border-2 border-dashed border-slate-200/80 items-center justify-center p-6 text-slate-400/80 bg-slate-50/30 min-h-[200px]">
-          <div className="text-center">
-            <span className="text-xs font-semibold text-slate-400">
-              + Khoảng trống chờ cập nhật card mới
-            </span>
+        {/* Card: TỔNG QUAN NĂNG LỰC & TIẾN ĐỘ HỌC TẬP (Col span 7) */}
+        <div className="lg:col-span-7 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] flex flex-col justify-between">
+          <div>
+            {/* Header: Title & Ranking Badge */}
+            <div className="flex items-center justify-between gap-2 mb-3.5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-xs">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
+                    TỔNG QUAN NĂNG LỰC
+                  </span>
+                  <span className="text-xs font-bold text-slate-800">
+                    {currentSubjectData.name}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 shadow-xs">
+                <Sparkles className="w-3 h-3 text-emerald-600 fill-emerald-500" />
+                <span>{currentSubjectData.badge}</span>
+              </div>
+            </div>
+
+            {/* 3 Metric Cards Grid (Tự động cập nhật theo môn đang chọn) */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-2.5 mb-3.5">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-[#f8fafc] border border-slate-100 flex flex-col justify-between transition-all">
+                <div className="flex items-center justify-between text-slate-400 mb-1">
+                  <span className="text-[10px] font-semibold">Điểm trung bình</span>
+                  <Target className="w-3.5 h-3.5 text-emerald-600" />
+                </div>
+                <div className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
+                  {currentSubjectData.score.toFixed(1)} <span className="text-xs font-medium text-slate-400">/ 10</span>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 mt-1">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>{currentSubjectData.scoreGrowth}</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 sm:p-3 rounded-xl bg-[#f8fafc] border border-slate-100 flex flex-col justify-between transition-all">
+                <div className="flex items-center justify-between text-slate-400 mb-1">
+                  <span className="text-[10px] font-semibold">Đề hoàn thành</span>
+                  <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+                </div>
+                <div className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
+                  {currentSubjectData.testsCount} <span className="text-xs font-medium text-slate-400">bài thi</span>
+                </div>
+                <div className="text-[10px] font-medium text-slate-500 mt-1 truncate">
+                  {currentSubjectData.questionsCountLabel}
+                </div>
+              </div>
+
+              <div className="p-2.5 sm:p-3 rounded-xl bg-[#f8fafc] border border-slate-100 flex flex-col justify-between transition-all">
+                <div className="flex items-center justify-between text-slate-400 mb-1">
+                  <span className="text-[10px] font-semibold">Độ chính xác</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                </div>
+                <div className="text-lg sm:text-xl font-black text-emerald-800 tracking-tight leading-tight">
+                  {currentSubjectData.accuracy.toFixed(1)}%
+                </div>
+                <div className="text-[10px] font-semibold text-emerald-700 mt-1 truncate">
+                  {currentSubjectData.accuracyStatus}
+                </div>
+              </div>
+            </div>
+
+            {/* Subject Selector Tabs & Topic Mastery Breakdown */}
+            <div className="pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                <span>Chọn môn học để xem chi tiết:</span>
+                <span className="text-emerald-700 font-bold">{currentSubjectData.name}</span>
+              </div>
+
+              {/* Subject Pill Buttons */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none select-none">
+                {subjectList.map((sub) => {
+                  const isSelected = selectedSubject === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setSelectedSubject(sub.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                        isSelected
+                          ? "bg-gradient-to-r from-[#064e3b] to-[#047857] text-white shadow-xs scale-102"
+                          : "bg-slate-100/90 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900 border border-slate-200/60"
+                      }`}
+                    >
+                      <span>{sub.icon}</span>
+                      <span>{sub.label}</span>
+                      {isSelected && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse ml-0.5" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+            </div>
           </div>
         </div>
 
-        {/* Card: THỜI GIAN HỌC TẬP TRONG TUẦN (Col span 5) */}
+        {/* Card: CHUỖI NGÀY HỌC (Col span 5 - Đã hoán đổi lên Row 1) */}
+        <div className="lg:col-span-5 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] flex flex-col justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              CHUỖI NGÀY HỌC
+            </span>
+            <div className="flex items-center gap-2 mt-2 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-500 shadow-sm">
+                <Flame className="w-6 h-6 fill-amber-500 animate-pulse" />
+              </div>
+              <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                {streakCount}
+              </span>
+              <span className="text-xs sm:text-sm font-semibold text-slate-500">
+                ngày liên tiếp
+              </span>
+            </div>
+          </div>
+
+          {/* 7-day circular checklist */}
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2 pt-3 border-t border-slate-100">
+            {weekDays.map((day, idx) => (
+              <div key={idx} className="flex flex-col items-center gap-1.5">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${day.active
+                      ? "bg-amber-400 text-slate-950 shadow-sm"
+                      : day.current
+                        ? "border-2 border-dashed border-amber-400 text-amber-600 bg-amber-50/50"
+                        : "bg-slate-100 text-slate-400"
+                    }`}
+                >
+                  {day.active ? "✓" : ""}
+                </div>
+                <span className="text-[11px] font-bold text-slate-500">
+                  {day.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Row 2: Lịch học của tôi & Chuỗi ngày học ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        {/* Card 1: LỊCH HỌC CỦA TÔI (Col span 7 - Đã chuyển xuống thay thế Kỹ năng gần đây) */}
+        <div className="lg:col-span-7 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] flex flex-col justify-between">
+          <div>
+            {/* Header with Title & Filter Tabs */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                  <CalendarDays className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
+                    LỊCH HỌC CỦA TÔI
+                  </span>
+                  <span className="text-xs font-bold text-slate-800">
+                    {scheduleView === "today"
+                      ? `Hôm nay · ${scheduleItems.filter((item) => item.isToday).length} buổi học`
+                      : `Tuần này · ${scheduleItems.length} buổi học`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Today / Week filter pills */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setScheduleView("today")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${scheduleView === "today"
+                      ? "bg-white text-emerald-800 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                    }`}
+                >
+                  Hôm nay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduleView("week")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${scheduleView === "week"
+                      ? "bg-white text-emerald-800 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                    }`}
+                >
+                  Cả tuần
+                </button>
+              </div>
+            </div>
+
+            {/* Schedule Body - Fixed height container so card height never changes */}
+            <div className="min-h-[156px] flex flex-col justify-center">
+              {scheduleView === "today" ? (
+                /* List of today's classes */
+                <div className="space-y-2.5">
+                  {displayedSchedule.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 sm:p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 hover:bg-emerald-50 shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Day / Date badge */}
+                        <div className="w-10 h-10 rounded-xl bg-[#064e3b] text-white flex flex-col items-center justify-center flex-shrink-0 shadow-xs">
+                          <span className="text-[10px] font-bold uppercase leading-none text-emerald-300">
+                            {item.dayLabel}
+                          </span>
+                          <span className="text-xs font-black leading-tight">
+                            {item.dateNum}
+                          </span>
+                        </div>
+
+                        {/* Class details */}
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                              {item.title}
+                            </h4>
+                            {item.isToday && !item.isCompleted && (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping" />
+                                SẮP TỚI
+                              </span>
+                            )}
+                            {item.isCompleted && (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <CheckCircle2 className="w-2.5 h-2.5" />
+                                Đã hoàn thành
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
+                            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                              <Clock className="w-3 h-3" />
+                              {item.time}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              {item.teacher} · {item.room}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action button */}
+                      {item.isToday && !item.isCompleted ? (
+                        <a
+                          href={item.meetUrl || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#10b981] to-[#059669] hover:from-[#059669] hover:to-[#047857] text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all self-end sm:self-center shrink-0"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          <span>Vào lớp</span>
+                        </a>
+                      ) : (
+                        <span className="text-[11px] font-semibold text-slate-400 self-end sm:self-center shrink-0">
+                          {item.isCompleted ? "Đã kết thúc" : "Chưa bắt đầu"}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* Caro Grid Table for Cả tuần */
+                <div className="w-full">
+                  <div className="grid grid-cols-8 gap-1 sm:gap-1.5 text-center">
+                    {/* Corner Header */}
+                    <div className="flex items-center justify-center text-[10px] font-bold text-slate-400">
+                      Buổi
+                    </div>
+
+                    {/* Day Column Headers (T2 - CN) */}
+                    {weekTableDays.map((d) => (
+                      <div
+                        key={d.key}
+                        className={`py-1 rounded-lg text-center transition-all ${d.isToday
+                            ? "bg-[#064e3b] text-white font-black shadow-xs"
+                            : "bg-slate-100/90 text-slate-700 font-bold"
+                          }`}
+                      >
+                        <div
+                          className={`text-[10px] uppercase leading-none ${d.isToday ? "text-emerald-300" : "text-slate-500"
+                            }`}
+                        >
+                          {d.label}
+                        </div>
+                        <div className="text-[11px] font-bold leading-tight mt-0.5">
+                          {d.date}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Caro Rows: Sáng, Chiều, Tối */}
+                    {timeSlots.map((slot) => (
+                      <React.Fragment key={slot.key}>
+                        {/* Slot label */}
+                        <div className="flex items-center justify-center text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100/80 rounded-lg">
+                          {slot.label}
+                        </div>
+
+                        {/* 7 day cells */}
+                        {weekTableDays.map((d) => {
+                          const classItem = getScheduleForSlot(d.key, slot.key);
+                          return (
+                            <div
+                              key={`${d.key}-${slot.key}`}
+                              className="relative group h-9 sm:h-10"
+                            >
+                              {classItem ? (
+                                <div
+                                  className={`w-full h-full rounded-lg flex flex-col items-center justify-center p-1 transition-all cursor-pointer shadow-xs ${classItem.isToday && !classItem.isCompleted
+                                      ? "bg-gradient-to-br from-[#10b981] to-[#059669] text-white ring-2 ring-amber-400"
+                                      : classItem.isCompleted
+                                        ? "bg-emerald-100/90 text-emerald-800 border border-emerald-300 hover:bg-emerald-200"
+                                        : "bg-[#064e3b] text-white hover:bg-emerald-800"
+                                    }`}
+                                >
+                                  <span className="text-[10px] font-black truncate max-w-full leading-tight">
+                                    {classItem.subject.replace(" học", "")}
+                                  </span>
+                                  <span className="text-[8px] opacity-90 truncate max-w-full leading-none mt-0.5">
+                                    {classItem.time.split(" - ")[0]}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="w-full h-full rounded-lg bg-slate-50/70 border border-slate-100 flex items-center justify-center text-slate-300 hover:bg-slate-100/50 transition-colors">
+                                  <span className="text-xs select-none">·</span>
+                                </div>
+                              )}
+
+                              {/* Tooltip on hover for green cells */}
+                              {classItem && (
+                                <div
+                                  className={`hidden group-hover:flex flex-col absolute z-40 bottom-full mb-2 w-56 sm:w-64 p-3 rounded-xl bg-slate-900/95 text-white shadow-2xl backdrop-blur-sm pointer-events-none border border-slate-700/60 text-left ${getTooltipPosition(
+                                    d.key
+                                  )}`}
+                                >
+                                  <div className="flex items-center justify-between gap-1 mb-1">
+                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">
+                                      {classItem.subject}
+                                    </span>
+                                    <span
+                                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${classItem.isCompleted
+                                          ? "bg-slate-700 text-slate-300"
+                                          : classItem.isToday
+                                            ? "bg-amber-400 text-slate-950 font-black"
+                                            : "bg-emerald-900 text-emerald-300"
+                                        }`}
+                                    >
+                                      {classItem.isCompleted
+                                        ? "Đã hoàn thành"
+                                        : classItem.isToday
+                                          ? "Sắp tới hôm nay"
+                                          : "Sắp diễn ra"}
+                                    </span>
+                                  </div>
+                                  <h5 className="text-xs font-bold text-white leading-snug mb-1">
+                                    {classItem.title}
+                                  </h5>
+                                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-300 mb-0.5">
+                                    <Clock className="w-3 h-3 text-emerald-400 shrink-0" />
+                                    <span>{classItem.time}</span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400">
+                                    {classItem.teacher} · {classItem.room}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </div>
+
+                  {/* Caro footer legend */}
+                  <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400 select-none">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded bg-[#064e3b]" />
+                        Lớp học
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded bg-emerald-100 border border-emerald-300" />
+                        Đã xong
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded bg-slate-100 border border-slate-200" />
+                        Trống
+                      </span>
+                    </div>
+                    <span className="text-[9px] italic text-slate-400">
+                      Rê chuột vào ô xanh để xem chi tiết
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer of Card 1 */}
+          <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            <div className="flex items-center gap-2">
+              <span>Đã hoàn thành <strong>2/5 buổi</strong></span>
+              <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden inline-block">
+                <div className="h-full bg-emerald-500 rounded-full w-[40%]" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: THỜI GIAN HỌC TẬP TRONG TUẦN (Col span 5 - Đã hoán đổi xuống Row 2) */}
         <div className="lg:col-span-5 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] flex flex-col justify-between">
           <div>
             {/* Header: Title & Badge */}
@@ -395,13 +899,12 @@ export default function OverviewTab({
                 {weeklyStudyData.map((d, i) => (
                   <span
                     key={d.day}
-                    className={`transition-colors cursor-pointer ${
-                      hoveredDay === i
+                    className={`transition-colors cursor-pointer ${hoveredDay === i
                         ? "text-emerald-700 font-extrabold"
                         : d.isToday
-                        ? "text-slate-900 font-extrabold"
-                        : "hover:text-slate-700"
-                    }`}
+                          ? "text-slate-900 font-extrabold"
+                          : "hover:text-slate-700"
+                      }`}
                     onMouseEnter={() => setHoveredDay(i)}
                     onMouseLeave={() => setHoveredDay(null)}
                   >
@@ -419,389 +922,134 @@ export default function OverviewTab({
             </span>
           </div>
         </div>
+
       </div>
 
-      {/* ── Row 2: Lịch học của tôi & Chuỗi ngày học ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* Card 1: LỊCH HỌC CỦA TÔI (Col span 7 - Đã chuyển xuống thay thế Kỹ năng gần đây) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] flex flex-col justify-between">
-          <div>
-            {/* Header with Title & Filter Tabs */}
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                  <CalendarDays className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block leading-none">
-                    LỊCH HỌC CỦA TÔI
-                  </span>
-                  <span className="text-xs font-bold text-slate-800">
-                    {scheduleView === "today"
-                      ? `Hôm nay · ${scheduleItems.filter((item) => item.isToday).length} buổi học`
-                      : `Tuần này · ${scheduleItems.length} buổi học`}
-                  </span>
-                </div>
-              </div>
-
-              {/* Today / Week filter pills */}
-              <div className="flex items-center bg-slate-100 p-1 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setScheduleView("today")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    scheduleView === "today"
-                      ? "bg-white text-emerald-800 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  Hôm nay
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScheduleView("week")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    scheduleView === "week"
-                      ? "bg-white text-emerald-800 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  Cả tuần
-                </button>
-              </div>
-            </div>
-
-            {/* Schedule Body - Fixed height container so card height never changes */}
-            <div className="min-h-[156px] flex flex-col justify-center">
-              {scheduleView === "today" ? (
-                /* List of today's classes */
-                <div className="space-y-2.5">
-                  {displayedSchedule.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 sm:p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 hover:bg-emerald-50 shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Day / Date badge */}
-                        <div className="w-10 h-10 rounded-xl bg-[#064e3b] text-white flex flex-col items-center justify-center flex-shrink-0 shadow-xs">
-                          <span className="text-[10px] font-bold uppercase leading-none text-emerald-300">
-                            {item.dayLabel}
-                          </span>
-                          <span className="text-xs font-black leading-tight">
-                            {item.dateNum}
-                          </span>
-                        </div>
-
-                        {/* Class details */}
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
-                              {item.title}
-                            </h4>
-                            {item.isToday && !item.isCompleted && (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
-                                <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping" />
-                                SẮP TỚI
-                              </span>
-                            )}
-                            {item.isCompleted && (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                <CheckCircle2 className="w-2.5 h-2.5" />
-                                Đã hoàn thành
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
-                            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                              <Clock className="w-3 h-3" />
-                              {item.time}
-                            </span>
-                            <span>•</span>
-                            <span>
-                              {item.teacher} · {item.room}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Action button */}
-                      {item.isToday && !item.isCompleted ? (
-                        <a
-                          href={item.meetUrl || "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#10b981] to-[#059669] hover:from-[#059669] hover:to-[#047857] text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all self-end sm:self-center shrink-0"
-                        >
-                          <Video className="w-3.5 h-3.5" />
-                          <span>Vào lớp</span>
-                        </a>
-                      ) : (
-                        <span className="text-[11px] font-semibold text-slate-400 self-end sm:self-center shrink-0">
-                          {item.isCompleted ? "Đã kết thúc" : "Chưa bắt đầu"}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                /* Caro Grid Table for Cả tuần */
-                <div className="w-full">
-                  <div className="grid grid-cols-8 gap-1 sm:gap-1.5 text-center">
-                    {/* Corner Header */}
-                    <div className="flex items-center justify-center text-[10px] font-bold text-slate-400">
-                      Buổi
-                    </div>
-
-                    {/* Day Column Headers (T2 - CN) */}
-                    {weekTableDays.map((d) => (
-                      <div
-                        key={d.key}
-                        className={`py-1 rounded-lg text-center transition-all ${
-                          d.isToday
-                            ? "bg-[#064e3b] text-white font-black shadow-xs"
-                            : "bg-slate-100/90 text-slate-700 font-bold"
-                        }`}
-                      >
-                        <div
-                          className={`text-[10px] uppercase leading-none ${
-                            d.isToday ? "text-emerald-300" : "text-slate-500"
-                          }`}
-                        >
-                          {d.label}
-                        </div>
-                        <div className="text-[11px] font-bold leading-tight mt-0.5">
-                          {d.date}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Caro Rows: Sáng, Chiều, Tối */}
-                    {timeSlots.map((slot) => (
-                      <React.Fragment key={slot.key}>
-                        {/* Slot label */}
-                        <div className="flex items-center justify-center text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100/80 rounded-lg">
-                          {slot.label}
-                        </div>
-
-                        {/* 7 day cells */}
-                        {weekTableDays.map((d) => {
-                          const classItem = getScheduleForSlot(d.key, slot.key);
-                          return (
-                            <div
-                              key={`${d.key}-${slot.key}`}
-                              className="relative group h-9 sm:h-10"
-                            >
-                              {classItem ? (
-                                <div
-                                  className={`w-full h-full rounded-lg flex flex-col items-center justify-center p-1 transition-all cursor-pointer shadow-xs ${
-                                    classItem.isToday && !classItem.isCompleted
-                                      ? "bg-gradient-to-br from-[#10b981] to-[#059669] text-white ring-2 ring-amber-400"
-                                      : classItem.isCompleted
-                                      ? "bg-emerald-100/90 text-emerald-800 border border-emerald-300 hover:bg-emerald-200"
-                                      : "bg-[#064e3b] text-white hover:bg-emerald-800"
-                                  }`}
-                                >
-                                  <span className="text-[10px] font-black truncate max-w-full leading-tight">
-                                    {classItem.subject.replace(" học", "")}
-                                  </span>
-                                  <span className="text-[8px] opacity-90 truncate max-w-full leading-none mt-0.5">
-                                    {classItem.time.split(" - ")[0]}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="w-full h-full rounded-lg bg-slate-50/70 border border-slate-100 flex items-center justify-center text-slate-300 hover:bg-slate-100/50 transition-colors">
-                                  <span className="text-xs select-none">·</span>
-                                </div>
-                              )}
-
-                              {/* Tooltip on hover for green cells */}
-                              {classItem && (
-                                <div
-                                  className={`hidden group-hover:flex flex-col absolute z-40 bottom-full mb-2 w-56 sm:w-64 p-3 rounded-xl bg-slate-900/95 text-white shadow-2xl backdrop-blur-sm pointer-events-none border border-slate-700/60 text-left ${getTooltipPosition(
-                                    d.key
-                                  )}`}
-                                >
-                                  <div className="flex items-center justify-between gap-1 mb-1">
-                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">
-                                      {classItem.subject}
-                                    </span>
-                                    <span
-                                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                                        classItem.isCompleted
-                                          ? "bg-slate-700 text-slate-300"
-                                          : classItem.isToday
-                                          ? "bg-amber-400 text-slate-950 font-black"
-                                          : "bg-emerald-900 text-emerald-300"
-                                      }`}
-                                    >
-                                      {classItem.isCompleted
-                                        ? "Đã hoàn thành"
-                                        : classItem.isToday
-                                        ? "Sắp tới hôm nay"
-                                        : "Sắp diễn ra"}
-                                    </span>
-                                  </div>
-                                  <h5 className="text-xs font-bold text-white leading-snug mb-1">
-                                    {classItem.title}
-                                  </h5>
-                                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-300 mb-0.5">
-                                    <Clock className="w-3 h-3 text-emerald-400 shrink-0" />
-                                    <span>{classItem.time}</span>
-                                  </div>
-                                  <p className="text-[10px] text-slate-400">
-                                    {classItem.teacher} · {classItem.room}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </React.Fragment>
-                    ))}
-                  </div>
-
-                  {/* Caro footer legend */}
-                  <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-400 select-none">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded bg-[#064e3b]" />
-                        Lớp học
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded bg-emerald-100 border border-emerald-300" />
-                        Đã xong
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded bg-slate-100 border border-slate-200" />
-                        Trống
-                      </span>
-                    </div>
-                    <span className="text-[9px] italic text-slate-400">
-                      Rê chuột vào ô xanh để xem chi tiết
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Footer of Card 1 */}
-          <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-            <div className="flex items-center gap-2">
-              <span>Đã hoàn thành <strong>2/5 buổi</strong></span>
-              <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden inline-block">
-                <div className="h-full bg-emerald-500 rounded-full w-[40%]" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: CHUỖI NGÀY HỌC (Col span 5 - Đã chuyển từ Row 1 xuống thay thế Đếm ngược kỳ thi) */}
-        <div className="lg:col-span-5 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] flex flex-col justify-between">
+      {/* ── Row 3: Lối tắt tiện ích học tập (Thay thế card lịch sử làm bài gần đây) ── */}
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              CHUỖI NGÀY HỌC
+              CÔNG CỤ THÔNG MINH · TRỢ LÝ HỌC TẬP
             </span>
-            <div className="flex items-center gap-2 mt-2 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-500 shadow-sm">
-                <Flame className="w-6 h-6 fill-amber-500 animate-pulse" />
-              </div>
-              <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                {streakCount}
-              </span>
-              <span className="text-xs sm:text-sm font-semibold text-slate-500">
-                ngày liên tiếp
-              </span>
-            </div>
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
+              Lối tắt tiện ích học tập
+            </h3>
           </div>
+          <span className="text-xs text-slate-500 font-medium">
+            4 tiện ích giúp tối ưu thời gian ôn luyện
+          </span>
+        </div>
 
-          {/* 7-day circular checklist */}
-          <div className="grid grid-cols-7 gap-1.5 sm:gap-2 pt-3 border-t border-slate-100">
-            {weekDays.map((day, idx) => (
-              <div key={idx} className="flex flex-col items-center gap-1.5">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                    day.active
-                      ? "bg-amber-400 text-slate-950 shadow-sm"
-                      : day.current
-                      ? "border-2 border-dashed border-amber-400 text-amber-600 bg-amber-50/50"
-                      : "bg-slate-100 text-slate-400"
-                  }`}
-                >
-                  {day.active ? "✓" : ""}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Kho luyện đề chuẩn */}
+          <div
+            onClick={() => onNavigateTab ? onNavigateTab("history") : undefined}
+            className="group relative bg-white rounded-2xl sm:rounded-3xl p-5 border border-emerald-100/80 hover:border-emerald-300 shadow-[0_4px_20px_rgba(6,78,59,0.04)] hover:shadow-[0_12px_28px_rgba(6,78,59,0.08)] transition-all duration-200 cursor-pointer flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-200/80 text-emerald-700 flex items-center justify-center group-hover:scale-105 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-200">
+                  <BookOpen className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold text-slate-500">
-                  {day.label}
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                  500+ Bộ đề
                 </span>
               </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
-      {/* ── Row 3: Hoạt động học tập & Lịch sử làm bài gần đây ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* Card 5: Lịch sử làm bài gần đây (Col span 12 hoặc 8) */}
-        <div className="lg:col-span-12 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)]">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                HOẠT ĐỘNG HỌC TẬP · THÁNG 9 · 2026
-              </span>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
-                Lịch sử làm bài gần đây
-              </h3>
+              <h4 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
+                Kho luyện đề chuẩn
+              </h4>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                Đề thi thử THPT Quốc gia & ĐGNL bám sát cấu trúc mới, có đáp án chi tiết.
+              </p>
             </div>
-            <button
-              type="button"
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer transition-colors"
-            >
-              <span>Xem tất cả</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-700">
+              <span>Luyện thi ngay</span>
+              <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+            </div>
           </div>
 
-          <div className="space-y-2.5">
-            {recentTests.map((test) => (
-              <div
-                key={test.id}
-                className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50/40 border border-slate-200/70 hover:border-emerald-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
-                      {test.title}
-                    </h4>
-                    <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-2">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {test.date}
-                      </span>
-                    </p>
-                  </div>
+          {/* Card 2: Thẻ Flashcard AI */}
+          <div
+            onClick={() => onNavigateTab ? onNavigateTab("flashcards") : undefined}
+            className="group relative bg-white rounded-2xl sm:rounded-3xl p-5 border border-amber-100/80 hover:border-amber-300 shadow-[0_4px_20px_rgba(217,119,6,0.04)] hover:shadow-[0_12px_28px_rgba(217,119,6,0.08)] transition-all duration-200 cursor-pointer flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-200/80 text-amber-700 flex items-center justify-center group-hover:scale-105 group-hover:bg-amber-600 group-hover:text-white transition-all duration-200">
+                  <Layers className="w-5 h-5" />
                 </div>
-
-                <div className="flex items-center gap-3 self-end sm:self-center">
-                  <span className="text-xs sm:text-sm font-black text-slate-900">
-                    {test.score}
-                  </span>
-                  <span
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${test.badgeColor}`}
-                  >
-                    {test.status}
-                  </span>
-                </div>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/60">
+                  Spaced Repetition
+                </span>
               </div>
-            ))}
+              <h4 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-amber-800 transition-colors">
+                Thẻ Flashcard AI
+              </h4>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                Ghi nhớ sâu từ vựng, công thức Toán - Lý và mốc lịch sử bằng lặp lại ngắt quãng.
+              </p>
+            </div>
+            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-amber-700">
+              <span>Ôn tập thẻ</span>
+              <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
+          {/* Card 3: Sổ tay câu hỏi sai */}
+          <div
+            onClick={() => onNavigateTab ? onNavigateTab("history") : undefined}
+            className="group relative bg-white rounded-2xl sm:rounded-3xl p-5 border border-rose-100/80 hover:border-rose-300 shadow-[0_4px_20px_rgba(225,29,72,0.04)] hover:shadow-[0_12px_28px_rgba(225,29,72,0.08)] transition-all duration-200 cursor-pointer flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-200/80 text-rose-700 flex items-center justify-center group-hover:scale-105 group-hover:bg-rose-600 group-hover:text-white transition-all duration-200">
+                  <BookMarked className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200/60">
+                  14 câu cần ôn
+                </span>
+              </div>
+              <h4 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-rose-800 transition-colors">
+                Sổ tay câu hỏi sai
+              </h4>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                Tự động tổng hợp câu trả lời sai từ các bài thi thử để luyện lại không tái phạm.
+              </p>
+            </div>
+            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-rose-700">
+              <span>Luyện lại câu sai</span>
+              <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
+          {/* Card 4: Hỏi gia sư AI */}
+          <div
+            onClick={() => onNavigateTab ? onNavigateTab("notes") : undefined}
+            className="group relative bg-white rounded-2xl sm:rounded-3xl p-5 border border-teal-100/80 hover:border-teal-300 shadow-[0_4px_20px_rgba(13,148,136,0.04)] hover:shadow-[0_12px_28px_rgba(13,148,136,0.08)] transition-all duration-200 cursor-pointer flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-teal-500/10 border border-teal-200/80 text-teal-700 flex items-center justify-center group-hover:scale-105 group-hover:bg-teal-600 group-hover:text-white transition-all duration-200">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200/60">
+                  Online 24/7
+                </span>
+              </div>
+              <h4 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-teal-800 transition-colors">
+                Gia sư AI EduMi
+              </h4>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                Giải đáp thắc mắc phương pháp làm bài, gợi ý cách tư duy và sửa bài văn tức thì.
+              </p>
+            </div>
+            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-teal-700">
+              <span>Hỏi bài ngay</span>
+              <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+            </div>
           </div>
         </div>
-
       </div>
     </div>
   );

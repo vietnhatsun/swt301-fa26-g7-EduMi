@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { verifySessionToken, SESSION_COOKIE_NAME } from "@/lib/auth-session";
 
 export async function GET(req: NextRequest) {
   try {
-    const sessionCookie = req.cookies.get("edumi_session")?.value;
+    const sessionCookie = req.cookies.get(SESSION_COOKIE_NAME)?.value;
     const supabase = createServiceClient();
 
-    // 1. Kiểm tra session cookie nội bộ của EduMi
+    // 1. Xác minh Token phiên và trích xuất Claims (HMAC-SHA256)
     if (sessionCookie) {
       try {
-        const parsed = JSON.parse(Buffer.from(sessionCookie, "base64url").toString("utf8"));
-        if (parsed?.id) {
-          // Lấy dữ liệu mới nhất từ database
+        const claims = await verifySessionToken(sessionCookie);
+        if (claims?.sub) {
+          // Lấy dữ liệu mới nhất từ database dựa trên claim "sub" (User ID)
           const { data: user } = await supabase
             .from("users")
             .select("id, email, full_name, role, avatar_url, phone_number, status, is_verified")
-            .eq("id", parsed.id)
+            .eq("id", claims.sub)
             .maybeSingle();
 
           if (user && user.is_verified && user.status === "active") {
@@ -33,19 +34,25 @@ export async function GET(req: NextRequest) {
                 fullName: user.full_name,
                 role: user.role,
                 avatarUrl: user.avatar_url || null,
-                studentCode: studentProfile?.student_code || parsed.studentCode || "EDM-784920",
-                streakCount: studentProfile?.current_streak ?? parsed.streakCount ?? 0,
-                longestStreak: studentProfile?.longest_streak ?? parsed.longestStreak ?? 0,
-                totalPoints: studentProfile?.total_points ?? parsed.totalPoints ?? 0,
+                studentCode: studentProfile?.student_code || claims.studentCode || "EDM-784920",
+                streakCount: studentProfile?.current_streak ?? 0,
+                longestStreak: studentProfile?.longest_streak ?? 0,
+                totalPoints: studentProfile?.total_points ?? 0,
                 schoolName: studentProfile?.school_name || "THPT EduMi",
                 gradeLevel: studentProfile?.grade_level || "Lớp 12",
                 phoneNumber: user.phone_number || "",
+              },
+              claims: {
+                sub: claims.sub,
+                role: claims.role,
+                email: claims.email,
+                exp: claims.exp,
               },
             });
           }
         }
       } catch (cookieErr) {
-        console.warn("[Auth Me Cookie Parse Error]:", cookieErr);
+        console.warn("[Auth Me Claims Verification Error]:", cookieErr);
       }
     }
 

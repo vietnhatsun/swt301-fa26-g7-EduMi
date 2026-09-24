@@ -39,6 +39,7 @@ DECLARE
     v_avatar_url TEXT;
     v_student_code VARCHAR(32);
     v_existing_id UUID;
+    v_password_hash VARCHAR(255);
 BEGIN
     -- Trích xuất thông tin họ tên từ Google metadata
     v_full_name := COALESCE(
@@ -55,10 +56,16 @@ BEGIN
     );
 
     -- Kiểm tra xem email đã tồn tại trong public.users chưa
-    SELECT id INTO v_existing_id FROM public.users WHERE email = NEW.email LIMIT 1;
+    SELECT id, password_hash INTO v_existing_id, v_password_hash FROM public.users WHERE email = NEW.email LIMIT 1;
 
     IF v_existing_id IS NOT NULL THEN
-        -- Nếu đã có tài khoản trước đó với email này nhưng khác ID (do đăng ký thông thường trước đó):
+        -- Nếu tài khoản này đã được tạo bằng mật khẩu thông thường (password_hash IS NOT NULL),
+        -- thì CHẶN không cho phép liên kết hoặc ghi đè bằng Google OAuth
+        IF v_password_hash IS NOT NULL THEN
+            RAISE EXCEPTION 'Email % đã được đăng ký bằng tài khoản mật khẩu thông thường. Vui lòng đăng nhập bằng Email và Mật khẩu.', NEW.email;
+        END IF;
+
+        -- Nếu đã có tài khoản trước đó với email này nhưng khác ID (do chưa đồng bộ):
         -- Ta đồng bộ ID về đúng NEW.id của auth.users để auth.uid() khớp với session đăng nhập
         IF v_existing_id <> NEW.id THEN
             DELETE FROM public.student_profiles WHERE user_id = v_existing_id;
