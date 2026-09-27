@@ -86,7 +86,7 @@ export default function ProfileSidebar({
             href="/"
             className="flex items-center gap-3 overflow-hidden group cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/20 shadow-md flex-shrink-0 relative bg-black/40 group-hover:scale-105 transition-transform duration-200">
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/20 shadow-md flex-shrink-0 relative bg-white group-hover:scale-105 transition-transform duration-200">
               <Image
                 src="/favicon.jpg"
                 alt="EduMi Logo"

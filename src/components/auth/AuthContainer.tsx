@@ -515,7 +515,7 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
                 {/* Top Header Switcher Bar (Forest Green) */}
               <div className="bg-gradient-to-r from-[#064e3b] via-[#047857] to-[#065f46] px-5 py-3 flex items-center justify-between border-b border-emerald-900/20">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 shadow-sm flex-shrink-0 relative bg-black/40">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 shadow-sm flex-shrink-0 relative bg-white">
                     <Image
                       src="/favicon.jpg"
                       alt="EduMi Logo"

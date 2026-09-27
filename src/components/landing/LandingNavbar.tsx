@@ -39,10 +39,10 @@ export default function LandingNavbar() {
         <div className="flex items-center justify-between">
           {/* ── Brand Logo ── */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-2xl overflow-hidden border border-emerald-200 shadow-sm flex-shrink-0 relative bg-emerald-50 p-0.5 group-hover:scale-105 transition-transform duration-200">
+            <div className="w-10 h-10 rounded-2xl overflow-hidden border border-emerald-200 shadow-sm flex-shrink-0 relative bg-white group-hover:scale-105 transition-transform duration-200">
               <Image
-                src="/capybara-mascot.png"
-                alt="EduMi Capy Mascot"
+                src="/favicon.jpg"
+                alt="EduMi Logo"
                 width={40}
                 height={40}
                 className="w-full h-full object-cover"

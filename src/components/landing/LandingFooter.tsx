@@ -19,9 +19,9 @@ export default function LandingFooter() {
           {/* Column 1: Brand Info */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="flex items-center gap-3 group inline-flex">
-              <div className="w-10 h-10 rounded-2xl overflow-hidden border border-emerald-400/40 bg-emerald-950 p-0.5 flex-shrink-0">
+              <div className="w-10 h-10 rounded-2xl overflow-hidden border border-emerald-400/40 bg-white p-0.5 flex-shrink-0">
                 <Image
-                  src="/capybara-mascot.png"
+                  src="/favicon.jpg"
                   alt="EduMi Logo"
                   width={40}
                   height={40}
