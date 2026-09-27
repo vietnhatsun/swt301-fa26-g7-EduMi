@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { ProfileTabId } from "../ProfileSidebar";
 import {
@@ -17,6 +17,8 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Check,
   Trophy,
   X,
   Calendar,
@@ -136,8 +138,129 @@ export default function OverviewTab({
     }
   };
 
+
+  const weekStudyData = [
+    {
+      day: "T2",
+      date: "22/9",
+      hours: 3.33,
+      timeText: "3h 20p",
+      cx: 80.0,
+      cy: 128.4,
+      color: "#10b981",
+      badgeFill: "#ecfdf5",
+      badgeStroke: "#a7f3d0",
+      badgeTextColor: "#047857",
+      subjects: "Toán học 2.0h · Tiếng Anh 1h 20p",
+      isPeak: false,
+    },
+    {
+      day: "T3",
+      date: "23/9",
+      hours: 4.17,
+      timeText: "4h 10p",
+      cx: 168.0,
+      cy: 115.4,
+      color: "#10b981",
+      badgeFill: "#ecfdf5",
+      badgeStroke: "#a7f3d0",
+      badgeTextColor: "#047857",
+      subjects: "Vật lý 2.5h · Ngữ văn 1h 40p",
+      isPeak: false,
+    },
+    {
+      day: "T4",
+      date: "24/9",
+      hours: 2.83,
+      timeText: "2h 50p",
+      cx: 256.0,
+      cy: 136.1,
+      color: "#84cc16",
+      badgeFill: "#ecfdf5",
+      badgeStroke: "#a7f3d0",
+      badgeTextColor: "#047857",
+      subjects: "Toán 1.5h · Hóa học 1h 20p",
+      isPeak: false,
+    },
+    {
+      day: "T5",
+      date: "25/9",
+      hours: 6.25,
+      timeText: "6h 15p",
+      cx: 344.0,
+      cy: 83.1,
+      color: "#eab308",
+      badgeFill: "#fef9c3",
+      badgeStroke: "#fde047",
+      badgeTextColor: "#854d0e",
+      subjects: "Tiếng Anh IELTS 3.5h · Toán 2h 45p",
+      isPeak: false,
+    },
+    {
+      day: "T6",
+      date: "26/9",
+      hours: 8.33,
+      timeText: "8h 20p",
+      cx: 432.0,
+      cy: 50.9,
+      color: "#f59e0b",
+      badgeFill: "#f59e0b",
+      badgeStroke: "#f59e0b",
+      badgeTextColor: "#ffffff",
+      subjects: "Luyện đề THPTQG 5h · Chuyên đề VIP 3h 20p",
+      isPeak: true,
+    },
+    {
+      day: "T7",
+      date: "27/9",
+      hours: 5.67,
+      timeText: "5h 40p",
+      cx: 520.0,
+      cy: 92.1,
+      color: "#f97316",
+      badgeFill: "#ffedd5",
+      badgeStroke: "#fed7aa",
+      badgeTextColor: "#c2410c",
+      subjects: "Vật lý 3h · Ngữ văn 2h 40p",
+      isPeak: false,
+    },
+    {
+      day: "CN",
+      date: "28/9",
+      hours: 6.17,
+      timeText: "6h 10p",
+      cx: 608.0,
+      cy: 84.4,
+      color: "#ea580c",
+      badgeFill: "#ffedd5",
+      badgeStroke: "#fed7aa",
+      badgeTextColor: "#c2410c",
+      subjects: "Tổng ôn tuần 3.5h · Thi thử EduMi 2h 40p",
+      isPeak: false,
+    },
+  ];
+
   // Môn học được chọn trong card Tổng quan năng lực
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState<boolean>(false);
+  const subjectDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        subjectDropdownRef.current &&
+        !subjectDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsSubjectDropdownOpen(false);
+      }
+    };
+    if (isSubjectDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isSubjectDropdownOpen]);
 
   const subjectList = [
     { id: "all", label: "Tất cả", icon: "🌟" },
@@ -251,6 +374,39 @@ export default function OverviewTab({
   };
 
   const currentSubjectData = subjectOverviewData[selectedSubject] || subjectOverviewData.all;
+
+  // Lời khuyên học tập chung cho từng môn học
+  const subjectAdvice: Record<
+    string,
+    { title: string; tip: string; ctaText: string }
+  > = {
+    all: {
+      title: "Lời khuyên học tập tổng thể",
+      tip: "Phân bổ thời gian hợp lý giữa các môn, duy trì thói quen tự học đều đặn mỗi ngày và chủ động hệ thống hóa lại kiến thức sau mỗi tuần học.",
+      ctaText: "Xem tài liệu học",
+    },
+    math: {
+      title: "Lời khuyên môn Toán học",
+      tip: "Nắm vững bản chất định lý và công thức cốt lõi trước khi giải bài tập, rèn luyện kỹ năng phân loại dạng đề và luôn kiểm tra lại các bước biến đổi.",
+      ctaText: "Luyện bài tập Toán",
+    },
+    literature: {
+      title: "Lời khuyên môn Ngữ văn",
+      tip: "Đọc kỹ văn bản để hiểu sâu chủ đề, tích lũy các dẫn chứng đời sống phong phú, rèn luyện cách lập luận chặt chẽ và hành văn mạch lạc, truyền cảm.",
+      ctaText: "Xem bài văn mẫu",
+    },
+    english: {
+      title: "Lời khuyên môn Tiếng Anh",
+      tip: "Tích lũy từ vựng theo chủ đề gắn liền ngữ cảnh bài đọc, nắm chắc các cấu trúc ngữ pháp trọng tâm và duy trì thói quen luyện đọc hiểu, phát âm mỗi ngày.",
+      ctaText: "Luyện đề Tiếng Anh",
+    },
+    physics: {
+      title: "Lời khuyên môn Vật lý",
+      tip: "Gắn liền công thức với hiện tượng vật lý thực tế, chú trọng rèn luyện kỹ năng đọc đồ thị và nắm chắc các điều kiện áp dụng của từng định luật.",
+      ctaText: "Luyện bài tập Vật lý",
+    },
+  };
+
 
   // Danh sách bài tập cần làm (bài tập về nhà từ các lớp học học viên tham gia)
   const homeworkItems: HomeworkItem[] = [
@@ -617,51 +773,58 @@ export default function OverviewTab({
 
   return (
     <div className="space-y-6">
-      {/* ── BANNER CHÀO MỪNG TỔNG QUAN (Thiết kế chiều cao cân đối, hình ảnh chìm sâu liền mạch) ── */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#064e3b] via-[#059669] to-[#047857] shadow-sm flex items-center justify-between min-h-[110px] sm:min-h-[125px] md:min-h-[135px] px-6 sm:px-8 py-5 sm:py-6">
-        {/* Decorative subtle background glow */}
-        <div className="absolute -top-12 -left-12 w-44 h-44 rounded-full bg-white/10 blur-xl pointer-events-none" />
+      {/* ── BANNER CHÀO MỪNG TỔNG QUAN (Thiết kế đồng bộ theo mẫu tham khảo) ── */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#024a30] via-[#047857] to-[#059669] shadow-[0_10px_35px_rgba(6,78,59,0.16)] border border-emerald-400/25 flex items-center justify-between min-h-[136px] sm:min-h-[152px] md:min-h-[168px] px-6 sm:px-8 py-5 sm:py-6">
+        {/* Luồng sáng ambient tỏa nhẹ phía sau mascot và trung tâm banner */}
+        <div className="absolute right-[8%] top-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-emerald-300/15 blur-3xl pointer-events-none" />
+        <div className="absolute right-[24%] bottom-0 w-48 h-36 rounded-full bg-amber-300/12 blur-2xl pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none" />
 
-        {/* ── HIỆU ỨNG BONG BÓNG NỔI (Floating Translucent Glass Bubbles) ── */}
+        {/* Hình minh họa 3D bên phải: Mascot được phóng to cân đối, mây trắng ôm sát đáy */}
+        <div className="absolute right-0 bottom-0 pointer-events-none flex items-end justify-end z-0 h-[110%] sm:h-[116%] md:h-[124%] max-w-[85%] sm:max-w-[75%] md:max-w-[66%] lg:max-w-[58%] select-none">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/banner-mascot.png"
+            alt="Mascot chào mừng EduMi"
+            className="h-full w-auto object-contain object-bottom-right drop-shadow-sm select-none"
+          />
+        </div>
+
+        {/* ── HIỆU ỨNG BONG BÓNG NỔI (Floating Translucent Glass Bubbles trải đều sinh động) ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1]">
           {/* Bubble 1: góc trái dưới */}
           <div
-            className="banner-bubble animate-bubble-1 w-9 h-9"
-            style={{ left: "6%", bottom: "14%", animationDuration: "5.5s" }}
+            className="banner-bubble animate-bubble-1 w-7 h-7"
+            style={{ left: "5%", bottom: "14%", animationDuration: "5.5s" }}
           />
           {/* Bubble 2: gần tag bên trái */}
           <div
             className="banner-bubble animate-bubble-2 w-5 h-5"
             style={{ left: "20%", top: "14%", animationDuration: "4.2s", animationDelay: "0.8s" }}
           />
-          {/* Bubble 3: nhỏ xinh phía trên */}
+          {/* Bubble 3: chuyển tiếp giữa text và khoảng giữa */}
           <div
             className="banner-bubble animate-bubble-3 w-4 h-4"
-            style={{ left: "36%", top: "26%", animationDuration: "3.8s", animationDelay: "1.4s" }}
+            style={{ left: "34%", bottom: "22%", animationDuration: "4.8s", animationDelay: "1.2s" }}
           />
-          {/* Bubble 4: trung tâm lớn */}
+          {/* Bubble 4: trung tâm phía trên */}
           <div
-            className="banner-bubble animate-bubble-1 w-10 h-10"
-            style={{ left: "47%", bottom: "16%", animationDuration: "6.2s", animationDelay: "0.3s" }}
+            className="banner-bubble animate-bubble-1 w-8 h-8"
+            style={{ left: "45%", top: "16%", animationDuration: "6.2s", animationDelay: "0.3s" }}
           />
-          {/* Bubble 5: giữa bên phải */}
+          {/* Bubble 5: trung tâm phía dưới */}
           <div
             className="banner-bubble animate-bubble-2 w-6 h-6"
-            style={{ left: "61%", top: "18%", animationDuration: "4.8s", animationDelay: "1.9s" }}
+            style={{ left: "54%", bottom: "20%", animationDuration: "5.0s", animationDelay: "1.7s" }}
           />
-          {/* Bubble 6: gần khu vực mascot */}
+          {/* Bubble 6: nhỏ xinh phía trên bên phải */}
           <div
-            className="banner-bubble animate-bubble-3 w-7 h-7"
-            style={{ left: "74%", bottom: "20%", animationDuration: "5.2s", animationDelay: "0.6s" }}
-          />
-          {/* Bubble 7: góc phải */}
-          <div
-            className="banner-bubble animate-bubble-1 w-5 h-5"
-            style={{ left: "89%", top: "18%", animationDuration: "4.5s", animationDelay: "2.2s" }}
+            className="banner-bubble animate-bubble-3 w-5 h-5"
+            style={{ right: "16%", top: "12%", animationDuration: "4.5s", animationDelay: "2.1s" }}
           />
         </div>
 
-        {/* ── HIỆU ỨNG NGÔI SAO LẤP LÁNH ĐỘNG (Twinkling & Sparkling Stars) ── */}
+        {/* ── HIỆU ỨNG NGÔI SAO LẤP LÁNH ĐỘNG (Twinkling & Sparkling Stars lấp đầy khoảng trống) ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[2]">
           {/* Star 1: Vàng kim lấp lánh cạnh tag */}
           <svg
@@ -673,99 +836,287 @@ export default function OverviewTab({
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
 
-          {/* Star 2: Trắng tinh khôi lấp lánh giữa banner */}
+          {/* Star 2: Trắng tinh khôi lấp lánh góc dưới text */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
-            className="absolute text-white w-3.5 h-3.5 animate-star-2"
-            style={{ left: "32%", bottom: "26%", animationDelay: "0.9s" }}
+            className="absolute text-white/90 w-3.5 h-3.5 animate-star-2"
+            style={{ left: "28%", bottom: "22%", animationDelay: "0.9s" }}
           >
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
 
-          {/* Star 3: Vàng ấm tỏa sáng đỉnh giữa */}
+          {/* Star 3: Vàng kim ấm áp ở khu vực giữa (giúp đoạn giữa bớt trống) */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
-            className="absolute text-amber-200 w-5 h-5 animate-star-3"
-            style={{ left: "53%", top: "14%", animationDelay: "1.5s" }}
+            className="absolute text-amber-200 w-4 h-4 animate-star-3"
+            style={{ left: "39%", top: "20%", animationDelay: "1.4s" }}
           >
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
 
-          {/* Star 4: Nhỏ nhẹ nhàng cạnh mascot */}
+          {/* Star 4: Vàng sáng lấp lánh nổi bật ở trung tâm */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
-            className="absolute text-emerald-100 w-3 h-3 animate-star-1"
-            style={{ left: "67%", bottom: "32%", animationDelay: "2.1s" }}
+            className="absolute text-yellow-300 w-5 h-5 animate-star-1 drop-shadow-[0_0_8px_rgba(253,224,71,0.8)]"
+            style={{ left: "48%", bottom: "24%", animationDelay: "0.5s" }}
           >
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
 
-          {/* Star 5: Vàng kim tỏa sáng góc phải */}
+          {/* Star 5: Sao trắng nhỏ lung linh gần mascot */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
-            className="absolute text-amber-300 w-4 h-4 animate-star-2"
-            style={{ left: "82%", top: "22%", animationDelay: "0.5s" }}
-          >
-            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
-          </svg>
-
-          {/* Star 6: Trắng lấp lánh nhẹ gần tiêu đề */}
-          <svg
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="absolute text-yellow-100 w-2.5 h-2.5 animate-star-3"
-            style={{ left: "18%", bottom: "16%", animationDelay: "1.8s" }}
+            className="absolute text-emerald-100 w-3 h-3 animate-star-2"
+            style={{ right: "32%", top: "18%", animationDelay: "1.8s" }}
           >
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
         </div>
 
         {/* Bên trái: Nội dung chào mừng & khích lệ học tập */}
-        <div className="relative z-10 max-w-sm sm:max-w-md md:max-w-lg space-y-1 sm:space-y-1.5">
-          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-200/90">
-            TỔNG QUAN HỌC TẬP · BẢNG ĐIỀU KHIỂN
+        <div className="relative z-10 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl space-y-1 sm:space-y-1.5 select-none">
+          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-white flex items-center gap-1">
+            <span className="text-[#facc15] font-black drop-shadow-xs">TỔNG</span>
+            <span className="text-white/95">QUAN HỌC TẬP · BẢNG ĐIỀU KHIỂN</span>
           </p>
-          <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
+          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight drop-shadow-sm">
             Chào {fullName.split(" ").pop() || "bạn"}, mừng bạn trở lại! 👋
           </h1>
-          <p className="text-xs sm:text-sm text-emerald-100/90 font-medium">
+          <p className="text-xs sm:text-sm text-emerald-50/95 font-medium drop-shadow-xs leading-relaxed">
             Theo dõi tiến độ, hoàn thành mục tiêu và duy trì phong độ học tập mỗi ngày.
           </p>
         </div>
-
-        {/* Bên phải: Hình ảnh 3D chào mừng chìm sâu tự nhiên vào góc phải banner */}
-        <div className="absolute right-0 top-0 bottom-0 w-48 sm:w-64 md:w-80 lg:w-96 h-full overflow-hidden pointer-events-none">
-          <div className="relative w-full h-full">
-            <Image
-              src="/banner-overview.jpg"
-              alt="Mascot chào mừng EduMi"
-              fill
-              priority
-              sizes="(max-width: 640px) 190px, 360px"
-              className="object-cover object-right [mask-image:linear-gradient(to_left,black_65%,transparent)]"
-            />
-          </div>
-        </div>
       </div>
 
-      {/* ── Row 1: Khoảng trống chờ thêm các card mới ── */}
-      {/* ── Row 1: Tổng quan năng lực & Chuỗi ngày học ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Khoảng trống chờ thêm card mới (Col span 7) */}
-        <div className="lg:col-span-7 rounded-2xl sm:rounded-3xl border-2 border-dashed border-slate-300/80 bg-white/40 shadow-xs min-h-[240px] flex flex-col items-center justify-center p-6 text-center group hover:border-emerald-400 hover:bg-emerald-50/20 transition-all select-none">
-          <div className="w-11 h-11 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-2.5 group-hover:scale-105 group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-all">
-            <Sparkles className="w-5 h-5" />
+      {/* ── Row 1: Biểu đồ thời gian học tập & Chuỗi ngày học ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        {/* Card: BIỂU ĐỒ THỜI GIAN HỌC TẬP (Col span 7 - Thiết kế theo đúng ảnh mẫu 100%, chỉ có 7 ngày trong tuần) */}
+        <div className="relative overflow-hidden lg:col-span-7 rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 border border-amber-200/80 bg-gradient-to-b from-[#fffefc] to-[#fffdf9] shadow-[0_10px_35px_rgba(245,158,11,0.06)] flex flex-col justify-between group select-none">
+          {/* Subtle ambient light glows */}
+          <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-emerald-300/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-10 -right-10 w-52 h-52 rounded-full bg-amber-300/15 blur-3xl pointer-events-none" />
+
+          {/* ── HEADER: Tiêu đề ── */}
+          <div className="relative z-10 flex items-center justify-between gap-3 mb-2 sm:mb-3">
+            {/* Cụm Tiêu đề bên trái */}
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="relative w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 flex items-center justify-center">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-emerald-400 p-0.5 shadow-md shadow-emerald-600/20 flex items-center justify-center">
+                  <div className="w-full h-full rounded-[14px] bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-lg">
+                    <span>📊</span>
+                  </div>
+                </div>
+                <span className="absolute -bottom-1 -right-1 text-xs drop-shadow-xs">🪙</span>
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">
+                  Thời gian học tập
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                  Tổng thời gian học trong 7 ngày gần đây
+                </p>
+              </div>
+            </div>
           </div>
-          <span className="text-xs sm:text-sm font-bold text-slate-600 group-hover:text-emerald-800 transition-colors">
-            Khu vực trống chờ thêm card mới
-          </span>
-          <span className="text-[11px] font-medium text-slate-400 mt-0.5">
-            (Tổng quan năng lực đã được chuyển xuống Row 3 cạnh Bảng xếp hạng)
-          </span>
+
+          {/* ── BIỂU ĐỒ ĐƯỜNG SVG (7 ngày: T2 đến CN) ── */}
+          <div className="relative z-10 w-full pt-1 pb-1">
+            <svg
+              viewBox="0 0 650 220"
+              className="w-full h-auto min-h-[190px] sm:min-h-[220px] overflow-visible"
+            >
+              <defs>
+                {/* Dải màu chuyển tiếp cho nét vẽ (Xanh lá -> Vàng chanh -> Hổ phách -> Cam) */}
+                <linearGradient id="studyStrokeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="28%" stopColor="#10b981" />
+                  <stop offset="48%" stopColor="#84cc16" />
+                  <stop offset="66%" stopColor="#f59e0b" />
+                  <stop offset="85%" stopColor="#f97316" />
+                  <stop offset="100%" stopColor="#ea580c" />
+                </linearGradient>
+
+                {/* Dải màu ngang cho vùng diện tích dưới đường biểu đồ */}
+                <linearGradient id="studyAreaHGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.32" />
+                  <stop offset="28%" stopColor="#10b981" stopOpacity="0.28" />
+                  <stop offset="48%" stopColor="#84cc16" stopOpacity="0.32" />
+                  <stop offset="66%" stopColor="#f59e0b" stopOpacity="0.45" />
+                  <stop offset="85%" stopColor="#f97316" stopOpacity="0.38" />
+                  <stop offset="100%" stopColor="#ea580c" stopOpacity="0.32" />
+                </linearGradient>
+
+                {/* Mặt nạ làm mờ dọc từ đỉnh xuống đáy */}
+                <linearGradient id="studyAreaVMask" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+                  <stop offset="65%" stopColor="#ffffff" stopOpacity="0.38" />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity="0.02" />
+                </linearGradient>
+
+                <mask id="studyAreaMask">
+                  <rect x="0" y="0" width="650" height="220" fill="url(#studyAreaVMask)" />
+                </mask>
+
+                {/* Gradient cho badge kỷ lục T6 */}
+                <linearGradient id="peakBadgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fbbf24" />
+                  <stop offset="100%" stopColor="#f59e0b" />
+                </linearGradient>
+
+                {/* Drop shadow cho badge kỷ lục */}
+                <filter id="peakShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#d97706" floodOpacity="0.35" />
+                </filter>
+              </defs>
+
+              {/* Lưới ngang nét đứt tương ứng với các mốc thời gian */}
+              <line x1="42" y1="25" x2="640" y2="25" stroke="#f1f5f9" strokeWidth="1.2" strokeDasharray="3 3" />
+              <line x1="42" y1="56" x2="640" y2="56" stroke="#f1f5f9" strokeWidth="1.2" strokeDasharray="3 3" />
+              <line x1="42" y1="87" x2="640" y2="87" stroke="#f1f5f9" strokeWidth="1.2" strokeDasharray="3 3" />
+              <line x1="42" y1="118" x2="640" y2="118" stroke="#f1f5f9" strokeWidth="1.2" strokeDasharray="3 3" />
+              <line x1="42" y1="149" x2="640" y2="149" stroke="#f1f5f9" strokeWidth="1.2" strokeDasharray="3 3" />
+              <line x1="42" y1="180" x2="640" y2="180" stroke="#e2e8f0" strokeWidth="1.5" />
+
+              {/* Nhãn trục Y bên trái (đặt tại x=32, tạo khoảng cách 25px tới thẻ T2) */}
+              <text x="32" y="29" textAnchor="end" fontSize="10" fontWeight="bold" fill="#94a3b8">10h</text>
+              <text x="32" y="60" textAnchor="end" fontSize="10" fontWeight="bold" fill="#94a3b8">8h</text>
+              <text x="32" y="91" textAnchor="end" fontSize="10" fontWeight="bold" fill="#94a3b8">6h</text>
+              <text x="32" y="122" textAnchor="end" fontSize="10" fontWeight="bold" fill="#94a3b8">4h</text>
+              <text x="32" y="153" textAnchor="end" fontSize="10" fontWeight="bold" fill="#94a3b8">2h</text>
+              <text x="32" y="184" textAnchor="end" fontSize="10" fontWeight="bold" fill="#94a3b8">0h</text>
+
+              {/* Vùng diện tích mờ dưới đường cong */}
+              <path
+                d="M 80.0 128.4 C 94.7 126.2, 138.7 114.1, 168.0 115.4 C 197.3 116.7, 226.7 141.5, 256.0 136.1 C 285.3 130.7, 314.7 97.3, 344.0 83.1 C 373.3 68.9, 402.7 49.4, 432.0 50.9 C 461.3 52.4, 490.7 86.5, 520.0 92.1 C 549.3 97.7, 593.3 85.7, 608.0 84.4 L 608.0 180 L 80.0 180 Z"
+                fill="url(#studyAreaHGrad)"
+                mask="url(#studyAreaMask)"
+                className="transition-all duration-300"
+              />
+
+              {/* Đường cong uốn lượn mềm mại */}
+              <path
+                d="M 80.0 128.4 C 94.7 126.2, 138.7 114.1, 168.0 115.4 C 197.3 116.7, 226.7 141.5, 256.0 136.1 C 285.3 130.7, 314.7 97.3, 344.0 83.1 C 373.3 68.9, 402.7 49.4, 432.0 50.9 C 461.3 52.4, 490.7 86.5, 520.0 92.1 C 549.3 97.7, 593.3 85.7, 608.0 84.4"
+                fill="none"
+                stroke="url(#studyStrokeGrad)"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="drop-shadow-xs"
+              />
+
+              {/* ── CÁC ĐIỂM DỮ LIỆU & THẺ HIỂN THỊ GIỜ (Pill Badges cố định, không hover) ── */}
+              {weekStudyData.map((item, idx) => {
+                const isPeak = item.isPeak;
+
+                return (
+                  <g key={idx}>
+                    {/* Thẻ giờ (Pill badge hiển thị giờ học cố định trên mỗi điểm) */}
+                    {isPeak ? (
+                      /* Badge Kỷ Lục T6: Màu vàng hổ phách nổi bật với mũi tên chỉ xuống */
+                      <g filter="url(#peakShadow)">
+                        <rect
+                          x={item.cx - 26}
+                          y={item.cy - 36}
+                          width="52"
+                          height="22"
+                          rx="11"
+                          fill="url(#peakBadgeGrad)"
+                        />
+                        <polygon
+                          points={`${item.cx - 4},${item.cy - 14} ${item.cx + 4},${item.cy - 14} ${item.cx},${item.cy - 9}`}
+                          fill="#f59e0b"
+                        />
+                        <text
+                          x={item.cx}
+                          y={item.cy - 21}
+                          textAnchor="middle"
+                          fontSize="10.5"
+                          fontWeight="900"
+                          fill="#ffffff"
+                        >
+                          {item.timeText}
+                        </text>
+                      </g>
+                    ) : (
+                      /* Thẻ giờ thường (Pill badge bo tròn mềm mại) */
+                      <g>
+                        <rect
+                          x={item.cx - 23}
+                          y={item.cy - 30}
+                          width="46"
+                          height="18"
+                          rx="9"
+                          fill={item.badgeFill}
+                          stroke={item.badgeStroke}
+                          strokeWidth="1.2"
+                        />
+                        <text
+                          x={item.cx}
+                          y={item.cy - 17.5}
+                          textAnchor="middle"
+                          fontSize="9.5"
+                          fontWeight="bold"
+                          fill={item.badgeTextColor}
+                        >
+                          {item.timeText}
+                        </text>
+                      </g>
+                    )}
+
+                    {/* Vòng tròn điểm trên đường cong */}
+                    {isPeak ? (
+                      /* Điểm T6 có ngôi sao trắng ⭐ bên trong */
+                      <g>
+                        <circle
+                          cx={item.cx}
+                          cy={item.cy}
+                          r="8.5"
+                          fill="#f59e0b"
+                          stroke="#ffffff"
+                          strokeWidth="2.5"
+                        />
+                        {/* Ngôi sao 5 cánh màu trắng */}
+                        <path
+                          d={`M ${item.cx} ${item.cy - 4.4} L ${item.cx + 1.3} ${item.cy - 1.4} L ${item.cx + 4.5} ${item.cy - 1.2} L ${item.cx + 2} ${item.cy + 0.8} L ${item.cx + 2.8} ${item.cy + 3.9} L ${item.cx} ${item.cy + 2.2} L ${item.cx - 2.8} ${item.cy + 3.9} L ${item.cx - 2} ${item.cy + 0.8} L ${item.cx - 4.5} ${item.cy - 1.2} L ${item.cx - 1.3} ${item.cy - 1.4} Z`}
+                          fill="#ffffff"
+                        />
+                      </g>
+                    ) : (
+                      /* Điểm thường: Vòng tròn viền màu, nền trắng */
+                      <circle
+                        cx={item.cx}
+                        cy={item.cy}
+                        r="5.5"
+                        fill="#ffffff"
+                        stroke={item.color}
+                        strokeWidth="3"
+                      />
+                    )}
+                  </g>
+                );
+              })}
+
+              {/* ── NHÃN TRỤC X: T2 đến CN và Ngày tương ứng ── */}
+              <g fontSize="11" fontWeight="900" fill="#1e293b" textAnchor="middle">
+                {weekStudyData.map((item, idx) => (
+                  <text key={`day-${idx}`} x={item.cx} y="201">
+                    {item.day}
+                  </text>
+                ))}
+              </g>
+              <g fontSize="10" fontWeight="600" fill="#64748b" textAnchor="middle">
+                {weekStudyData.map((item, idx) => (
+                  <text key={`date-${idx}`} x={item.cx} y="215">
+                    {item.date}
+                  </text>
+                ))}
+              </g>
+            </svg>
+          </div>
         </div>
 
         {/* Card: CHUỖI NGÀY HỌC (Col span 5 - Nền ấm áp & Linh vật ngọn lửa nhiệt huyết) */}
@@ -821,13 +1172,13 @@ export default function OverviewTab({
                     day.active
                       ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-xs"
                       : day.current
-                        ? "border-2 border-dashed border-amber-500 text-amber-700 bg-white/80 shadow-xs"
-                        : "bg-white/70 text-slate-400 border border-amber-100"
+                        ? "border-2 border-dashed border-orange-500 text-orange-800 bg-white/90 shadow-xs ring-2 ring-orange-300/40"
+                        : "bg-amber-100/90 text-amber-800/60 border-2 border-amber-300/85 shadow-[inset_0_1px_2px_rgba(180,83,9,0.08)]"
                   }`}
                 >
                   {day.active ? "✓" : ""}
                 </div>
-                <span className="text-[11px] font-bold text-amber-900/70">
+                <span className="text-[11px] font-black text-amber-950/80">
                   {day.label}
                 </span>
               </div>
@@ -848,11 +1199,16 @@ export default function OverviewTab({
           </div>
 
           <div className="relative z-20">
-            {/* Header: Title "Lịch học" + Navigation < Tháng 9/2026 > */}
+            {/* Header: Title "Lịch học" with icon + Navigation < Tháng 9/2026 > */}
             <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
-              <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight whitespace-nowrap">
-                Lịch học
-              </h3>
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border-2 border-slate-900 shadow-[0_2px_0_rgba(15,23,42,0.12)] flex items-center justify-center shrink-0">
+                  <CalendarDays className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-900 stroke-[2.5]" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight whitespace-nowrap">
+                  Lịch học
+                </h3>
+              </div>
 
               {/* Navigation buttons and Month text */}
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -947,8 +1303,8 @@ export default function OverviewTab({
                               ? "bg-emerald-600 text-white font-black shadow-md scale-105 ring-2 ring-emerald-300"
                               : "bg-emerald-500 text-white font-extrabold shadow-2xs hover:bg-emerald-600 hover:scale-105"
                             : isHovered
-                              ? "bg-rose-600 text-white font-black shadow-md scale-105 ring-2 ring-rose-300"
-                              : "bg-rose-500 text-white font-extrabold shadow-2xs hover:bg-rose-600 hover:scale-105"
+                              ? "bg-blue-600 text-white font-black shadow-md scale-105 ring-2 ring-blue-300"
+                              : "bg-blue-500 text-white font-extrabold shadow-2xs hover:bg-blue-600 hover:scale-105"
                           : "text-slate-900 font-bold hover:bg-black/5"
                       }`}
                     >
@@ -1043,7 +1399,7 @@ export default function OverviewTab({
                                     {item.title}
                                   </span>
                                   {item.isCompleted ? (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0">
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
                                       Đã học
                                     </span>
                                   ) : item.isToday ? (
@@ -1101,30 +1457,30 @@ export default function OverviewTab({
             />
           </div>
 
-          {/* Footer Legend: Ô xanh (sắp tới/chưa học) và ô đỏ (đã học xong) */}
+          {/* Footer Legend: Ô xanh lá (sắp tới/chưa học) và ô xanh dương (đã học xong) */}
           <div className="relative z-10 pt-2.5 border-t border-amber-300/60 flex items-center justify-between text-[11px] text-slate-700 select-none">
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <span className="flex items-center gap-1.5 font-bold text-[10px] sm:text-[11px] text-emerald-800">
+              <span className="flex items-center gap-1.5 font-bold text-[10px] sm:text-[11px] text-emerald-900">
                 <span className="w-2.5 h-2.5 rounded-md bg-emerald-500 shadow-2xs" />
                 Sắp tới (Chưa học)
               </span>
-              <span className="flex items-center gap-1.5 font-bold text-[10px] sm:text-[11px] text-rose-800">
-                <span className="w-2.5 h-2.5 rounded-md bg-rose-500 shadow-2xs" />
+              <span className="flex items-center gap-1.5 font-bold text-[10px] sm:text-[11px] text-blue-900">
+                <span className="w-2.5 h-2.5 rounded-md bg-blue-500 shadow-2xs" />
                 Đã học xong
               </span>
             </div>
           </div>
         </div>
 
-        {/* Card 2: BÀI TẬP CẦN LÀM (11fr - Mở rộng to hơn, nền cam sôi động chuẩn retro pop) */}
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 border border-orange-400/80 bg-[#f97316] shadow-[0_8px_30px_rgba(234,88,12,0.14)] flex flex-col justify-between group">
-          {/* Decorative shapes exactly from reference image */}
-          <div className="absolute -top-12 -right-8 w-44 h-44 rounded-full bg-[#c084fc] opacity-80 pointer-events-none" />
-          <div className="absolute -bottom-14 left-44 w-32 h-32 rounded-full border-[14px] border-[#34d399] opacity-90 pointer-events-none" />
-          <div className="absolute -bottom-10 -right-10 w-36 h-36 rounded-full bg-[#facc15] opacity-90 pointer-events-none" />
+        {/* Card 2: BÀI TẬP CẦN LÀM (11fr - Nền cam rực rỡ, đậm đà nổi bật) */}
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 border-2 border-orange-500/80 bg-gradient-to-br from-[#fdba74] via-[#fb923c] to-[#f97316] shadow-[0_14px_40px_rgba(249,115,22,0.18)] flex flex-col justify-between group">
+          {/* Subtle ambient light glows */}
+          <div className="absolute -top-12 -right-8 w-44 h-44 rounded-full bg-purple-400/25 blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-14 left-44 w-36 h-36 rounded-full border-[10px] border-emerald-400/30 pointer-events-none" />
+          <div className="absolute -bottom-10 -right-10 w-36 h-36 rounded-full bg-amber-300/35 blur-2xl pointer-events-none" />
 
-          {/* Left-edge black pointer */}
-          <div className="absolute -left-0.5 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[12px] border-l-slate-950 pointer-events-none z-10" />
+          {/* Left-edge pointer */}
+          <div className="absolute -left-0.5 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[12px] border-l-orange-600 pointer-events-none z-10" />
 
           <div className="relative z-10">
             {/* Header: Analog Clock Icon + Title + Counter Badges */}
@@ -1151,7 +1507,7 @@ export default function OverviewTab({
                   Bài tập cần làm
                 </h3>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  <span className="text-xs sm:text-[13px] font-bold text-slate-950">
+                  <span className="text-xs sm:text-[13px] font-extrabold text-slate-950">
                     {homeworkItems.length} bài cần phải nộp
                   </span>
                   <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-950 text-white shadow-2xs">
@@ -1229,15 +1585,18 @@ export default function OverviewTab({
 
       </div>
 
-      {/* ── Row 3: Bảng xếp hạng vinh danh (3fr) & Tổng quan năng lực (7fr) ── */}
+      {/* ── Row 3: Khoảng trống dự trữ (7fr bên trái) & Bảng xếp hạng vinh danh (3fr bên phải) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-5 items-stretch">
 
-        {/* Phần 3 (Col span 3): BẢNG XẾP HẠNG VINH DANH HỌC VIÊN (Thiết kế theo hướng dọc) */}
-        <div className="lg:col-span-3 relative rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-[#5aa873]/70 bg-[#6ebe87] shadow-[0_8px_30px_rgba(110,190,135,0.16)] flex flex-col justify-between group">
+        {/* Khoảng trống dự trữ (Col span 7 - Bên trái): Giữ chỗ chờ bổ sung nội dung sau */}
+        <div className="hidden lg:block lg:col-span-7" />
+
+        {/* Phần 3 (Col span 3 - Bên phải): BẢNG XẾP HẠNG VINH DANH HỌC VIÊN (Thiết kế theo tông xanh thương hiệu chính) */}
+        <div className="lg:col-span-3 relative rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-emerald-400/35 bg-gradient-to-br from-[#024a30] via-[#047857] to-[#059669] shadow-[0_10px_35px_rgba(6,78,59,0.18)] flex flex-col justify-between group">
           {/* Subtle glow background clipped */}
           <div className="absolute inset-0 rounded-2xl sm:rounded-3xl overflow-hidden pointer-events-none">
-            <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-emerald-300/20 blur-2xl" />
-            <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-teal-200/20 blur-2xl" />
+            <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-emerald-300/15 blur-2xl" />
+            <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-teal-300/15 blur-2xl" />
           </div>
 
           <div className="relative z-10">
@@ -1248,10 +1607,10 @@ export default function OverviewTab({
                   <Trophy className="w-5 h-5 text-amber-500 fill-amber-400" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-black text-slate-950 tracking-tight leading-tight">
+                  <h3 className="text-base sm:text-lg font-black text-white tracking-tight leading-tight">
                     Vinh danh học viên
                   </h3>
-                  <p className="text-[10px] sm:text-[11px] font-bold text-slate-950/80 mt-0.5">
+                  <p className="text-[10px] sm:text-[11px] font-bold text-emerald-100/90 mt-0.5">
                     Top 3 tháng 9/2026
                   </p>
                 </div>
@@ -1336,136 +1695,18 @@ export default function OverviewTab({
           </div>
 
           {/* Footer: Thứ hạng cá nhân & nút xem chi tiết */}
-          <div className="relative z-10 pt-3 mt-3 border-t border-emerald-600/30 flex items-center justify-between gap-2">
-            <span className="text-[11px] font-bold text-slate-950">
-              Bạn: <strong className="font-black text-slate-950">#12</strong> (2,180 XP)
+          <div className="relative z-10 pt-3 mt-3 border-t border-emerald-400/30 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold text-white">
+              Bạn: <strong className="font-black text-amber-300">#12</strong> (2,180 XP)
             </span>
             <button
               type="button"
               onClick={() => (onNavigateTab ? onNavigateTab("history") : undefined)}
-              className="px-3 py-1 rounded-full bg-slate-950 hover:bg-slate-800 text-white font-extrabold text-[10px] sm:text-[11px] shadow-sm hover:shadow-md flex items-center gap-1 cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
+              className="px-3.5 py-1 rounded-full bg-slate-950 hover:bg-slate-800 text-white font-extrabold text-[10px] sm:text-[11px] shadow-sm hover:shadow-md border border-emerald-400/40 flex items-center gap-1 cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
             >
               <span>Bảng vàng</span>
               <ArrowRight className="w-3 h-3" />
             </button>
-          </div>
-        </div>
-
-        {/* Phần 7 (Col span 7): TỔNG QUAN NĂNG LỰC & TIẾN ĐỘ HỌC TẬP (Di chuyển từ Row 1 xuống) */}
-        <div className="lg:col-span-7 relative overflow-hidden rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-emerald-200/90 bg-gradient-to-br from-[#ffffff] via-[#f0fdf4] to-[#e6fcf5] shadow-[0_8px_30px_rgba(6,78,59,0.06)] flex flex-col justify-between group">
-          {/* Decorative background glow & shapes */}
-          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-10 left-1/3 w-48 h-48 rounded-full bg-teal-400/10 blur-2xl pointer-events-none" />
-          <div className="absolute top-0 right-0 w-36 h-36 rounded-bl-[80px] bg-gradient-to-bl from-emerald-100/50 via-teal-50/20 to-transparent pointer-events-none" />
-
-          {/* 3D Mascot: Thumbs up with honor medal & golden star */}
-          <div className="absolute right-3 sm:right-5 top-2 sm:top-3 w-20 h-20 sm:w-24 sm:h-24 pointer-events-none transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-1 drop-shadow-md z-10 hidden sm:block">
-            <Image
-              src="/stickers/mastery-capybara.png"
-              alt="Mascot năng lực"
-              fill
-              className="object-contain"
-            />
-          </div>
-
-          <div className="relative z-10">
-            {/* Header: Title & Ranking Badge */}
-            <div className="flex items-center justify-between gap-2 mb-3.5 sm:pr-24">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100/80 border border-emerald-200 flex items-center justify-center text-emerald-800 shadow-xs">
-                  <Award className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800/70 block leading-none">
-                    TỔNG QUAN NĂNG LỰC
-                  </span>
-                  <span className="text-xs font-bold text-slate-800">
-                    {currentSubjectData.name}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-white/90 px-2.5 py-1 rounded-full border border-emerald-200/90 shadow-xs backdrop-blur-xs">
-                <Sparkles className="w-3 h-3 text-emerald-600 fill-emerald-500" />
-                <span>{currentSubjectData.badge}</span>
-              </div>
-            </div>
-
-            {/* 3 Metric Cards Grid (Hiệu ứng kính mờ & viền màu thanh lịch) */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-2.5 mb-3.5">
-              <div className="p-2.5 sm:p-3 rounded-xl bg-white/85 backdrop-blur-xs border border-emerald-200/70 shadow-xs hover:shadow-md hover:border-emerald-300 hover:-translate-y-0.5 transition-all flex flex-col justify-between">
-                <div className="flex items-center justify-between text-slate-500 mb-1">
-                  <span className="text-[10px] font-semibold">Điểm trung bình</span>
-                  <Target className="w-3.5 h-3.5 text-emerald-600" />
-                </div>
-                <div className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
-                  {currentSubjectData.score.toFixed(1)} <span className="text-xs font-medium text-slate-400">/ 10</span>
-                </div>
-                <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 mt-1">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>{currentSubjectData.scoreGrowth}</span>
-                </div>
-              </div>
-
-              <div className="p-2.5 sm:p-3 rounded-xl bg-white/85 backdrop-blur-xs border border-blue-200/70 shadow-xs hover:shadow-md hover:border-blue-300 hover:-translate-y-0.5 transition-all flex flex-col justify-between">
-                <div className="flex items-center justify-between text-slate-500 mb-1">
-                  <span className="text-[10px] font-semibold">Đề hoàn thành</span>
-                  <BookOpen className="w-3.5 h-3.5 text-blue-500" />
-                </div>
-                <div className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
-                  {currentSubjectData.testsCount} <span className="text-xs font-medium text-slate-400">bài thi</span>
-                </div>
-                <div className="text-[10px] font-medium text-slate-500 mt-1 truncate">
-                  {currentSubjectData.questionsCountLabel}
-                </div>
-              </div>
-
-              <div className="p-2.5 sm:p-3 rounded-xl bg-white/85 backdrop-blur-xs border border-teal-200/70 shadow-xs hover:shadow-md hover:border-teal-300 hover:-translate-y-0.5 transition-all flex flex-col justify-between">
-                <div className="flex items-center justify-between text-slate-500 mb-1">
-                  <span className="text-[10px] font-semibold">Độ chính xác</span>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <div className="text-lg sm:text-xl font-black text-emerald-800 tracking-tight leading-tight">
-                  {currentSubjectData.accuracy.toFixed(1)}%
-                </div>
-                <div className="text-[10px] font-semibold text-emerald-700 mt-1 truncate">
-                  {currentSubjectData.accuracyStatus}
-                </div>
-              </div>
-            </div>
-
-            {/* Subject Selector Tabs & Topic Mastery Breakdown */}
-            <div className="pt-3 border-t border-emerald-100/80">
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                <span>Chọn môn học để xem chi tiết:</span>
-                <span className="text-emerald-700 font-bold">{currentSubjectData.name}</span>
-              </div>
-
-              {/* Subject Pill Buttons */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none select-none">
-                {subjectList.map((sub) => {
-                  const isSelected = selectedSubject === sub.id;
-                  return (
-                    <button
-                      key={sub.id}
-                      type="button"
-                      onClick={() => setSelectedSubject(sub.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                        isSelected
-                          ? "bg-gradient-to-r from-[#064e3b] to-[#047857] text-white shadow-xs scale-102"
-                          : "bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-emerald-100 shadow-2xs"
-                      }`}
-                    >
-                      <span>{sub.icon}</span>
-                      <span>{sub.label}</span>
-                      {isSelected && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse ml-0.5" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
       </div>
