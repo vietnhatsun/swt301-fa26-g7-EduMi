@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { ProfileTabId } from "../ProfileSidebar";
 import {
   Flame,
@@ -322,14 +323,139 @@ export default function OverviewTab({
 
   return (
     <div className="space-y-6">
-      {/* ── Top Header Greeting ── */}
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800/80 mb-1">
-          TỔNG QUAN HỌC TẬP
-        </p>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-          Chào {fullName.split(" ").pop() || "bạn"}, mừng bạn trở lại! 👋
-        </h1>
+      {/* ── BANNER CHÀO MỪNG TỔNG QUAN (Thiết kế chiều cao cân đối, hình ảnh chìm sâu liền mạch) ── */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#064e3b] via-[#059669] to-[#047857] shadow-sm flex items-center justify-between min-h-[110px] sm:min-h-[125px] md:min-h-[135px] px-6 sm:px-8 py-5 sm:py-6">
+        {/* Decorative subtle background glow */}
+        <div className="absolute -top-12 -left-12 w-44 h-44 rounded-full bg-white/10 blur-xl pointer-events-none" />
+
+        {/* ── HIỆU ỨNG BONG BÓNG NỔI (Floating Translucent Glass Bubbles) ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1]">
+          {/* Bubble 1: góc trái dưới */}
+          <div
+            className="banner-bubble animate-bubble-1 w-9 h-9"
+            style={{ left: "6%", bottom: "14%", animationDuration: "5.5s" }}
+          />
+          {/* Bubble 2: gần tag bên trái */}
+          <div
+            className="banner-bubble animate-bubble-2 w-5 h-5"
+            style={{ left: "20%", top: "14%", animationDuration: "4.2s", animationDelay: "0.8s" }}
+          />
+          {/* Bubble 3: nhỏ xinh phía trên */}
+          <div
+            className="banner-bubble animate-bubble-3 w-4 h-4"
+            style={{ left: "36%", top: "26%", animationDuration: "3.8s", animationDelay: "1.4s" }}
+          />
+          {/* Bubble 4: trung tâm lớn */}
+          <div
+            className="banner-bubble animate-bubble-1 w-10 h-10"
+            style={{ left: "47%", bottom: "16%", animationDuration: "6.2s", animationDelay: "0.3s" }}
+          />
+          {/* Bubble 5: giữa bên phải */}
+          <div
+            className="banner-bubble animate-bubble-2 w-6 h-6"
+            style={{ left: "61%", top: "18%", animationDuration: "4.8s", animationDelay: "1.9s" }}
+          />
+          {/* Bubble 6: gần khu vực mascot */}
+          <div
+            className="banner-bubble animate-bubble-3 w-7 h-7"
+            style={{ left: "74%", bottom: "20%", animationDuration: "5.2s", animationDelay: "0.6s" }}
+          />
+          {/* Bubble 7: góc phải */}
+          <div
+            className="banner-bubble animate-bubble-1 w-5 h-5"
+            style={{ left: "89%", top: "18%", animationDuration: "4.5s", animationDelay: "2.2s" }}
+          />
+        </div>
+
+        {/* ── HIỆU ỨNG NGÔI SAO LẤP LÁNH ĐỘNG (Twinkling & Sparkling Stars) ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-[2]">
+          {/* Star 1: Vàng kim lấp lánh cạnh tag */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-amber-300 w-4 h-4 animate-star-1"
+            style={{ left: "4%", top: "18%", animationDelay: "0.2s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 2: Trắng tinh khôi lấp lánh giữa banner */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-white w-3.5 h-3.5 animate-star-2"
+            style={{ left: "32%", bottom: "26%", animationDelay: "0.9s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 3: Vàng ấm tỏa sáng đỉnh giữa */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-amber-200 w-5 h-5 animate-star-3"
+            style={{ left: "53%", top: "14%", animationDelay: "1.5s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 4: Nhỏ nhẹ nhàng cạnh mascot */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-emerald-100 w-3 h-3 animate-star-1"
+            style={{ left: "67%", bottom: "32%", animationDelay: "2.1s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 5: Vàng kim tỏa sáng góc phải */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-amber-300 w-4 h-4 animate-star-2"
+            style={{ left: "82%", top: "22%", animationDelay: "0.5s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 6: Trắng lấp lánh nhẹ gần tiêu đề */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-yellow-100 w-2.5 h-2.5 animate-star-3"
+            style={{ left: "18%", bottom: "16%", animationDelay: "1.8s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+        </div>
+
+        {/* Bên trái: Nội dung chào mừng & khích lệ học tập */}
+        <div className="relative z-10 max-w-sm sm:max-w-md md:max-w-lg space-y-1 sm:space-y-1.5">
+          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-200/90">
+            TỔNG QUAN HỌC TẬP · BẢNG ĐIỀU KHIỂN
+          </p>
+          <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
+            Chào {fullName.split(" ").pop() || "bạn"}, mừng bạn trở lại! 👋
+          </h1>
+          <p className="text-xs sm:text-sm text-emerald-100/90 font-medium">
+            Theo dõi tiến độ, hoàn thành mục tiêu và duy trì phong độ học tập mỗi ngày.
+          </p>
+        </div>
+
+        {/* Bên phải: Hình ảnh 3D chào mừng chìm sâu tự nhiên vào góc phải banner */}
+        <div className="absolute right-0 top-0 bottom-0 w-48 sm:w-64 md:w-80 lg:w-96 h-full overflow-hidden pointer-events-none">
+          <div className="relative w-full h-full">
+            <Image
+              src="/banner-overview.jpg"
+              alt="Mascot chào mừng EduMi"
+              fill
+              priority
+              sizes="(max-width: 640px) 190px, 360px"
+              className="object-cover object-right [mask-image:linear-gradient(to_left,black_65%,transparent)]"
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Row 1: Khoảng trống chờ thêm các card mới ── */}

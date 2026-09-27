@@ -134,7 +134,7 @@ export default function ProfilePage() {
           />
         );
       case "notes":
-        return <NotesTab />;
+        return <NotesTab fullName={currentStudent.fullName} />;
       case "materials":
         return (
           <div className="bg-white rounded-3xl p-8 border border-emerald-100 text-center py-16">
@@ -236,7 +236,7 @@ export default function ProfilePage() {
 
         {/* Scrollable Body */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="max-w-6xl mx-auto">
+          <div className={activeTab === "notes" ? "max-w-7xl mx-auto" : "max-w-6xl mx-auto"}>
             {renderTabContent()}
           </div>
         </main>

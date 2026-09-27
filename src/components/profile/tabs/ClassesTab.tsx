@@ -1,29 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { createPortal } from "react-dom";
 import {
   School,
   Calendar,
-  Clock,
   Video,
   User,
   CheckCircle2,
-  BookOpen,
-  ArrowRight,
-  Search,
-  Sparkles,
-  ExternalLink,
   Plus,
   PlayCircle,
   FileText,
-  AlertCircle,
+  Pin,
 } from "lucide-react";
+import { QuickNotesPiPContent, openPiPWindowHelper } from "../QuickNotesPiP";
+import { StudySession, NoteCard } from "./NotesTab";
 
 interface OnlineClass {
   id: string;
   title: string;
   subject: string;
   subjectColor: string;
+  coverImage: string;
   teacher: string;
   teacherAvatar?: string;
   schedule: string;
@@ -40,11 +39,41 @@ interface OnlineClass {
 }
 
 export default function ClassesTab() {
-  const [filter, setFilter] = useState<"all" | "today" | "active" | "ended">("all");
-  const [searchQuery, setSearchQuery] = useState("");
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [classCodeInput, setClassCodeInput] = useState("");
   const [joinSuccessMsg, setJoinSuccessMsg] = useState("");
+  const [pipWindow, setPipWindow] = useState<Window | null>(null);
+  const [pipSessions, setPipSessions] = useState<StudySession[]>([]);
+  const [activePipSessionId, setActivePipSessionId] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("edumi_study_sessions");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setPipSessions(parsed);
+          if (parsed.length > 0) setActivePipSessionId(parsed[0].id);
+        }
+      } catch (e) {
+        console.warn("Failed to load sessions in ClassesTab", e);
+      }
+    }
+  }, []);
+
+  const handleJoinClassWithPiP = async (cls: OnlineClass) => {
+    // 1. Open Google Meet in new tab
+    window.open(cls.meetUrl || "https://meet.google.com", "_blank");
+
+    // 2. Open PiP window
+    const win = await openPiPWindowHelper(390, 620);
+    if (win) {
+      win.addEventListener("pagehide", () => {
+        setPipWindow(null);
+      });
+      setPipWindow(win);
+    }
+  };
 
   const myClasses: OnlineClass[] = [
     {
@@ -52,6 +81,7 @@ export default function ClassesTab() {
       title: "Toán 12: Chuyên đề Hàm số, Tích phân & Logarit VIP",
       subject: "Toán học",
       subjectColor: "bg-blue-50 text-blue-700 border-blue-200",
+      coverImage: "/classes/class-math.jpg",
       teacher: "Thầy Đức · Thạc sĩ Sư phạm Toán",
       schedule: "Thứ 2, Thứ 5 (19:30 - 21:00)",
       roomName: "Lớp học ảo EduMi #01 (Google Meet)",
@@ -69,6 +99,7 @@ export default function ClassesTab() {
       title: "Ngữ pháp Tiếng Anh: 12 Thì & Câu bị động nâng cao",
       subject: "Tiếng Anh",
       subjectColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      coverImage: "/classes/class-english.jpg",
       teacher: "Cô Thu Hà · 8.5 IELTS",
       schedule: "Thứ 2, Thứ 4 (08:00 - 09:30)",
       roomName: "Lớp học ảo EduMi #02",
@@ -86,6 +117,7 @@ export default function ClassesTab() {
       title: "Vật lý 12: Dao động cơ học & Dòng điện xoay chiều",
       subject: "Vật lý",
       subjectColor: "bg-purple-50 text-purple-700 border-purple-200",
+      coverImage: "/classes/class-physics.jpg",
       teacher: "Thầy Quang · Chuyên gia Luyện thi ĐH",
       schedule: "Thứ 4, Thứ 7 (19:30 - 21:00)",
       roomName: "Lớp học ảo EduMi #03",
@@ -102,6 +134,7 @@ export default function ClassesTab() {
       title: "Ngữ văn 12: Kỹ năng Viết Nghị luận văn học đạt điểm 8+",
       subject: "Ngữ văn",
       subjectColor: "bg-rose-50 text-rose-700 border-rose-200",
+      coverImage: "/classes/class-literature.jpg",
       teacher: "Cô Phương Linh · Giảng viên Văn học",
       schedule: "Chủ nhật (14:00 - 16:30)",
       roomName: "Lớp học ảo EduMi #05",
@@ -115,17 +148,6 @@ export default function ClassesTab() {
     },
   ];
 
-  const filteredClasses = myClasses.filter((item) => {
-    const matchSearch =
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.teacher.toLowerCase().includes(searchQuery.toLowerCase());
-
-    if (!matchSearch) return false;
-    if (filter === "today") return item.status === "upcoming" || item.status === "completed";
-    if (filter === "active") return item.status !== "completed";
-    return true;
-  });
 
   const handleJoinClass = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,238 +162,272 @@ export default function ClassesTab() {
 
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800/80 mb-1">
-            QUẢN LÝ LỚP HỌC TRỰC TUYẾN
-          </p>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <span>Lớp học của tôi</span>
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-              4 lớp đang học
-            </span>
-          </h1>
-        </div>
+      {/* ── KHUNG BANNER LỚP HỌC (Thiết kế chiều cao cân đối, hình ảnh chìm sâu liền mạch) ── */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#064e3b] via-[#059669] to-[#047857] shadow-sm flex items-center justify-between min-h-[110px] sm:min-h-[125px] md:min-h-[135px] px-6 sm:px-8 py-5 sm:py-6">
+        {/* Decorative subtle background glow */}
+        <div className="absolute -top-12 -left-12 w-44 h-44 rounded-full bg-white/10 blur-xl pointer-events-none" />
 
-        <button
-          type="button"
-          onClick={() => setShowJoinModal(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm hover:shadow-md transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tham gia bằng mã lớp</span>
-        </button>
-      </div>
-
-      {/* ── 4 KPI Stats Summary ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)]">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <School className="w-4 h-4 text-emerald-600" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              Lớp đang theo học
-            </span>
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">4</span>
-            <span className="text-xs text-slate-500 font-medium">lớp trực tuyến</span>
-          </div>
-          <p className="text-[11px] text-emerald-600 font-semibold mt-1">Toán, Văn, Anh, Lý</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)]">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <Clock className="w-4 h-4 text-amber-600" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              Lịch học hôm nay
-            </span>
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">2</span>
-            <span className="text-xs text-slate-500 font-medium">buổi học</span>
-          </div>
-          <p className="text-[11px] text-amber-600 font-semibold mt-1">1 hoàn thành · 1 sắp tới</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)]">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <Video className="w-4 h-4 text-blue-600" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              Giờ học tích lũy
-            </span>
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">32.5</span>
-            <span className="text-xs text-slate-500 font-medium">giờ học</span>
-          </div>
-          <p className="text-[11px] text-blue-600 font-semibold mt-1">+4.5h trong tuần này</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)]">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              Tỉ lệ chuyên cần
-            </span>
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">98%</span>
-            <span className="text-xs text-slate-500 font-medium">tham dự đúng giờ</span>
-          </div>
-          <p className="text-[11px] text-emerald-600 font-semibold mt-1">Xuất sắc · Hạng A</p>
-        </div>
-      </div>
-
-      {/* ── Filter & Search Toolbar ── */}
-      <div className="bg-white rounded-2xl p-3 sm:p-4 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          <button
-            type="button"
-            onClick={() => setFilter("all")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              filter === "all"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Tất cả (4)
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter("today")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              filter === "today"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Lịch hôm nay (2)
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter("active")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              filter === "active"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Đang học (3)
-          </button>
-        </div>
-
-        <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm theo môn, tên lớp, giáo viên..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
+        {/* ── HIỆU ỨNG BONG BÓNG NỔI (Floating Translucent Glass Bubbles) ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1]">
+          {/* Bubble 1: góc trái dưới */}
+          <div
+            className="banner-bubble animate-bubble-1 w-9 h-9"
+            style={{ left: "7%", bottom: "14%", animationDuration: "5.5s" }}
+          />
+          {/* Bubble 2: gần tag bên trái */}
+          <div
+            className="banner-bubble animate-bubble-2 w-5 h-5"
+            style={{ left: "21%", top: "14%", animationDuration: "4.2s", animationDelay: "0.8s" }}
+          />
+          {/* Bubble 3: nhỏ xinh phía trên */}
+          <div
+            className="banner-bubble animate-bubble-3 w-4 h-4"
+            style={{ left: "37%", top: "26%", animationDuration: "3.8s", animationDelay: "1.4s" }}
+          />
+          {/* Bubble 4: trung tâm lớn */}
+          <div
+            className="banner-bubble animate-bubble-1 w-10 h-10"
+            style={{ left: "48%", bottom: "16%", animationDuration: "6.2s", animationDelay: "0.3s" }}
+          />
+          {/* Bubble 5: giữa bên phải */}
+          <div
+            className="banner-bubble animate-bubble-2 w-6 h-6"
+            style={{ left: "62%", top: "18%", animationDuration: "4.8s", animationDelay: "1.9s" }}
+          />
+          {/* Bubble 6: gần khu vực mascot */}
+          <div
+            className="banner-bubble animate-bubble-3 w-7 h-7"
+            style={{ left: "75%", bottom: "20%", animationDuration: "5.2s", animationDelay: "0.6s" }}
+          />
+          {/* Bubble 7: góc phải */}
+          <div
+            className="banner-bubble animate-bubble-1 w-5 h-5"
+            style={{ left: "89%", top: "18%", animationDuration: "4.5s", animationDelay: "2.2s" }}
           />
         </div>
+
+        {/* ── HIỆU ỨNG NGÔI SAO LẤP LÁNH ĐỘNG (Twinkling & Sparkling Stars) ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-[2]">
+          {/* Star 1: Vàng kim lấp lánh cạnh tag "LỚP HỌC" */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-amber-300 w-4 h-4 animate-star-1"
+            style={{ left: "4%", top: "18%", animationDelay: "0.2s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 2: Trắng tinh khôi lấp lánh giữa banner */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-white w-3.5 h-3.5 animate-star-2"
+            style={{ left: "33%", bottom: "26%", animationDelay: "0.9s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 3: Vàng ấm tỏa sáng đỉnh giữa */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-amber-200 w-5 h-5 animate-star-3"
+            style={{ left: "54%", top: "14%", animationDelay: "1.5s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 4: Nhỏ nhẹ nhàng cạnh mascot */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-emerald-100 w-3 h-3 animate-star-1"
+            style={{ left: "68%", bottom: "32%", animationDelay: "2.1s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 5: Vàng kim tỏa sáng góc phải */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-amber-300 w-4 h-4 animate-star-2"
+            style={{ left: "83%", top: "22%", animationDelay: "0.5s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+
+          {/* Star 6: Trắng lấp lánh nhẹ gần tiêu đề */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-yellow-100 w-2.5 h-2.5 animate-star-3"
+            style={{ left: "19%", bottom: "16%", animationDelay: "1.8s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+        </div>
+
+
+        {/* Bên trái: Nội dung thanh thoát, khoảng cách thoáng đãng */}
+        <div className="relative z-10 max-w-sm sm:max-w-md md:max-w-lg space-y-1 sm:space-y-1.5">
+          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-200/90">
+            LỚP HỌC · THỜI GIAN THỰC
+          </p>
+          <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
+            Khám phá lớp học của bạn
+          </h1>
+          <p className="text-xs sm:text-sm text-emerald-100/90 font-medium">
+            Tham gia các buổi học tương tác và xem lại bài giảng dễ dàng.
+          </p>
+        </div>
+
+        {/* Bên phải: Hình ảnh chìm sâu tự nhiên vào góc phải banner (không dùng khung ảnh) */}
+        <div className="absolute right-0 top-0 bottom-0 w-48 sm:w-64 md:w-80 lg:w-96 h-full overflow-hidden pointer-events-none">
+          <div className="relative w-full h-full">
+            <Image
+              src="/classes/banner-classes.jpg"
+              alt="Mascot lớp học EduMi"
+              fill
+              priority
+              sizes="(max-width: 640px) 190px, 360px"
+              className="object-cover object-right [mask-image:linear-gradient(to_left,black_65%,transparent)]"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* ── Class Cards Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-        {filteredClasses.map((cls) => (
+      {/* ── Class Cards Grid (Bố cục ảnh bìa bên trái, thông tin bên phải) ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5">
+        {myClasses.map((cls) => (
           <div
             key={cls.id}
-            className="bg-white rounded-2xl sm:rounded-3xl p-5 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] hover:shadow-[0_8px_30px_rgba(6,78,59,0.08)] transition-all flex flex-col justify-between"
+            className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] hover:shadow-[0_12px_32px_rgba(6,78,59,0.08)] transition-all flex flex-col sm:flex-row gap-4 sm:gap-5 group"
           >
-            <div>
-              {/* Header: Subject badge & Status tag */}
-              <div className="flex items-center justify-between gap-2 mb-3">
+            {/* ── Bên trái: Ảnh bìa lớp học ── */}
+            <div className="w-full sm:w-44 md:w-52 lg:w-56 h-44 sm:h-auto min-h-[160px] sm:min-h-[190px] rounded-xl sm:rounded-2xl overflow-hidden relative flex-shrink-0 border border-slate-100 bg-slate-100 shadow-2xs">
+              <Image
+                src={cls.coverImage}
+                alt={cls.title}
+                fill
+                sizes="(max-width: 640px) 100vw, 240px"
+                className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              />
+              {/* Huy hiệu môn học phủ góc ảnh bìa */}
+              <div className="absolute top-2.5 left-2.5 z-10">
                 <span
-                  className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${cls.subjectColor}`}
+                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full backdrop-blur-md shadow-xs border ${cls.subjectColor} bg-white/95`}
                 >
                   {cls.subject}
                 </span>
-                <span
-                  className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${cls.statusColor}`}
-                >
-                  {cls.statusLabel}
-                </span>
-              </div>
-
-              {/* Class Title */}
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2">
-                {cls.title}
-              </h3>
-
-              {/* Teacher & Schedule info */}
-              <div className="mt-3 space-y-1.5 text-xs text-slate-600">
-                <div className="flex items-center gap-2">
-                  <User className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                  <span className="font-semibold text-slate-800">{cls.teacher}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                  <span>{cls.schedule}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Video className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                  <span className="truncate">{cls.roomName}</span>
-                </div>
-              </div>
-
-              {/* Progress bar */}
-              <div className="mt-4 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="text-slate-500 font-medium">Tiến độ khóa học</span>
-                  <span className="font-bold text-slate-800">
-                    {cls.completedLessons}/{cls.totalLessons} buổi ({cls.progress}%)
-                  </span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-600 rounded-full transition-all duration-300"
-                    style={{ width: `${cls.progress}%` }}
-                  />
-                </div>
               </div>
             </div>
 
-            {/* Actions footer */}
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-              <span className="text-[11px] text-slate-400 font-medium">
-                {cls.nextSessionTime ? `Lịch: ${cls.nextSessionTime}` : "Đang cập nhật"}
-              </span>
+            {/* ── Bên phải: Thông tin lớp học & tiến độ ── */}
+            <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
+              <div>
+                {/* Header: Status tag & Room name */}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span
+                    className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${cls.statusColor}`}
+                  >
+                    {cls.statusLabel}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-medium truncate">
+                    {cls.roomName.split(" ")[0]} {cls.roomName.split(" ")[1]}
+                  </span>
+                </div>
 
-              {cls.status === "upcoming" && (
-                <a
-                  href={cls.meetUrl || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm hover:shadow transition-all"
-                >
-                  <Video className="w-3.5 h-3.5" />
-                  <span>Vào lớp học ngay</span>
-                </a>
-              )}
+                {/* Class Title */}
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-emerald-800 transition-colors">
+                  {cls.title}
+                </h3>
 
-              {cls.status === "completed" && (
-                <button
-                  type="button"
-                  onClick={() => alert("Đang mở video ghi hình buổi học đã hoàn thành.")}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
-                >
-                  <PlayCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Xem Record</span>
-                </button>
-              )}
+                {/* Teacher & Schedule info */}
+                <div className="mt-2.5 space-y-1 text-xs text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <span className="font-semibold text-slate-800 truncate">{cls.teacher}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <span className="truncate">{cls.schedule}</span>
+                  </div>
+                </div>
+              </div>
 
-              {cls.status === "future" && (
-                <button
-                  type="button"
-                  onClick={() => alert("Tài liệu bài học sẽ được mở trước giờ học 30 phút.")}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs transition-all cursor-pointer"
-                >
-                  <FileText className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Tài liệu</span>
-                </button>
-              )}
+              <div>
+                {/* Progress bar */}
+                <div className="mt-3 pt-2.5 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="text-slate-500 font-medium text-[11px]">Tiến độ khóa học</span>
+                    <span className="font-bold text-slate-800 text-[11px]">
+                      {cls.completedLessons}/{cls.totalLessons} buổi ({cls.progress}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-600 rounded-full transition-all duration-300"
+                      style={{ width: `${cls.progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Actions footer */}
+                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-400 font-medium truncate">
+                    {cls.nextSessionTime ? `Lịch: ${cls.nextSessionTime}` : "Đang cập nhật"}
+                  </span>
+
+                  {cls.status === "upcoming" && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleJoinClassWithPiP(cls)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs shadow-2xs transition-all cursor-pointer"
+                        title="Vào Google Meet đồng thời mở cửa sổ sổ ghi chú ghim nổi trên màn hình"
+                      >
+                        <Pin className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="hidden sm:inline">Vào + Ghim Note</span>
+                        <span className="sm:hidden">+ Note</span>
+                      </button>
+
+                      <a
+                        href={cls.meetUrl || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs hover:shadow transition-all"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        <span>Vào lớp</span>
+                      </a>
+                    </div>
+                  )}
+
+                  {cls.status === "completed" && (
+                    <button
+                      type="button"
+                      onClick={() => alert("Đang mở video ghi hình buổi học đã hoàn thành.")}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer flex-shrink-0"
+                    >
+                      <PlayCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Xem Record</span>
+                    </button>
+                  )}
+
+                  {cls.status === "future" && (
+                    <button
+                      type="button"
+                      onClick={() => alert("Tài liệu bài học sẽ được mở trước giờ học 30 phút.")}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs transition-all cursor-pointer flex-shrink-0"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Tài liệu</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -442,6 +498,103 @@ export default function ClassesTab() {
           </div>
         </div>
       )}
+
+      {/* ── ALWAYS-ON-TOP PIP FLOATING WINDOW PORTAL ── */}
+      {pipWindow &&
+        pipWindow.document &&
+        createPortal(
+          <QuickNotesPiPContent
+            sessions={pipSessions}
+            activeSessionId={activePipSessionId}
+            onSelectSession={setActivePipSessionId}
+            onAddCard={(colKey, content, sticker, stickerColor) => {
+              const newCard: NoteCard = {
+                id: "card-" + Date.now(),
+                content,
+                sticker,
+                stickerColor,
+                createdAt: new Date().toLocaleTimeString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              };
+              setPipSessions((prev) => {
+                const updated = prev.map((sess) => {
+                  if (sess.id !== activePipSessionId) return sess;
+                  return {
+                    ...sess,
+                    columns: {
+                      ...sess.columns,
+                      [colKey]: [...sess.columns[colKey], newCard],
+                    },
+                  };
+                });
+                if (typeof window !== "undefined") {
+                  try {
+                    localStorage.setItem("edumi_study_sessions", JSON.stringify(updated));
+                  } catch (e) {
+                    console.warn(e);
+                  }
+                }
+                return updated;
+              });
+            }}
+            onDeleteCard={(colKey, cardId) => {
+              setPipSessions((prev) => {
+                const updated = prev.map((sess) => {
+                  if (sess.id !== activePipSessionId) return sess;
+                  return {
+                    ...sess,
+                    columns: {
+                      ...sess.columns,
+                      [colKey]: sess.columns[colKey].filter((c) => c.id !== cardId),
+                    },
+                  };
+                });
+                if (typeof window !== "undefined") {
+                  try {
+                    localStorage.setItem("edumi_study_sessions", JSON.stringify(updated));
+                  } catch (e) {
+                    console.warn(e);
+                  }
+                }
+                return updated;
+              });
+            }}
+            onAddSession={(title, subject) => {
+              const now = new Date();
+              const day = String(now.getDate());
+              const month = `TH${now.getMonth() + 1}`;
+              const fullDate = `${day} THÁNG ${now.getMonth() + 1}, ${now.getFullYear()}`;
+              const newSession: StudySession = {
+                id: "sess-" + Date.now(),
+                title,
+                subject,
+                dateDay: day,
+                dateMonth: month,
+                fullDate,
+                columns: { lecture: [], supplementary: [], questions: [] },
+              };
+              setPipSessions((prev) => {
+                const updated = [newSession, ...prev];
+                if (typeof window !== "undefined") {
+                  try {
+                    localStorage.setItem("edumi_study_sessions", JSON.stringify(updated));
+                  } catch (e) {
+                    console.warn(e);
+                  }
+                }
+                return updated;
+              });
+              setActivePipSessionId(newSession.id);
+            }}
+            onClose={() => {
+              pipWindow.close();
+              setPipWindow(null);
+            }}
+          />,
+          pipWindow.document.body
+        )}
     </div>
   );
 }
