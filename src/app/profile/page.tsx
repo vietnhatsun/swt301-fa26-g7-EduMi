@@ -8,6 +8,7 @@ import OverviewTab from "@/components/profile/tabs/OverviewTab";
 import PersonalInfoTab from "@/components/profile/tabs/PersonalInfoTab";
 import NotesTab from "@/components/profile/tabs/NotesTab";
 import ClassesTab from "@/components/profile/tabs/ClassesTab";
+import MaterialsTab from "@/components/profile/tabs/MaterialsTab";
 import HistoryTab from "@/components/profile/tabs/HistoryTab";
 import TransactionsTab from "@/components/profile/tabs/TransactionsTab";
 import { createBrowserClient } from "@/lib/supabase";
@@ -136,16 +137,7 @@ export default function ProfilePage() {
       case "notes":
         return <NotesTab fullName={currentStudent.fullName} />;
       case "materials":
-        return (
-          <div className="bg-white rounded-3xl p-8 border border-emerald-100 text-center py-16">
-            <h2 className="text-xl font-bold text-slate-900 mb-2">
-              Tài liệu học tập 📚
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-              Kho tài liệu số và bộ đề luyện thi chuyên sâu đang được đồng bộ. Hãy quay lại sau nhé!
-            </p>
-          </div>
-        );
+        return <MaterialsTab />;
       case "flashcards":
         return (
           <div className="bg-white rounded-3xl p-8 border border-emerald-100 text-center py-16">

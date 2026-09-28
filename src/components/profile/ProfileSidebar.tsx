@@ -12,8 +12,6 @@ import {
   History,
   User,
   CreditCard,
-  Settings,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
@@ -22,8 +20,8 @@ import {
 export type ProfileTabId =
   | "overview"
   | "classes"
-  | "notes"
   | "materials"
+  | "notes"
   | "flashcards"
   | "history"
   | "personal"
@@ -57,8 +55,8 @@ export default function ProfileSidebar({
   }[] = [
     { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
     { id: "classes", label: "Lớp học", icon: School },
-    { id: "notes", label: "Sổ ghi chú", icon: BookMarked, badge: "3" },
     { id: "materials", label: "Tài liệu", icon: Layers },
+    { id: "notes", label: "Sổ ghi chú", icon: BookMarked, badge: "3" },
     { id: "flashcards", label: "Flashcard", icon: Sparkles, badge: "Mới" },
     { id: "history", label: "Lịch sử làm bài", icon: History },
   ];
@@ -70,7 +68,6 @@ export default function ProfileSidebar({
   }[] = [
     { id: "personal", label: "Hồ sơ cá nhân", icon: User },
     { id: "transactions", label: "Giao dịch", icon: CreditCard },
-    { id: "settings", label: "Cài đặt", icon: Settings },
   ];
 
   return (
@@ -208,51 +205,28 @@ export default function ProfileSidebar({
         </div>
       </div>
 
-      {/* ── Bottom User Card / Logout ── */}
+      {/* ── Bottom User Card ── */}
       <div className="p-3 border-t border-white/10 bg-black/10">
         {!isCollapsed ? (
-          <div className="space-y-2.5">
-            {/* Student ID badge */}
-            <div className="p-2.5 rounded-xl bg-black/20 border border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-2 truncate">
-                <GraduationCap className="w-4 h-4 text-amber-300 flex-shrink-0" />
-                <div className="truncate">
-                  <p className="text-[10px] text-emerald-200 font-medium">
-                    Mã học sinh
-                  </p>
-                  <p className="text-xs font-bold text-white tracking-wide truncate">
-                    {studentCode}
-                  </p>
-                </div>
+          <div className="p-2.5 rounded-xl bg-black/20 border border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-2 truncate">
+              <GraduationCap className="w-4 h-4 text-amber-300 flex-shrink-0" />
+              <div className="truncate">
+                <p className="text-[10px] text-emerald-200 font-medium">
+                  Mã học sinh
+                </p>
+                <p className="text-xs font-bold text-white tracking-wide truncate">
+                  {studentCode}
+                </p>
               </div>
             </div>
-
-            {/* Logout button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (onLogout) onLogout();
-                else window.location.href = "/login";
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-red-500/20 border border-white/10 hover:border-red-400/30 text-emerald-100 hover:text-red-200 text-xs font-semibold transition-all cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Đăng xuất</span>
-            </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (onLogout) onLogout();
-                else window.location.href = "/login";
-              }}
-              title="Đăng xuất"
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-red-500/20 border border-white/10 hover:border-red-400/30 text-emerald-100 hover:text-red-200 flex items-center justify-center transition-all cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+          <div
+            className="flex items-center justify-center p-2 rounded-xl bg-black/20 border border-white/10"
+            title={`Mã học sinh: ${studentCode}`}
+          >
+            <GraduationCap className="w-4 h-4 text-amber-300" />
           </div>
         )}
       </div>
