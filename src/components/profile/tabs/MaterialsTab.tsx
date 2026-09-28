@@ -5,33 +5,28 @@ import Image from "next/image";
 import {
   Search,
   ChevronDown,
+  ChevronRight,
   X,
-  Filter,
   Check,
   RotateCcw,
   FileText,
   Download,
   Eye,
   BookmarkCheck,
-  Bookmark,
-  Calendar,
   Clock,
-  Sparkles,
   BookOpen,
-  Layers,
-  Share2,
   Trash2,
-  ExternalLink,
   CheckCircle2,
   HardDrive,
   FolderOpen,
+  Star,
 } from "lucide-react";
 
 export interface SavedMaterial {
   id: string;
   title: string;
+  cardCode: string;
   subject: string;
-  subjectColor: string;
   author: string;
   fileType: "PDF" | "DOCX" | "SLIDE";
   fileSize: string;
@@ -41,7 +36,9 @@ export interface SavedMaterial {
   savedLabel: string;
   description: string;
   source: string;
-  isFavorite?: boolean;
+  bgColor: string;
+  accentColor: string;
+  patternType: "waves" | "clouds" | "confetti" | "stripes" | "ripples" | "chevrons" | "sparkles" | "crosshatch";
 }
 
 export default function MaterialsTab() {
@@ -50,104 +47,154 @@ export default function MaterialsTab() {
     {
       id: "mat-01",
       title: "Tuyển tập 50 Đề thi thử THPT Quốc Gia môn Toán 2026 (Có giải chi tiết)",
+      cardCode: "TOÁN 12",
       subject: "Toán học",
-      subjectColor: "bg-blue-50 text-blue-700 border-blue-200",
       author: "Ban Chuyên môn Toán EduMi & Thầy Đức",
       fileType: "PDF",
       fileSize: "15.4 MB",
       pages: 180,
-      downloads: 3420,
+      downloads: 45120,
       savedAt: "2026-09-28T10:30:00Z",
       savedLabel: "Vừa lưu hôm nay (2 giờ trước)",
       description:
         "Tổng hợp các dạng bài phân loại 8+ và 9+, phương pháp giải nhanh Hàm số, Tích phân và Hình Oxyz bám sát cấu trúc đề minh họa mới nhất của Bộ GD&ĐT.",
       source: "Kho học liệu THPT Quốc Gia",
-      isFavorite: true,
+      bgColor: "bg-[#e07328]",
+      accentColor: "text-[#e07328]",
+      patternType: "waves",
     },
     {
       id: "mat-02",
       title: "Cẩm nang 1200 Collocations & Idioms Tiếng Anh thi Đại học điểm 9+",
+      cardCode: "IELTS 9+",
       subject: "Tiếng Anh",
-      subjectColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
       author: "Cô Thu Hà · 8.5 IELTS",
       fileType: "PDF",
       fileSize: "6.2 MB",
       pages: 96,
-      downloads: 2890,
+      downloads: 45240,
       savedAt: "2026-09-27T15:00:00Z",
       savedLabel: "Lưu hôm qua",
       description:
         "Tổng hợp cụm từ cố định, thành ngữ và cụm động từ thường gặp trong các đề thi Tiếng Anh chính thức qua các năm, kèm ví dụ thực tế và bài tập áp dụng.",
       source: "Kho đề thi & Chuyên đề Tiếng Anh",
-      isFavorite: true,
+      bgColor: "bg-[#be4c73]",
+      accentColor: "text-[#be4c73]",
+      patternType: "clouds",
     },
     {
       id: "mat-03",
       title: "Sơ đồ tư duy & Bí kíp giải nhanh Vật lý 12: Dao động cơ & Sóng cơ",
+      cardCode: "VẬT LÝ 12",
       subject: "Vật lý",
-      subjectColor: "bg-purple-50 text-purple-700 border-purple-200",
       author: "Thầy Quang · Chuyên gia Luyện thi ĐH",
       fileType: "PDF",
       fileSize: "9.8 MB",
       pages: 72,
-      downloads: 1940,
+      downloads: 45360,
       savedAt: "2026-09-25T09:15:00Z",
       savedLabel: "Lưu 3 ngày trước",
       description:
         "Hệ thống hóa toàn bộ công thức cốt lõi bằng Mindmap trực quan, kèm 50 bài tập mẫu có hướng dẫn bấm máy tính Casio tối ưu thời gian làm bài.",
       source: "Kho tài liệu Vật lý Chuyên sâu",
-      isFavorite: false,
+      bgColor: "bg-[#bf5447]",
+      accentColor: "text-[#bf5447]",
+      patternType: "confetti",
     },
     {
       id: "mat-04",
       title: "Hệ thống Luận điểm & Mở bài - Kết bài độc đáo môn Ngữ văn 12",
+      cardCode: "NGỮ VĂN",
       subject: "Ngữ văn",
-      subjectColor: "bg-rose-50 text-rose-700 border-rose-200",
       author: "Cô Phương Linh · Giảng viên Văn học",
       fileType: "DOCX",
       fileSize: "4.1 MB",
       pages: 64,
-      downloads: 2150,
+      downloads: 45490,
       savedAt: "2026-09-21T08:30:00Z",
       savedLabel: "Lưu 1 tuần trước",
       description:
         "Tuyển chọn các dẫn chứng lý luận văn học sắc bén, các đoạn văn mở kết sáng tạo chinh phục giám khảo chấm thi cho các tác phẩm trọng tâm 12.",
       source: "Kho bài văn mẫu & Nghị luận",
-      isFavorite: false,
+      bgColor: "bg-[#7356bc]",
+      accentColor: "text-[#7356bc]",
+      patternType: "stripes",
     },
     {
       id: "mat-05",
       title: "Phân dạng & Phương pháp giải bài tập Este - Lipit nâng cao 8+",
+      cardCode: "HÓA HỌC",
       subject: "Hóa học",
-      subjectColor: "bg-amber-50 text-amber-700 border-amber-200",
       author: "Thầy Hùng · Thủ khoa ĐH Dược",
       fileType: "PDF",
       fileSize: "7.5 MB",
       pages: 85,
-      downloads: 1680,
+      downloads: 38200,
       savedAt: "2026-09-14T14:00:00Z",
       savedLabel: "Lưu 2 tuần trước",
       description:
         "Kỹ thuật đồng đẳng hóa, dồn chất và bảo toàn nguyên tố giúp xử lý các câu hỏi điểm 9-10 este đa chức trong 3 phút không bị nhầm lẫn.",
       source: "Kho tài liệu Hóa học EduMi",
-      isFavorite: false,
+      bgColor: "bg-[#0d9488]",
+      accentColor: "text-[#0d9488]",
+      patternType: "ripples",
     },
     {
       id: "mat-06",
       title: "Slide Tóm tắt Toàn bộ Kiến thức Di truyền học & Tiến hóa Sinh 12",
+      cardCode: "SINH HỌC",
       subject: "Sinh học",
-      subjectColor: "bg-teal-50 text-teal-700 border-teal-200",
       author: "Ban Chuyên môn Sinh học EduMi",
       fileType: "SLIDE",
       fileSize: "18.2 MB",
       pages: 110,
-      downloads: 1230,
+      downloads: 32450,
       savedAt: "2026-08-28T11:20:00Z",
       savedLabel: "Lưu 1 tháng trước",
       description:
         "Slide hình ảnh minh họa sinh động về ADN, phiên mã, dịch mã và quy luật di truyền Menđen, liên kết gen kèm câu hỏi trắc nghiệm củng cố.",
       source: "Kho tài liệu Khoa học Tự nhiên",
-      isFavorite: false,
+      bgColor: "bg-[#0284c7]",
+      accentColor: "text-[#0284c7]",
+      patternType: "chevrons",
+    },
+    {
+      id: "mat-07",
+      title: "Niên biểu Lịch sử Việt Nam giai đoạn 1919 - 1975 trọng tâm",
+      cardCode: "LỊCH SỬ",
+      subject: "Lịch sử",
+      author: "Thầy Hoàng Tuấn · Giảng viên ĐH Sư Phạm",
+      fileType: "PDF",
+      fileSize: "5.8 MB",
+      pages: 58,
+      downloads: 29800,
+      savedAt: "2026-08-15T09:00:00Z",
+      savedLabel: "Lưu hơn 1 tháng trước",
+      description:
+        "Bảng tổng kết sự kiện, mốc thời gian, ý nghĩa lịch sử các chiến dịch Điện Biên Phủ, Hồ Chí Minh giúp ghi nhớ siêu tốc không bị lẫn lộn.",
+      source: "Kho chuyên đề Lịch sử THPT",
+      bgColor: "bg-[#b45309]",
+      accentColor: "text-[#b45309]",
+      patternType: "sparkles",
+    },
+    {
+      id: "mat-08",
+      title: "Kỹ năng Khai thác Atlat Địa lý Việt Nam đạt điểm tối đa 9+",
+      cardCode: "ĐỊA LÝ 12",
+      subject: "Địa lý",
+      author: "Cô Mai Anh · Chuyên gia Địa lý THPT",
+      fileType: "PDF",
+      fileSize: "12.3 MB",
+      pages: 92,
+      downloads: 31200,
+      savedAt: "2026-08-10T14:30:00Z",
+      savedLabel: "Lưu hơn 1 tháng trước",
+      description:
+        "Bí kíp đọc nhanh bản đồ, bảng số liệu, biểu đồ kinh tế xã hội và nhận diện vùng miền trong Atlat mà không cần học vẹt lý thuyết.",
+      source: "Kho tài liệu Địa lý Ôn thi ĐH",
+      bgColor: "bg-[#4f46e5]",
+      accentColor: "text-[#4f46e5]",
+      patternType: "crosshatch",
     },
   ]);
 
@@ -201,8 +248,7 @@ export default function MaterialsTab() {
     setIsSubjectDropdownOpen(false);
   };
 
-  // Các tùy chọn bộ lọc thời gian theo yêu cầu người dùng:
-  // "dropdown bộ lọc thì nên là lưu theo thời gian mới nhất và tất cả"
+  // Các tùy chọn bộ lọc thời gian: "Mới nhất" và "Tất cả"
   const timeOptions = [
     { id: "all", label: "Tất cả", desc: "Tất cả tài liệu đã lưu" },
     { id: "newest", label: "Mới nhất", desc: "Ưu tiên tài liệu lưu gần đây nhất" },
@@ -218,12 +264,14 @@ export default function MaterialsTab() {
     { id: "Vật lý", label: "Vật lý", icon: "⚡" },
     { id: "Hóa học", label: "Hóa học", icon: "🧪" },
     { id: "Sinh học", label: "Sinh học", icon: "🧬" },
+    { id: "Lịch sử", label: "Lịch sử", icon: "🏛️" },
+    { id: "Địa lý", label: "Địa lý", icon: "🌍" },
   ];
 
   // Xóa tài liệu khỏi danh sách đã lưu
   const handleRemoveMaterial = (id: string, title: string) => {
     setMaterials((prev) => prev.filter((m) => m.id !== id));
-    showToast(`Đã xóa "${title}" khỏi danh sách lưu trữ`);
+    showToast(`Đã bỏ lưu "${title}"`);
   };
 
   // Tải tài liệu
@@ -237,8 +285,7 @@ export default function MaterialsTab() {
     selectedTimeFilter !== "all" ||
     selectedSubject !== "all";
 
-  // Lọc tài liệu
-  const now = new Date("2026-09-28T12:54:00Z").getTime();
+  const now = new Date("2026-09-28T15:53:00Z").getTime();
 
   let filteredMaterials = materials.filter((item) => {
     // 1. Tìm kiếm từ khóa
@@ -277,26 +324,197 @@ export default function MaterialsTab() {
     );
   }
 
-  // Helper trả về badge loại file
-  const renderFileTypeBadge = (type: SavedMaterial["fileType"]) => {
-    switch (type) {
-      case "PDF":
+  // Component vẽ các hoa văn doodle sinh động (Doodle patterns giống ảnh mẫu)
+  const renderCardPattern = (pattern: SavedMaterial["patternType"]) => {
+    switch (pattern) {
+      case "waves":
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-red-50 text-red-700 border border-red-200">
-            PDF
-          </span>
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-25"
+            viewBox="0 0 300 400"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M-50,80 Q50,20 150,100 T350,60"
+              fill="none"
+              stroke="white"
+              strokeWidth="34"
+              strokeLinecap="round"
+            />
+            <path
+              d="M-30,220 Q70,150 170,230 T370,190"
+              fill="none"
+              stroke="white"
+              strokeWidth="38"
+              strokeLinecap="round"
+            />
+            <path
+              d="M-40,360 Q60,300 160,370 T360,330"
+              fill="none"
+              stroke="white"
+              strokeWidth="32"
+              strokeLinecap="round"
+            />
+          </svg>
         );
-      case "DOCX":
+
+      case "clouds":
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200">
-            DOCX
-          </span>
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
+            viewBox="0 0 300 400"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M-20,130 Q40,70 100,130 Q160,60 220,120 Q280,70 340,130 L340,-20 L-20,-20 Z"
+              fill="white"
+            />
+            <path
+              d="M-20,250 Q50,180 120,240 Q190,170 260,240 Q310,190 340,230 L340,-20 L-20,-20 Z"
+              fill="white"
+              opacity="0.6"
+            />
+            <path
+              d="M-20,370 Q60,300 140,360 Q220,290 300,360 L340,360 L340,-20 L-20,-20 Z"
+              fill="white"
+              opacity="0.4"
+            />
+          </svg>
         );
-      case "SLIDE":
+
+      case "confetti":
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200">
-            SLIDE
-          </span>
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-25"
+            viewBox="0 0 300 400"
+          >
+            <g stroke="white" strokeWidth="8" strokeLinecap="round">
+              <line x1="30" y1="40" x2="55" y2="65" />
+              <line x1="90" y1="30" x2="115" y2="55" />
+              <line x1="160" y1="50" x2="185" y2="75" />
+              <line x1="230" y1="35" x2="255" y2="60" />
+
+              <line x1="45" y1="120" x2="70" y2="145" />
+              <line x1="120" y1="105" x2="145" y2="130" />
+              <line x1="200" y1="115" x2="225" y2="140" />
+              <line x1="265" y1="110" x2="290" y2="135" />
+
+              <line x1="25" y1="200" x2="50" y2="225" />
+              <line x1="100" y1="190" x2="125" y2="215" />
+              <line x1="175" y1="195" x2="200" y2="220" />
+              <line x1="245" y1="185" x2="270" y2="210" />
+
+              <line x1="40" y1="280" x2="65" y2="305" />
+              <line x1="115" y1="270" x2="140" y2="295" />
+              <line x1="190" y1="285" x2="215" y2="310" />
+              <line x1="260" y1="275" x2="285" y2="300" />
+            </g>
+          </svg>
+        );
+
+      case "stripes":
+        return (
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
+            viewBox="0 0 300 400"
+          >
+            <g stroke="white" strokeWidth="26">
+              <line x1="-50" y1="0" x2="400" y2="450" />
+              <line x1="-50" y1="80" x2="400" y2="530" />
+              <line x1="-50" y1="160" x2="400" y2="610" />
+              <line x1="-50" y1="240" x2="400" y2="690" />
+              <line x1="-50" y1="-80" x2="400" y2="370" />
+              <line x1="-50" y1="-160" x2="400" y2="290" />
+            </g>
+          </svg>
+        );
+
+      case "ripples":
+        return (
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
+            viewBox="0 0 300 400"
+          >
+            <circle cx="280" cy="80" r="40" fill="none" stroke="white" strokeWidth="18" />
+            <circle cx="280" cy="80" r="95" fill="none" stroke="white" strokeWidth="20" />
+            <circle cx="280" cy="80" r="155" fill="none" stroke="white" strokeWidth="22" />
+            <circle cx="20" cy="340" r="50" fill="none" stroke="white" strokeWidth="18" />
+            <circle cx="20" cy="340" r="115" fill="none" stroke="white" strokeWidth="20" />
+          </svg>
+        );
+
+      case "chevrons":
+        return (
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
+            viewBox="0 0 300 400"
+          >
+            <path
+              d="M-20,90 L45,45 L115,90 L185,45 L255,90 L325,45"
+              fill="none"
+              stroke="white"
+              strokeWidth="20"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M-20,200 L45,155 L115,200 L185,155 L255,200 L325,155"
+              fill="none"
+              stroke="white"
+              strokeWidth="20"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M-20,310 L45,265 L115,310 L185,265 L255,310 L325,265"
+              fill="none"
+              stroke="white"
+              strokeWidth="20"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        );
+
+      case "sparkles":
+        return (
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-25"
+            viewBox="0 0 300 400"
+          >
+            <g fill="white">
+              <path d="M60,60 C60,75 75,75 75,75 C75,75 60,75 60,90 C60,75 45,75 45,75 C45,75 60,75 60,60 Z" />
+              <path d="M230,110 C230,130 250,130 250,130 C250,130 230,130 230,150 C230,130 210,130 210,130 C210,130 230,130 230,110 Z" />
+              <path d="M80,240 C80,260 100,260 100,260 C100,260 80,260 80,280 C80,260 60,260 60,260 C60,260 80,260 80,240 Z" />
+              <path d="M220,300 C220,318 238,318 238,318 C238,318 220,318 220,336 C220,318 202,318 202,318 C202,318 220,318 220,300 Z" />
+              <circle cx="150" cy="50" r="7" />
+              <circle cx="35" cy="160" r="6" />
+              <circle cx="265" cy="220" r="7" />
+              <circle cx="145" cy="340" r="6" />
+            </g>
+          </svg>
+        );
+
+      case "crosshatch":
+        return (
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
+            viewBox="0 0 300 400"
+          >
+            <g stroke="white" strokeWidth="4">
+              <line x1="0" y1="50" x2="300" y2="50" />
+              <line x1="0" y1="110" x2="300" y2="110" />
+              <line x1="0" y1="170" x2="300" y2="170" />
+              <line x1="0" y1="230" x2="300" y2="230" />
+              <line x1="0" y1="290" x2="300" y2="290" />
+              <line x1="0" y1="350" x2="300" y2="350" />
+
+              <line x1="60" y1="0" x2="60" y2="400" />
+              <line x1="120" y1="0" x2="120" y2="400" />
+              <line x1="180" y1="0" x2="180" y2="400" />
+              <line x1="240" y1="0" x2="240" y2="400" />
+            </g>
+          </svg>
         );
     }
   };
@@ -318,37 +536,30 @@ export default function MaterialsTab() {
 
         {/* ── HIỆU ỨNG BONG BÓNG NỔI (Floating Translucent Glass Bubbles) ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1]">
-          {/* Bubble 1: góc trái dưới */}
           <div
             className="banner-bubble animate-bubble-1 w-9 h-9"
             style={{ left: "7%", bottom: "14%", animationDuration: "5.5s" }}
           />
-          {/* Bubble 2: gần tag bên trái */}
           <div
             className="banner-bubble animate-bubble-2 w-5 h-5"
             style={{ left: "21%", top: "14%", animationDuration: "4.2s", animationDelay: "0.8s" }}
           />
-          {/* Bubble 3: nhỏ xinh phía trên */}
           <div
             className="banner-bubble animate-bubble-3 w-4 h-4"
             style={{ left: "37%", top: "26%", animationDuration: "3.8s", animationDelay: "1.4s" }}
           />
-          {/* Bubble 4: trung tâm lớn */}
           <div
             className="banner-bubble animate-bubble-1 w-10 h-10"
             style={{ left: "48%", bottom: "16%", animationDuration: "6.2s", animationDelay: "0.3s" }}
           />
-          {/* Bubble 5: giữa bên phải */}
           <div
             className="banner-bubble animate-bubble-2 w-6 h-6"
             style={{ left: "62%", top: "18%", animationDuration: "4.8s", animationDelay: "1.9s" }}
           />
-          {/* Bubble 6: gần khu vực mascot */}
           <div
             className="banner-bubble animate-bubble-3 w-7 h-7"
             style={{ left: "75%", bottom: "20%", animationDuration: "5.2s", animationDelay: "0.6s" }}
           />
-          {/* Bubble 7: góc phải */}
           <div
             className="banner-bubble animate-bubble-1 w-5 h-5"
             style={{ left: "89%", top: "18%", animationDuration: "4.5s", animationDelay: "2.2s" }}
@@ -357,7 +568,6 @@ export default function MaterialsTab() {
 
         {/* ── HIỆU ỨNG NGÔI SAO LẤP LÁNH ĐỘNG (Twinkling & Sparkling Stars) ── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[2]">
-          {/* Star 1: Vàng kim lấp lánh cạnh tag */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
@@ -367,7 +577,6 @@ export default function MaterialsTab() {
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
 
-          {/* Star 2: Trắng tinh khôi lấp lánh giữa banner */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
@@ -377,7 +586,6 @@ export default function MaterialsTab() {
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
 
-          {/* Star 3: Vàng ấm tỏa sáng đỉnh giữa */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
@@ -387,7 +595,6 @@ export default function MaterialsTab() {
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
 
-          {/* Star 4: Nhỏ nhẹ nhàng cạnh mascot */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
@@ -397,7 +604,6 @@ export default function MaterialsTab() {
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
 
-          {/* Star 5: Vàng kim tỏa sáng góc phải */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
@@ -407,7 +613,6 @@ export default function MaterialsTab() {
             <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
           </svg>
 
-          {/* Star 6: Trắng lấp lánh nhẹ gần tiêu đề */}
           <svg
             viewBox="0 0 24 24"
             fill="currentColor"
@@ -418,7 +623,7 @@ export default function MaterialsTab() {
           </svg>
         </div>
 
-        {/* Bên trái: Nội dung thanh thoát, khoảng cách thoáng đãng */}
+        {/* Bên trái: Tiêu đề banner */}
         <div className="relative z-10 max-w-sm sm:max-w-md md:max-w-lg space-y-1 sm:space-y-1.5">
           <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-200/90 flex items-center gap-1.5">
             <BookmarkCheck className="w-3.5 h-3.5 text-amber-300" />
@@ -432,7 +637,7 @@ export default function MaterialsTab() {
           </p>
         </div>
 
-        {/* Bên phải: Hình ảnh chìm sâu tự nhiên vào góc phải banner */}
+        {/* Bên phải: Tranh minh họa mascot chìm sâu */}
         <div className="absolute right-0 top-0 bottom-0 w-48 sm:w-64 md:w-80 lg:w-96 h-full overflow-hidden pointer-events-none">
           <div className="relative w-full h-full">
             <Image
@@ -475,7 +680,7 @@ export default function MaterialsTab() {
 
           {/* Cụm 2 Dropdown (Thời gian lưu & Môn học) & Nút Đặt lại */}
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap">
-            {/* Dropdown 1: Lọc theo thời gian lưu (Mới nhất & Tất cả theo yêu cầu) */}
+            {/* Dropdown 1: Lọc theo thời gian lưu (Mới nhất & Tất cả) */}
             <div className="relative flex-1 sm:flex-initial" ref={timeDropdownRef}>
               <button
                 type="button"
@@ -571,7 +776,7 @@ export default function MaterialsTab() {
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-1.5">
                     Lọc theo môn học
                   </div>
-                  <div className="space-y-0.5">
+                  <div className="space-y-0.5 max-h-60 overflow-y-auto">
                     {subjectOptions.map((opt) => {
                       const isSelected = selectedSubject === opt.id;
                       return (
@@ -674,19 +879,19 @@ export default function MaterialsTab() {
         )}
       </div>
 
-      {/* ── THANH THỐNG KÊ NHẸ & ĐƯỜNG DẪN ĐẾN KHO HỌC LIỆU CHUNG ── */}
+      {/* ── THANH THỐNG KÊ NHẸ ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1 text-xs">
         <div className="flex items-center gap-3 text-slate-600 font-medium">
           <span className="flex items-center gap-1.5">
             <FolderOpen className="w-4 h-4 text-emerald-600" />
             <span>
-              Đã lưu <strong className="text-slate-900">{filteredMaterials.length}</strong> tài liệu
+              Đang hiển thị <strong className="text-slate-900">{filteredMaterials.length}</strong> tài liệu đã lưu
             </span>
           </span>
           <span className="text-slate-300">·</span>
           <span className="flex items-center gap-1.5 text-slate-500">
             <HardDrive className="w-3.5 h-3.5 text-slate-400" />
-            <span>Kho lưu trữ cá nhân EduMi</span>
+            <span>Kho tài liệu cá nhân EduMi</span>
           </span>
         </div>
 
@@ -697,97 +902,102 @@ export default function MaterialsTab() {
         </div>
       </div>
 
-      {/* ── DANH SÁCH THẺ TÀI LIỆU (GRID CARDS) ── */}
+      {/* ── DANH SÁCH THẺ TÀI LIỆU (4 CARD TRÊN MỖI HÀNG, THIẾT KẾ ĐỘC ĐÁO THEO ẢNH MẪU) ── */}
       {filteredMaterials.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {filteredMaterials.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-2xl sm:rounded-3xl p-5 border border-slate-200/80 hover:border-emerald-300 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(5,150,105,0.08)] transition-all duration-200 flex flex-col justify-between group"
+              onClick={() => setPreviewMaterial(item)}
+              className={`relative overflow-hidden rounded-[26px] sm:rounded-[30px] p-5 sm:p-5.5 min-h-[350px] sm:min-h-[365px] flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 cursor-pointer group select-none text-white ${item.bgColor}`}
             >
-              <div>
-                {/* Header card: Môn học, Loại file, Thời gian đã lưu */}
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`px-2.5 py-1 rounded-xl text-xs font-bold border ${item.subjectColor}`}
-                    >
-                      {item.subject}
-                    </span>
-                    {renderFileTypeBadge(item.fileType)}
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-semibold border border-emerald-200/60">
-                      <BookmarkCheck className="w-3 h-3 text-emerald-600" />
-                      <span>{item.savedLabel}</span>
-                    </span>
-                  </div>
+              {/* Lớp hoa văn doodle nền sống động (Wavy, Clouds, Confetti, Stripes,...) */}
+              {renderCardPattern(item.patternType)}
 
-                  {/* Nút xóa bỏ lưu */}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveMaterial(item.id, item.title)}
-                    className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
-                    title="Bỏ lưu tài liệu này"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+              {/* Lớp gradient đổ bóng nhẹ cho phần text nổi bật */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/25 pointer-events-none" />
+
+              {/* ── HEADER THẺ: Tag nhận diện + Icon tai nghe/file + Nút bỏ lưu ── */}
+              <div className="relative z-10 flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="text-[11px] font-bold tracking-wide text-white/90 truncate uppercase">
+                    edumi | {item.subject.toLowerCase()}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded-md bg-white/20 backdrop-blur-xs text-[9px] font-extrabold text-white">
+                    {item.fileType}
+                  </span>
                 </div>
 
-                {/* Tiêu đề tài liệu */}
-                <h3
-                  onClick={() => setPreviewMaterial(item)}
-                  className="font-bold text-slate-900 text-sm sm:text-base leading-snug group-hover:text-emerald-700 transition-colors cursor-pointer line-clamp-2 mb-2"
-                >
-                  {item.title}
-                </h3>
-
-                {/* Mô tả tóm tắt */}
-                <p className="text-xs text-slate-500 leading-relaxed line-clamp-2 mb-3 font-normal">
-                  {item.description}
-                </p>
-
-                {/* Metadata tác giả và nguồn */}
-                <div className="text-[11px] text-slate-400 space-y-1 mb-4 pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <span className="font-semibold text-slate-700">Tác giả:</span>
-                    <span className="truncate">{item.author}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-emerald-700/80">
-                    <span className="font-semibold text-slate-500">Nguồn:</span>
-                    <span className="truncate">{item.source}</span>
-                  </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveMaterial(item.id, item.title);
+                    }}
+                    className="w-7 h-7 rounded-full bg-black/15 hover:bg-rose-600/80 text-white/80 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                    title="Bỏ lưu tài liệu này"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Footer card: Dung lượng, số trang, hành động */}
-              <div className="flex items-center justify-between gap-3 pt-1">
-                <div className="flex items-center gap-2.5 text-xs text-slate-500 font-medium">
+              {/* ── BODY THẺ: Tiêu đề to đậm phá cách + Tên tài liệu + Thông số ── */}
+              <div className="relative z-10 my-auto py-2">
+                {/* Tiêu đề ngắn to đậm phong cách Retro/Chubby như ảnh mẫu ("TEST 1", "TEST 2",...) */}
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase leading-none drop-shadow-md mb-2 font-sans group-hover:scale-105 transition-transform origin-left">
+                  {item.cardCode}
+                </h2>
+
+                {/* Tiêu đề chi tiết tài liệu */}
+                <h3 className="text-white font-bold text-xs sm:text-sm leading-snug line-clamp-2 drop-shadow-xs mb-3 text-white/95">
+                  {item.title}
+                </h3>
+
+                {/* Dòng thông số đánh giá và số trang y hệt ảnh mẫu */}
+                <div className="flex items-center gap-2 text-white/90 text-[11px] font-semibold flex-wrap">
                   <span className="flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    <Star className="w-3 h-3 fill-white text-white" />
+                    <span>{item.downloads.toLocaleString("vi-VN")} lượt xem</span>
+                  </span>
+                  <span className="opacity-70">|</span>
+                  <span className="flex items-center gap-1">
+                    <FileText className="w-3 h-3 text-white/90" />
                     <span>{item.pages} trang</span>
                   </span>
-                  <span>·</span>
-                  <span>{item.fileSize}</span>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewMaterial(item)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 text-slate-700 hover:text-emerald-800 text-xs font-semibold transition-all cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Xem trước</span>
-                  </button>
+              {/* ── FOOTER THẺ: 2 Nút bo tròn màu trắng nổi bật như ảnh mẫu ── */}
+              <div className="relative z-10 grid grid-cols-2 gap-2 pt-3">
+                {/* Nút 1: Xem */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewMaterial(item);
+                  }}
+                  className="w-full py-2.5 px-2 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs flex items-center justify-center gap-1 shadow-sm hover:shadow-md transition-all cursor-pointer group/btn"
+                >
+                  <Eye className={`w-3.5 h-3.5 ${item.accentColor}`} />
+                  <span>Xem</span>
+                  <ChevronRight className="w-3 h-3 text-slate-400 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(item)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Tải về</span>
-                  </button>
-                </div>
+                {/* Nút 2: Tải về */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload(item);
+                  }}
+                  className="w-full py-2.5 px-2 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs flex items-center justify-center gap-1 shadow-sm hover:shadow-md transition-all cursor-pointer group/btn"
+                >
+                  <Download className={`w-3.5 h-3.5 ${item.accentColor}`} />
+                  <span className="truncate">Tải về</span>
+                  <ChevronRight className="w-3 h-3 text-slate-400 group-hover/btn:translate-x-0.5 transition-transform shrink-0" />
+                </button>
               </div>
             </div>
           ))}
@@ -825,12 +1035,12 @@ export default function MaterialsTab() {
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                  <span
-                    className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border ${previewMaterial.subjectColor}`}
-                  >
+                  <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
                     {previewMaterial.subject}
                   </span>
-                  {renderFileTypeBadge(previewMaterial.fileType)}
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {previewMaterial.fileType}
+                  </span>
                   <span className="text-[11px] text-slate-400 font-medium">
                     {previewMaterial.savedLabel}
                   </span>
