@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   BookOpen,
   Clock,
-  CheckCircle2,
   Search,
   Filter,
   ArrowUpRight,
   RotateCcw,
-  Award,
-  Sparkles,
-  ChevronRight,
   Calendar,
+  ChevronDown,
+  Check,
+  X,
 } from "lucide-react";
 
 interface TestHistoryItem {
@@ -33,6 +33,34 @@ export default function HistoryTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+
+  const subjectDropdownRef = useRef<HTMLDivElement>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        subjectDropdownRef.current &&
+        !subjectDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsSubjectDropdownOpen(false);
+      }
+      if (
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsStatusDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const historyData: TestHistoryItem[] = [
     {
@@ -128,18 +156,40 @@ export default function HistoryTab() {
     },
   ];
 
-  const subjects = [
-    { id: "all", label: "Tất cả môn" },
-    { id: "math", label: "Toán học" },
-    { id: "literature", label: "Ngữ văn" },
-    { id: "english", label: "Tiếng Anh" },
-    { id: "physics", label: "Vật lý" },
+  const subjectOptions = [
+    { id: "all", label: "Tất cả môn học", icon: "📚" },
+    { id: "math", label: "Toán học", icon: "📐" },
+    { id: "literature", label: "Ngữ văn", icon: "📖" },
+    { id: "english", label: "Tiếng Anh", icon: "🇬🇧" },
+    { id: "physics", label: "Vật lý", icon: "⚡" },
   ];
 
+  const statusOptions = [
+    { id: "all", label: "Tất cả trạng thái", desc: "Tất cả các bài thi đã làm" },
+    { id: "Đạt", label: "Đạt chuẩn", desc: "Điểm từ trung bình khá trở lên" },
+    { id: "Đã hoàn thành", label: "Đã hoàn thành", desc: "Bài thi đã nộp và chấm điểm" },
+    { id: "Cần cố gắng", label: "Cần cố gắng", desc: "Cần ôn tập và rèn luyện thêm" },
+  ];
+
+  const isFiltered =
+    searchQuery.trim() !== "" ||
+    selectedSubject !== "all" ||
+    selectedStatus !== "all";
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setSelectedSubject("all");
+    setSelectedStatus("all");
+    setIsSubjectDropdownOpen(false);
+    setIsStatusDropdownOpen(false);
+  };
+
   const filteredData = historyData.filter((item) => {
+    const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.subject.toLowerCase().includes(searchQuery.toLowerCase());
+      !q ||
+      item.title.toLowerCase().includes(q) ||
+      item.subject.toLowerCase().includes(q);
     const matchesSubject =
       selectedSubject === "all" || item.subjectCode === selectedSubject;
     const matchesStatus =
@@ -149,95 +199,326 @@ export default function HistoryTab() {
 
   return (
     <div className="space-y-6">
-      {/* ── Top Header ── */}
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800/80 mb-1">
-          HỌC TẬP · LỊCH SỬ & BẢNG ĐIỂM
-        </p>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-          Lịch sử làm bài thi 📝
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Xem lại kết quả, thời gian hoàn thành và lời giải chi tiết của các bài thi đã làm.
-        </p>
+      {/* ── KHUNG BANNER LỊCH SỬ LÀM BÀI (Phong cách Tab Lớp học) ── */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#064e3b] via-[#059669] to-[#047857] shadow-sm flex items-center justify-between min-h-[115px] sm:min-h-[130px] md:min-h-[140px] px-6 sm:px-8 py-5 sm:py-6">
+        {/* Decorative subtle background glow */}
+        <div className="absolute -top-12 -left-12 w-44 h-44 rounded-full bg-white/10 blur-xl pointer-events-none" />
+
+        {/* ── HIỆU ỨNG BONG BÓNG NỔI (Floating Translucent Glass Bubbles) ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-[1]">
+          <div
+            className="banner-bubble animate-bubble-1 w-9 h-9"
+            style={{ left: "7%", bottom: "14%", animationDuration: "5.5s" }}
+          />
+          <div
+            className="banner-bubble animate-bubble-2 w-5 h-5"
+            style={{ left: "21%", top: "14%", animationDuration: "4.2s", animationDelay: "0.8s" }}
+          />
+          <div
+            className="banner-bubble animate-bubble-3 w-4 h-4"
+            style={{ left: "37%", top: "26%", animationDuration: "3.8s", animationDelay: "1.4s" }}
+          />
+          <div
+            className="banner-bubble animate-bubble-1 w-10 h-10"
+            style={{ left: "48%", bottom: "16%", animationDuration: "6.2s", animationDelay: "0.3s" }}
+          />
+          <div
+            className="banner-bubble animate-bubble-2 w-6 h-6"
+            style={{ left: "62%", top: "18%", animationDuration: "4.8s", animationDelay: "1.9s" }}
+          />
+          <div
+            className="banner-bubble animate-bubble-3 w-7 h-7"
+            style={{ left: "75%", bottom: "20%", animationDuration: "5.2s", animationDelay: "0.6s" }}
+          />
+          <div
+            className="banner-bubble animate-bubble-1 w-5 h-5"
+            style={{ left: "89%", top: "18%", animationDuration: "4.5s", animationDelay: "2.2s" }}
+          />
+        </div>
+
+        {/* ── HIỆU ỨNG NGÔI SAO LẤP LÁNH ĐỘNG (Twinkling & Sparkling Stars) ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-[2]">
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-amber-300 w-4 h-4 animate-star-1"
+            style={{ left: "4%", top: "18%", animationDelay: "0.2s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-white w-3.5 h-3.5 animate-star-2"
+            style={{ left: "33%", bottom: "26%", animationDelay: "0.9s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-amber-200 w-5 h-5 animate-star-3"
+            style={{ left: "54%", top: "14%", animationDelay: "1.5s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="absolute text-emerald-100 w-3 h-3 animate-star-1"
+            style={{ left: "68%", bottom: "32%", animationDelay: "2.1s" }}
+          >
+            <path d="M12 1 C12 7.075 16.925 12 23 12 C16.925 12 12 16.925 12 23 C12 16.925 7.075 12 1 12 C7.075 12 12 7.075 12 1 Z" />
+          </svg>
+        </div>
+
+        {/* Bên trái: Tiêu đề & các chỉ số thống kê tích hợp */}
+        <div className="relative z-10 max-w-sm sm:max-w-md md:max-w-xl space-y-1 sm:space-y-1.5">
+          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-200/90">
+            HỌC TẬP · LỊCH SỬ & BẢNG ĐIỂM
+          </p>
+          <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
+            Lịch sử làm bài thi của bạn
+          </h1>
+          <p className="text-xs sm:text-sm text-emerald-100/90 font-medium">
+            Xem lại kết quả, thời gian hoàn thành và lời giải chi tiết của các bài thi đã làm.
+          </p>
+        </div>
+
+        {/* Bên phải: Mascot chìm sâu tự nhiên vào góc phải banner */}
+        <div className="absolute right-0 top-0 bottom-0 w-48 sm:w-64 md:w-80 lg:w-96 h-full overflow-hidden pointer-events-none">
+          <div className="relative w-full h-full">
+            <Image
+              src="/classes/banner-classes.jpg"
+              alt="Mascot lịch sử làm bài thi EduMi"
+              fill
+              priority
+              sizes="(max-width: 640px) 190px, 360px"
+              className="object-cover object-right [mask-image:linear-gradient(to_left,black_65%,transparent)]"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* ── Stats Summary Bar ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-[0_4px_20px_rgba(6,78,59,0.03)]">
-          <div className="flex items-center gap-2 text-slate-400 mb-1">
-            <BookOpen className="w-4 h-4 text-emerald-600" />
-            <span className="text-xs font-semibold">Đề đã làm</span>
-          </div>
-          <div className="text-xl font-black text-slate-900">
-            {historyData.length} <span className="text-xs font-medium text-slate-400">bài thi</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-[0_4px_20px_rgba(6,78,59,0.03)]">
-          <div className="flex items-center gap-2 text-slate-400 mb-1">
-            <Award className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-semibold">Điểm trung bình</span>
-          </div>
-          <div className="text-xl font-black text-slate-900">
-            8.4 <span className="text-xs font-medium text-slate-400">/ 10</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-[0_4px_20px_rgba(6,78,59,0.03)]">
-          <div className="flex items-center gap-2 text-slate-400 mb-1">
-            <Sparkles className="w-4 h-4 text-purple-600" />
-            <span className="text-xs font-semibold">Điểm cao nhất</span>
-          </div>
-          <div className="text-xl font-black text-emerald-700">
-            9.0 <span className="text-xs font-medium text-slate-400">/ 10</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-[0_4px_20px_rgba(6,78,59,0.03)]">
-          <div className="flex items-center gap-2 text-slate-400 mb-1">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span className="text-xs font-semibold">Tỉ lệ đạt</span>
-          </div>
-          <div className="text-xl font-black text-emerald-700">
-            100%
-          </div>
-        </div>
-      </div>
-
-      {/* ── Filters & Search ── */}
-      <div className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-[0_4px_20px_rgba(6,78,59,0.03)] space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Search bar */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+      {/* ── BỘ LỌC BÀI THI (GIỮA BANNER VÀ DANH SÁCH BÀI THI) ── */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4.5 border border-slate-200/80 shadow-[0_2px_14px_rgba(0,0,0,0.03)] space-y-3">
+        {/* Hàng điều khiển: Tìm kiếm + 2 Dropdown */}
+        <div className="flex flex-col md:flex-row gap-2.5 sm:gap-3 items-stretch md:items-center justify-between">
+          {/* Thanh tìm kiếm */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm theo tên đề thi, chuyên đề..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+              placeholder="Tìm kiếm theo tên đề thi, môn học, chuyên đề..."
+              className="w-full pl-9.5 pr-8 py-2.5 rounded-xl border border-slate-200/90 bg-slate-50/70 hover:bg-white focus:bg-white text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-md transition-colors cursor-pointer"
+                title="Xóa tìm kiếm"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
-          {/* Subject Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-            {subjects.map((sub) => (
+          {/* Cụm 2 Dropdown (Môn học + Trạng thái) & Nút Đặt lại */}
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap">
+            {/* Dropdown 1: Lọc theo môn học */}
+            <div className="relative flex-1 sm:flex-initial" ref={subjectDropdownRef}>
               <button
-                key={sub.id}
                 type="button"
-                onClick={() => setSelectedSubject(sub.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                  selectedSubject === sub.id
-                    ? "bg-[#064e3b] text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900 border border-slate-200/60"
+                onClick={() => {
+                  setIsSubjectDropdownOpen(!isSubjectDropdownOpen);
+                  setIsStatusDropdownOpen(false);
+                }}
+                className={`inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all cursor-pointer w-full sm:w-auto min-w-[145px] ${
+                  selectedSubject !== "all"
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-900 shadow-2xs font-bold"
+                    : "bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700"
                 }`}
               >
-                {sub.label}
+                <div className="flex items-center gap-2 truncate">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span className="truncate">
+                    {subjectOptions.find((s) => s.id === selectedSubject)?.label || "Tất cả môn học"}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                    isSubjectDropdownOpen ? "rotate-180 text-emerald-600" : ""
+                  }`}
+                />
               </button>
-            ))}
+
+              {/* Menu môn học */}
+              {isSubjectDropdownOpen && (
+                <div className="absolute right-0 sm:left-0 sm:right-auto mt-1.5 w-48 sm:w-52 rounded-2xl bg-white border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.12)] p-1.5 z-30 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-1.5">
+                    Lọc theo môn học
+                  </div>
+                  <div className="space-y-0.5">
+                    {subjectOptions.map((opt) => {
+                      const isSelected = selectedSubject === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSubject(opt.id);
+                            setIsSubjectDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                            isSelected
+                              ? "bg-emerald-50 text-emerald-900 font-bold"
+                              : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{opt.icon}</span>
+                            <span>{opt.label}</span>
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Dropdown 2: Lọc theo trạng thái kết quả */}
+            <div className="relative flex-1 sm:flex-initial" ref={statusDropdownRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                  setIsSubjectDropdownOpen(false);
+                }}
+                className={`inline-flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all cursor-pointer w-full sm:w-auto min-w-[155px] ${
+                  selectedStatus !== "all"
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-900 shadow-2xs font-bold"
+                    : "bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700"
+                }`}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Filter className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span className="truncate">
+                    {statusOptions.find((s) => s.id === selectedStatus)?.label || "Tất cả trạng thái"}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                    isStatusDropdownOpen ? "rotate-180 text-emerald-600" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Menu trạng thái */}
+              {isStatusDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 w-52 sm:w-56 rounded-2xl bg-white border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.12)] p-1.5 z-30 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-1.5">
+                    Trạng thái kết quả
+                  </div>
+                  <div className="space-y-0.5">
+                    {statusOptions.map((opt) => {
+                      const isSelected = selectedStatus === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedStatus(opt.id);
+                            setIsStatusDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                            isSelected
+                              ? "bg-emerald-50 text-emerald-900 font-bold"
+                              : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                          }`}
+                        >
+                          <div className="text-left">
+                            <div className="font-bold">{opt.label}</div>
+                            <div className="text-[10px] text-slate-400 font-normal">{opt.desc}</div>
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Nút Đặt lại bộ lọc */}
+            {isFiltered && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all cursor-pointer shrink-0"
+                title="Đặt lại toàn bộ bộ lọc"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Đặt lại</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Hàng các chip lọc đang kích hoạt */}
+        {isFiltered && (
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs text-slate-500">
+            <div className="flex items-center gap-2 flex-wrap">
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold">
+                  Tìm: &ldquo;{searchQuery}&rdquo;
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="hover:text-rose-600 cursor-pointer ml-0.5"
+                    title="Xóa tìm kiếm"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {selectedSubject !== "all" && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-semibold">
+                  {subjectOptions.find((s) => s.id === selectedSubject)?.icon}{" "}
+                  {subjectOptions.find((s) => s.id === selectedSubject)?.label}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSubject("all")}
+                    className="hover:text-rose-600 cursor-pointer ml-0.5"
+                    title="Bỏ lọc môn"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {selectedStatus !== "all" && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-semibold">
+                  {statusOptions.find((s) => s.id === selectedStatus)?.label}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatus("all")}
+                    className="hover:text-rose-600 cursor-pointer ml-0.5"
+                    title="Bỏ lọc trạng thái"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] text-slate-400 font-medium">
+              Tìm thấy <span className="font-bold text-emerald-700">{filteredData.length}</span> bài thi
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── History List ── */}
@@ -295,15 +576,8 @@ export default function HistoryTab() {
                 </div>
 
                 <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
-                  <div className="text-right">
-                    <div className="text-sm sm:text-base font-black text-slate-900">
-                      {test.score}
-                    </div>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border inline-block mt-0.5 ${test.badgeColor}`}
-                    >
-                      {test.status}
-                    </span>
+                  <div className="text-sm sm:text-base font-black text-slate-900 text-right">
+                    {test.score}
                   </div>
 
                   <button

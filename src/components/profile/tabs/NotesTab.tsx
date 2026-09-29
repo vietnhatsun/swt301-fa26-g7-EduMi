@@ -1,19 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Plus,
   Camera,
   ClipboardPaste,
-  Maximize2,
-  Minimize2,
   Sparkles,
   Trash2,
   Upload,
   Clock,
   BookOpen,
   Pin,
+  ChevronDown,
+  ChevronUp,
+  Check,
 } from "lucide-react";
 import { QuickNotesPiPContent, openPiPWindowHelper } from "../QuickNotesPiP";
 
@@ -222,7 +223,24 @@ export default function NotesTab({
   ]);
 
   const [activeSessionId, setActiveSessionId] = useState<string>("session-new");
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSessionDropdownOpen, setIsSessionDropdownOpen] = useState(false);
+  const sessionDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Đóng dropdown chọn chủ đề khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sessionDropdownRef.current &&
+        !sessionDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsSessionDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Modals & Popovers
   const [showAddCardModal, setShowAddCardModal] = useState(false);
@@ -471,39 +489,12 @@ export default function NotesTab({
   };
 
   return (
-    <div
-      className={`transition-all duration-200 ${
-        isFullscreen
-          ? "fixed inset-0 z-50 bg-[#f8faf8] p-4 sm:p-6 lg:p-8 overflow-y-auto flex flex-col"
-          : "space-y-4"
-      }`}
-    >
-      {/* ── KHỐI BUỔI HỌC Ở TRÊN CÙNG (Thay thế hoàn toàn khối header cũ) ── */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)] space-y-4">
-        {/* Hàng 1: Tiêu đề BUỔI HỌC, Nút Chụp ghi chú, Dán kiến thức & Công cụ */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-3 border-b border-slate-100">
-          {/* Trái: BUỔI HỌC + 2 Nút tác vụ nhanh */}
-          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-            <div className="flex items-center gap-2 pr-2.5 sm:border-r border-slate-200">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black">
-                <BookOpen className="w-4 h-4 text-emerald-700" />
-              </div>
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-                <span>BUỔI HỌC</span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                  {sessions.length}
-                </span>
-              </h2>
-              <button
-                type="button"
-                onClick={() => setShowNewSessionModal(true)}
-                className="w-7 h-7 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 flex items-center justify-center transition-colors cursor-pointer"
-                title="Tạo buổi học mới"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-
+    <div className="space-y-4">
+      {/* ── THANH CÔNG CỤ & DROPDOWN CHỦ ĐỀ Ở TRÊN CÙNG ── */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 border border-emerald-100/80 shadow-[0_4px_20px_rgba(6,78,59,0.04)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          {/* Trái: Chụp ghi chú mới, Dán kiến thức, Ghim & Thêm mới chủ đề */}
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
             {/* Nút 1: Chụp ghi chú mới */}
             <button
               type="button"
@@ -524,7 +515,7 @@ export default function NotesTab({
               <span>Dán kiến thức</span>
             </button>
 
-            {/* Nút 3: Ghim nổi trên Google Meet (Always-on-top PiP) */}
+            {/* Nút 3: Ghim (Always-on-top PiP) */}
             <button
               type="button"
               onClick={handleTogglePiP}
@@ -536,111 +527,165 @@ export default function NotesTab({
               title="Mở cửa sổ ghi chú nhỏ luôn ghim nổi trên Google Meet để note bài không cần chuyển tab"
             >
               <Pin className={`w-3.5 h-3.5 ${pipWindow ? "text-white" : "text-emerald-600"}`} />
-              <span>{pipWindow ? "Đang ghim nổi (Đóng)" : "Ghim nổi trên Google Meet"}</span>
+              <span>{pipWindow ? "Đang ghim (Đóng)" : "Ghim"}</span>
             </button>
-          </div>
 
-          {/* Phải: Nút công cụ Toàn màn hình */}
-          <div className="flex items-center gap-2 self-end sm:self-center">
-            {/* Fullscreen button */}
+            {/* Nút 4: Thêm mới chủ đề */}
             <button
               type="button"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 sm:p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all cursor-pointer"
-              title={isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
+              onClick={() => setShowNewSessionModal(true)}
+              className="py-1.5 px-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow"
+              title="Thêm mới chủ đề"
             >
-              {isFullscreen ? (
-                <Minimize2 className="w-3.5 h-3.5" />
-              ) : (
-                <Maximize2 className="w-3.5 h-3.5" />
-              )}
+              <Plus className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Thêm mới chủ đề</span>
             </button>
           </div>
-        </div>
 
-        {/* Hàng 2: Danh sách các buổi học xếp hàng ngang (Horizontal Scroll) */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-1 pt-0.5 scrollbar-thin">
-          {sessions.map((sess) => {
-            const isSelected = sess.id === activeSessionId;
-            const cardCount =
-              sess.columns.lecture.length +
-              sess.columns.supplementary.length +
-              sess.columns.questions.length;
-
-            return (
-              <div
-                key={sess.id}
-                onClick={() => setActiveSessionId(sess.id)}
-                className={`p-2.5 sm:p-3 rounded-2xl border transition-all cursor-pointer flex-shrink-0 flex items-center gap-3 min-w-[210px] max-w-[280px] ${
-                  isSelected
-                    ? "bg-emerald-50/90 border-emerald-500 shadow-xs ring-2 ring-emerald-500/25"
-                    : "bg-white hover:bg-slate-50 border-slate-200/80 hover:border-emerald-200"
+          {/* Phải: DROPDOWN CHỌN CHỦ ĐỀ (Thay thế nút thu gọn & danh sách thẻ cuộn ngang) */}
+          <div className="relative self-end sm:self-center" ref={sessionDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsSessionDropdownOpen(!isSessionDropdownOpen)}
+              className="inline-flex items-center justify-between gap-2.5 px-3.5 py-2 rounded-xl border border-emerald-300/90 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-950 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:shadow w-full sm:w-auto min-w-[200px] max-w-[340px]"
+              title="Nhấn để chọn chủ đề bài học khác"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <BookOpen className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <span className="truncate font-black text-slate-900">
+                  {currentSession?.title || "Chọn chủ đề..."}
+                </span>
+              </div>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-emerald-700 shrink-0 transition-transform duration-200 ${
+                  isSessionDropdownOpen ? "rotate-180" : ""
                 }`}
-              >
-                {/* Date Block */}
-                <div
-                  className={`w-10 h-11 rounded-xl flex flex-col items-center justify-center flex-shrink-0 border leading-none transition-colors ${
-                    isSelected
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
-                      : "bg-slate-100 text-slate-700 border-slate-200"
-                  }`}
-                >
-                  <span className="text-xs font-black tracking-tight">
-                    {sess.dateDay}
-                  </span>
-                  <span className="text-[8px] font-bold uppercase tracking-wider opacity-90 mt-0.5">
-                    {sess.dateMonth}
+              />
+            </button>
+
+            {/* Menu Dropdown danh sách chủ đề */}
+            {isSessionDropdownOpen && (
+              <div className="absolute right-0 mt-1.5 w-72 sm:w-84 rounded-2xl bg-white border border-slate-200/90 shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-2 z-40 animate-in fade-in zoom-in-95 duration-100">
+                <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Danh sách chủ đề ({sessions.length})
                   </span>
                 </div>
 
-                {/* Session Details */}
-                <div className="flex-1 min-w-0">
-                  <h3
-                    className={`text-xs font-bold leading-snug truncate transition-colors ${
-                      isSelected
-                        ? "text-emerald-950 font-black"
-                        : "text-slate-800 hover:text-emerald-800"
-                    }`}
-                  >
-                    {sess.title}
-                  </h3>
-                  <p className="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center gap-1.5 truncate">
-                    <span className="font-semibold text-emerald-700">
-                      {cardCount} thẻ
-                    </span>
-                    <span>·</span>
-                    <span className="truncate">{sess.subject}</span>
-                  </p>
+                <div className="max-h-72 overflow-y-auto space-y-1 pr-0.5 scrollbar-thin">
+                  {sessions.map((sess) => {
+                    const isSelected = sess.id === activeSessionId;
+                    const cardCount =
+                      sess.columns.lecture.length +
+                      sess.columns.supplementary.length +
+                      sess.columns.questions.length;
+
+                    return (
+                      <button
+                        key={sess.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveSessionId(sess.id);
+                          setIsSessionDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-emerald-50 text-emerald-950 border border-emerald-200/90 font-bold"
+                            : "hover:bg-slate-50 text-slate-800 border border-transparent"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          {/* Khối ngày nhỏ */}
+                          <div
+                            className={`w-8 h-8 rounded-lg flex flex-col items-center justify-center shrink-0 text-center leading-none ${
+                              isSelected
+                                ? "bg-emerald-600 text-white shadow-2xs"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            <span className="text-[11px] font-black">{sess.dateDay}</span>
+                            <span className="text-[7px] font-bold uppercase">{sess.dateMonth}</span>
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-bold truncate">
+                              {sess.title}
+                            </div>
+                            <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                              <span className="font-semibold text-emerald-700">
+                                {cardCount} thẻ
+                              </span>
+                              <span>·</span>
+                              <span className="truncate">{sess.subject}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {isSelected && (
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0 ml-2" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            );
-          })}
-
-          {/* Quick Add Session card at end of scroll row */}
-          <button
-            type="button"
-            onClick={() => setShowNewSessionModal(true)}
-            className="p-3 rounded-2xl border border-dashed border-slate-300 hover:border-emerald-400 bg-slate-50/60 hover:bg-emerald-50/50 text-slate-600 hover:text-emerald-800 font-bold text-xs flex items-center gap-2 flex-shrink-0 transition-all cursor-pointer h-[54px]"
-          >
-            <Plus className="w-4 h-4 text-emerald-600" />
-            <span className="whitespace-nowrap">Thêm buổi học</span>
-          </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ── 3 CỘT CORNELL NOTES BOARD (Trải rộng toàn màn hình) ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 items-start">
-        {/* ══════ CỘT 1: NỘI DUNG BÀI HỌC (Blue Dot) ══════ */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-[0_4px_20px_rgba(6,78,59,0.03)] flex flex-col min-h-[460px]">
+        {/* ══════ CỘT 1: NỘI DUNG BÀI HỌC (Xanh nước biển) ══════ */}
+        <div className="relative overflow-hidden bg-gradient-to-b from-[#eff6ff] via-[#e0f2fe]/70 to-[#f0f9ff] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-blue-200/80 shadow-[0_4px_24px_rgba(37,99,235,0.06)] flex flex-col min-h-[460px]">
+          {/* Hoa văn nền sóng lượn xanh nước biển (phong cách ảnh 2) */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none text-blue-500/10"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 360 600"
+            preserveAspectRatio="none"
+            fill="none"
+          >
+            <path
+              d="M-20,90 Q90,40 180,95 T380,80 L380,-10 L-20,-10 Z"
+              fill="currentColor"
+              opacity="0.5"
+            />
+            <path
+              d="M-20,180 Q100,120 200,190 T380,150"
+              stroke="currentColor"
+              strokeWidth="28"
+              strokeLinecap="round"
+            />
+            <path
+              d="M-20,320 Q80,250 190,330 T380,280"
+              stroke="currentColor"
+              strokeWidth="36"
+              strokeLinecap="round"
+            />
+            <path
+              d="M-20,460 Q110,390 220,470 T380,420"
+              stroke="currentColor"
+              strokeWidth="32"
+              strokeLinecap="round"
+            />
+            <path
+              d="M-20,570 Q90,510 200,580 T380,530"
+              stroke="currentColor"
+              strokeWidth="40"
+              strokeLinecap="round"
+            />
+          </svg>
+
           {/* Column Header */}
-          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+          <div className="relative z-10 flex items-center justify-between pb-3.5 border-b border-blue-200/60">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-xs" />
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-xs ring-2 ring-blue-400/20" />
               <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
                 Nội dung bài học
               </h3>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 text-blue-800 border border-blue-200 shadow-2xs">
               {currentSession.columns.lecture.length}
             </span>
           </div>
@@ -652,16 +697,16 @@ export default function NotesTab({
               setTargetColumn("lecture");
               setShowAddCardModal(true);
             }}
-            className="mt-3.5 w-full py-2 px-3 rounded-xl border border-dashed border-blue-200 hover:border-blue-400 bg-blue-50/30 hover:bg-blue-50/70 text-blue-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            className="relative z-10 mt-3.5 w-full py-2 px-3 rounded-xl border border-dashed border-blue-300 hover:border-blue-500 bg-white/70 hover:bg-white text-blue-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Thêm thẻ</span>
           </button>
 
           {/* Cards List */}
-          <div className="mt-3.5 space-y-3 flex-1 overflow-y-auto pr-0.5">
+          <div className="relative z-10 mt-3.5 space-y-3 flex-1 overflow-y-auto pr-0.5">
             {currentSession.columns.lecture.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-2xl my-auto">
+              <div className="p-6 text-center text-slate-500 text-xs border border-dashed border-blue-200 rounded-2xl my-auto bg-white/60 backdrop-blur-2xs">
                 Chưa có thẻ nào trong mục này. Bấm{" "}
                 <span className="font-bold text-blue-600">+ Thêm thẻ</span> để
                 bắt đầu ghi chú!
@@ -670,7 +715,7 @@ export default function NotesTab({
               currentSession.columns.lecture.map((card) => (
                 <div
                   key={card.id}
-                  className="bg-white rounded-2xl p-4 border border-slate-200 hover:border-blue-300 shadow-2xs hover:shadow-md transition-all group relative"
+                  className="bg-white/95 backdrop-blur-xs rounded-2xl p-4 border border-blue-100/90 hover:border-blue-300 shadow-2xs hover:shadow-md transition-all group relative"
                 >
                   {card.sticker && (
                     <div className="mb-2">
@@ -707,17 +752,46 @@ export default function NotesTab({
           </div>
         </div>
 
-        {/* ══════ CỘT 2: NỘI DUNG BỔ SUNG QUAN TRỌNG (Purple Dot) ══════ */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-[0_4px_20px_rgba(6,78,59,0.03)] flex flex-col min-h-[460px]">
+        {/* ══════ CỘT 2: NỘI DUNG BỔ SUNG QUAN TRỌNG (Đỏ) ══════ */}
+        <div className="relative overflow-hidden bg-gradient-to-b from-[#fff1f2] via-[#ffe4e6]/70 to-[#fff5f5] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-rose-200/80 shadow-[0_4px_24px_rgba(225,29,72,0.06)] flex flex-col min-h-[460px]">
+          {/* Hoa văn nền đường vệt & sóng đỏ (phong cách ảnh 2) */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none text-rose-500/10"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 360 600"
+            preserveAspectRatio="none"
+            fill="none"
+          >
+            <path
+              d="M-20,110 Q120,50 220,120 T380,90"
+              stroke="currentColor"
+              strokeWidth="32"
+              strokeLinecap="round"
+            />
+            <rect x="40" y="180" width="16" height="55" rx="8" transform="rotate(-35 40 180)" fill="currentColor" opacity="0.85" />
+            <rect x="170" y="160" width="18" height="65" rx="9" transform="rotate(-35 170 160)" fill="currentColor" opacity="0.7" />
+            <rect x="280" y="210" width="16" height="50" rx="8" transform="rotate(-35 280 210)" fill="currentColor" opacity="0.8" />
+            <rect x="90" y="310" width="18" height="60" rx="9" transform="rotate(-35 90 310)" fill="currentColor" opacity="0.6" />
+            <rect x="220" y="330" width="18" height="70" rx="9" transform="rotate(-35 220 330)" fill="currentColor" opacity="0.75" />
+            <rect x="50" y="450" width="16" height="55" rx="8" transform="rotate(-35 50 450)" fill="currentColor" opacity="0.6" />
+            <rect x="190" y="460" width="18" height="65" rx="9" transform="rotate(-35 190 460)" fill="currentColor" opacity="0.7" />
+            <path
+              d="M-20,550 Q140,490 250,560 T380,520"
+              stroke="currentColor"
+              strokeWidth="36"
+              strokeLinecap="round"
+            />
+          </svg>
+
           {/* Column Header */}
-          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+          <div className="relative z-10 flex items-center justify-between pb-3.5 border-b border-rose-200/60">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-xs" />
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-xs ring-2 ring-rose-400/20" />
               <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
                 Nội dung bổ sung quan trọng
               </h3>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 text-rose-800 border border-rose-200 shadow-2xs">
               {currentSession.columns.supplementary.length}
             </span>
           </div>
@@ -729,30 +803,30 @@ export default function NotesTab({
               setTargetColumn("supplementary");
               setShowAddCardModal(true);
             }}
-            className="mt-3.5 w-full py-2 px-3 rounded-xl border border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/30 hover:bg-purple-50/70 text-purple-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            className="relative z-10 mt-3.5 w-full py-2 px-3 rounded-xl border border-dashed border-rose-300 hover:border-rose-500 bg-white/70 hover:bg-white text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Thêm thẻ</span>
           </button>
 
           {/* Cards List */}
-          <div className="mt-3.5 space-y-3 flex-1 overflow-y-auto pr-0.5">
+          <div className="relative z-10 mt-3.5 space-y-3 flex-1 overflow-y-auto pr-0.5">
             {currentSession.columns.supplementary.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-2xl my-auto">
+              <div className="p-6 text-center text-slate-500 text-xs border border-dashed border-rose-200 rounded-2xl my-auto bg-white/60 backdrop-blur-2xs">
                 Ghi lại các lưu ý, mẹo giải đề hoặc cạm bẫy hay gặp tại đây.
               </div>
             ) : (
               currentSession.columns.supplementary.map((card) => (
                 <div
                   key={card.id}
-                  className="bg-white rounded-2xl p-4 border border-slate-200 hover:border-purple-300 shadow-2xs hover:shadow-md transition-all group relative"
+                  className="bg-white/95 backdrop-blur-xs rounded-2xl p-4 border border-rose-100/90 hover:border-rose-300 shadow-2xs hover:shadow-md transition-all group relative"
                 >
                   {card.sticker && (
                     <div className="mb-2">
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                           card.stickerColor ||
-                          "bg-purple-50 text-purple-800 border-purple-200"
+                          "bg-rose-50 text-rose-800 border-rose-200"
                         }`}
                       >
                         {card.sticker}
@@ -784,17 +858,53 @@ export default function NotesTab({
           </div>
         </div>
 
-        {/* ══════ CỘT 3: CÂU HỎI ĐỂ CỦNG CỐ KIẾN THỨC (Green Dot) ══════ */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-[0_4px_20px_rgba(6,78,59,0.03)] flex flex-col min-h-[460px]">
+        {/* ══════ CỘT 3: CÂU HỎI ĐỂ CỦNG CỐ KIẾN THỨC (Xanh lá cây) ══════ */}
+        <div className="relative overflow-hidden bg-gradient-to-b from-[#f0fdf4] via-[#dcfce7]/70 to-[#f6fef9] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-emerald-200/80 shadow-[0_4px_24px_rgba(5,150,105,0.06)] flex flex-col min-h-[460px]">
+          {/* Hoa văn nền sóng lượn xanh lá cây (phong cách ảnh 2) */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none text-emerald-600/10"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 360 600"
+            preserveAspectRatio="none"
+            fill="none"
+          >
+            <path
+              d="M-20,80 C80,30 200,140 380,70"
+              stroke="currentColor"
+              strokeWidth="30"
+              strokeLinecap="round"
+            />
+            <path
+              d="M-20,220 C90,160 210,270 380,200"
+              stroke="currentColor"
+              strokeWidth="34"
+              strokeLinecap="round"
+            />
+            <path
+              d="M-20,360 C100,300 220,410 380,340"
+              stroke="currentColor"
+              strokeWidth="28"
+              strokeLinecap="round"
+            />
+            <path
+              d="M-20,490 C110,430 230,540 380,480"
+              stroke="currentColor"
+              strokeWidth="36"
+              strokeLinecap="round"
+            />
+            <circle cx="280" cy="140" r="45" fill="currentColor" opacity="0.4" />
+            <circle cx="70" cy="420" r="55" fill="currentColor" opacity="0.35" />
+          </svg>
+
           {/* Column Header */}
-          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+          <div className="relative z-10 flex items-center justify-between pb-3.5 border-b border-emerald-200/60">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs ring-2 ring-emerald-400/20" />
               <h3 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight">
                 Câu hỏi để củng cố kiến thức
               </h3>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 text-emerald-800 border border-emerald-200 shadow-2xs">
               {currentSession.columns.questions.length}
             </span>
           </div>
@@ -806,16 +916,16 @@ export default function NotesTab({
               setTargetColumn("questions");
               setShowAddCardModal(true);
             }}
-            className="mt-3.5 w-full py-2 px-3 rounded-xl border border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 text-emerald-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            className="relative z-10 mt-3.5 w-full py-2 px-3 rounded-xl border border-dashed border-emerald-300 hover:border-emerald-500 bg-white/70 hover:bg-white text-emerald-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Thêm thẻ</span>
           </button>
 
           {/* Cards List */}
-          <div className="mt-3.5 space-y-3 flex-1 overflow-y-auto pr-0.5">
+          <div className="relative z-10 mt-3.5 space-y-3 flex-1 overflow-y-auto pr-0.5">
             {currentSession.columns.questions.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-2xl my-auto">
+              <div className="p-6 text-center text-slate-500 text-xs border border-dashed border-emerald-200 rounded-2xl my-auto bg-white/60 backdrop-blur-2xs">
                 Tạo câu hỏi gợi nhớ (Active Recall) để ôn tập bài giảng đạt hiệu
                 quả cao nhất!
               </div>
@@ -823,7 +933,7 @@ export default function NotesTab({
               currentSession.columns.questions.map((card) => (
                 <div
                   key={card.id}
-                  className="bg-white rounded-2xl p-4 border border-slate-200 hover:border-emerald-300 shadow-2xs hover:shadow-md transition-all group relative"
+                  className="bg-white/95 backdrop-blur-xs rounded-2xl p-4 border border-emerald-100/90 hover:border-emerald-300 shadow-2xs hover:shadow-md transition-all group relative"
                 >
                   {card.sticker && (
                     <div className="mb-2">
@@ -1127,13 +1237,13 @@ export default function NotesTab({
         </div>
       )}
 
-      {/* ── MODAL: TẠO BUỔI HỌC MỚI ── */}
+      {/* ── MODAL: TẠO CHỦ ĐỀ MỚI ── */}
       {showNewSessionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-emerald-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-slate-900">
-                Tạo chủ đề / Buổi học mới
+                Tạo chủ đề mới
               </h3>
               <button
                 type="button"
@@ -1147,7 +1257,7 @@ export default function NotesTab({
             <form onSubmit={handleCreateSession} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Tên chủ đề bài học:
+                  Tên chủ đề:
                 </label>
                 <input
                   type="text"
@@ -1190,7 +1300,7 @@ export default function NotesTab({
                   type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all cursor-pointer"
                 >
-                  Tạo buổi học
+                  Tạo chủ đề
                 </button>
               </div>
             </form>
