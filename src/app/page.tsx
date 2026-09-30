@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import HeroSection from "@/components/landing/HeroSection";
-import StatsBar from "@/components/landing/StatsBar";
 import FeaturesSection from "@/components/landing/FeaturesSection";
 import AiTutorSection from "@/components/landing/AiTutorSection";
 import SubjectsSection from "@/components/landing/SubjectsSection";
@@ -38,10 +37,7 @@ export default function HomePage() {
         {/* 1. Hero Section (Uses ChatGPT Capy study room background image) */}
         <HeroSection />
 
-        {/* 2. Key Achievements & Metrics Stats Bar */}
-        <StatsBar />
-
-        {/* 3. Core Features Showcase */}
+        {/* 2. Core Features Showcase */}
         <FeaturesSection />
 
         {/* 4. Interactive Capy AI Tutor Section */}
