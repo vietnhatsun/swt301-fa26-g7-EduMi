@@ -487,20 +487,19 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
 
       {/* Main: 50% Left (Form Card), 50% Right (Full Bleed Cover Image) */}
       <div className="w-full h-full flex flex-col lg:flex-row items-stretch relative z-10">
-        
+
         {/* ── LEFT COLUMN (50%): Form Card (Neo đáy bằng justify-end để khi mở rộng card sẽ vươn lên trên mượt mà) ── */}
         <div className="w-full lg:w-1/2 h-full flex flex-col justify-end items-center pb-5 sm:pb-8 lg:pb-10 pt-4 px-6 sm:px-12 lg:px-14 xl:px-20 overflow-y-auto lg:overflow-hidden">
-          
+
           {/* Card Container với Mascot Capybara ngồi ở trên đỉnh card */}
           <div className="w-full max-w-[450px] mx-auto relative pt-16 sm:pt-20">
-            
+
             {/* Mascot Capybara: Trồi lên khi Đăng nhập, thụt xuống núp sau form khi Đăng ký (đồng bộ 1600ms) */}
             <div
-              className={`absolute -top-6 sm:-top-8 left-1/2 -translate-x-1/2 z-0 transition-all duration-[1600ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                mode === "login"
-                  ? "translate-y-0 opacity-100 scale-100 pointer-events-auto"
-                  : "translate-y-32 sm:translate-y-40 opacity-0 scale-95 pointer-events-none"
-              }`}
+              className={`absolute -top-6 sm:-top-8 left-1/2 -translate-x-1/2 z-0 transition-all duration-[1600ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${mode === "login"
+                ? "translate-y-0 opacity-100 scale-100 pointer-events-auto"
+                : "translate-y-32 sm:translate-y-40 opacity-0 scale-95 pointer-events-none"
+                }`}
             >
               <CapybaraMascot isPasswordFocused={isPasswordFocused && !showPassword} />
             </div>
@@ -513,424 +512,415 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
             >
               <div ref={contentInnerRef}>
                 {/* Top Header Switcher Bar (Forest Green) */}
-              <div className="bg-gradient-to-r from-[#064e3b] via-[#047857] to-[#065f46] px-5 py-3 flex items-center justify-between border-b border-emerald-900/20">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 shadow-sm flex-shrink-0 relative bg-white">
-                    <Image
-                      src="/favicon.jpg"
-                      alt="EduMi Logo"
-                      width={32}
-                      height={32}
-                      className="w-full h-full object-cover"
-                    />
+                <div className="bg-gradient-to-r from-[#064e3b] via-[#047857] to-[#065f46] px-5 py-3 flex items-center justify-between border-b border-emerald-900/20">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 shadow-sm flex-shrink-0 relative bg-white">
+                      <Image
+                        src="/favicon.jpg"
+                        alt="EduMi Logo"
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <h2 className="text-white text-xs sm:text-sm font-bold tracking-tight leading-tight">
+                        EduMi Platform
+                      </h2>
+                      <span className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-200/90">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Trực tuyến
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-white text-xs sm:text-sm font-bold tracking-tight leading-tight">
-                      EduMi Platform
-                    </h2>
-                    <span className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-200/90">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Trực tuyến
-                    </span>
-                  </div>
-                </div>
 
-                {/* Switcher Pill Bar với viên trượt chuyển động chuẩn xác 100% */}
-                <div className="relative grid grid-cols-2 items-center bg-black/40 p-0.5 rounded-full border border-white/15 w-[156px]">
-                  {/* Sliding background indicator */}
-                  <div
-                    className={`absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                      mode === "login"
+                  {/* Switcher Pill Bar với viên trượt chuyển động chuẩn xác 100% */}
+                  <div className="relative grid grid-cols-2 items-center bg-black/40 p-0.5 rounded-full border border-white/15 w-[156px]">
+                    {/* Sliding background indicator */}
+                    <div
+                      className={`absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mode === "login"
                         ? "translate-x-0"
                         : "translate-x-[calc(100%+2px)]"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch("login")}
-                    className={`relative z-10 font-bold text-[10px] py-1 text-center rounded-full transition-colors duration-200 cursor-pointer select-none ${
-                      mode === "login" ? "text-[#064e3b]" : "text-emerald-100 hover:text-white"
-                    }`}
-                  >
-                    ĐĂNG NHẬP
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch("register")}
-                    className={`relative z-10 font-bold text-[10px] py-1 text-center rounded-full transition-colors duration-200 cursor-pointer select-none ${
-                      mode === "register" ? "text-[#064e3b]" : "text-emerald-100 hover:text-white"
-                    }`}
-                  >
-                    ĐĂNG KÝ
-                  </button>
-                </div>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-5 sm:p-7">
-                
-                {/* ── BƯỚC XÁC THỰC OTP (NẾU ĐANG Ở STEP VERIFY CỦA ĐĂNG KÝ) ── */}
-                {step === "verify" ? (
-                  <div className="text-left animate-fadeIn">
+                        }`}
+                    />
                     <button
                       type="button"
-                      onClick={() => {
-                        setStep("form");
-                        setToast(null);
-                      }}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#059669] hover:text-[#064e3b] mb-3 transition-colors cursor-pointer"
+                      onClick={() => handleModeSwitch("login")}
+                      className={`relative z-10 font-bold text-[10px] py-1 text-center rounded-full transition-colors duration-200 cursor-pointer select-none ${mode === "login" ? "text-[#064e3b]" : "text-emerald-100 hover:text-white"
+                        }`}
                     >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Đổi thông tin đăng ký</span>
+                      ĐĂNG NHẬP
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => handleModeSwitch("register")}
+                      className={`relative z-10 font-bold text-[10px] py-1 text-center rounded-full transition-colors duration-200 cursor-pointer select-none ${mode === "register" ? "text-[#064e3b]" : "text-emerald-100 hover:text-white"
+                        }`}
+                    >
+                      ĐĂNG KÝ
+                    </button>
+                  </div>
+                </div>
 
-                    <div className="mb-4">
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 text-[#059669] flex items-center justify-center mb-2.5 shadow-sm">
-                        <KeyRound className="w-5 h-5" />
+                {/* Card Body */}
+                <div className="p-5 sm:p-7">
+
+                  {/* ── BƯỚC XÁC THỰC OTP (NẾU ĐANG Ở STEP VERIFY CỦA ĐĂNG KÝ) ── */}
+                  {step === "verify" ? (
+                    <div className="text-left animate-fadeIn">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStep("form");
+                          setToast(null);
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#059669] hover:text-[#064e3b] mb-3 transition-colors cursor-pointer"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Đổi thông tin đăng ký</span>
+                      </button>
+
+                      <div className="mb-4">
+                        <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 text-[#059669] flex items-center justify-center mb-2.5 shadow-sm">
+                          <KeyRound className="w-5 h-5" />
+                        </div>
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0f172a] mb-1">
+                          Xác thực mã OTP ✉️
+                        </h1>
+                        <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
+                          Mã xác thực 6 số đã được gửi đến:
+                          <br />
+                          <span className="font-semibold text-[#047857]">{email}</span>
+                        </p>
                       </div>
-                      <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0f172a] mb-1">
-                        Xác thực mã OTP ✉️
-                      </h1>
-                      <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
-                        Mã xác thực 6 số đã được gửi đến:
-                        <br />
-                        <span className="font-semibold text-[#047857]">{email}</span>
-                      </p>
-                    </div>
 
-                    <div className="my-5">
-                      <label className="block text-xs font-semibold text-[#334155] mb-2 text-center">
-                        Nhập 6 chữ số xác thực
-                      </label>
-                      <div className="flex items-center justify-center gap-2 sm:gap-2.5">
-                        {otpDigits.map((digit, index) => (
-                          <input
-                            key={index}
-                            ref={(el) => {
-                              otpInputRefs.current[index] = el;
-                            }}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => handleOtpChange(index, e.target.value)}
-                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                            onPaste={handleOtpPaste}
-                            disabled={isVerifiedSuccess}
-                            className={`w-11 h-12 sm:w-12 sm:h-14 text-center font-bold text-lg sm:text-xl rounded-xl border transition-all outline-none ${
-                              digit
+                      <div className="my-5">
+                        <label className="block text-xs font-semibold text-[#334155] mb-2 text-center">
+                          Nhập 6 chữ số xác thực
+                        </label>
+                        <div className="flex items-center justify-center gap-2 sm:gap-2.5">
+                          {otpDigits.map((digit, index) => (
+                            <input
+                              key={index}
+                              ref={(el) => {
+                                otpInputRefs.current[index] = el;
+                              }}
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={1}
+                              value={digit}
+                              onChange={(e) => handleOtpChange(index, e.target.value)}
+                              onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                              onPaste={handleOtpPaste}
+                              disabled={isVerifiedSuccess}
+                              className={`w-11 h-12 sm:w-12 sm:h-14 text-center font-bold text-lg sm:text-xl rounded-xl border transition-all outline-none ${digit
                                 ? "bg-white border-[#10b981] text-[#064e3b] shadow-sm ring-2 ring-[#10b981]/20"
                                 : "bg-[#f8fafc] border-slate-200 text-[#0f172a] focus:bg-white focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20"
-                            }`}
-                          />
-                        ))}
+                                }`}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleVerifyOtp()}
-                      disabled={isLoading || isVerifiedSuccess || otpDigits.join("").length !== 6}
-                      className="w-full py-2.5 sm:py-3 px-5 rounded-xl bg-gradient-to-r from-[#10b981] via-[#059669] to-[#047857] hover:from-[#059669] hover:to-[#065f46] text-white font-bold text-xs sm:text-sm shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:shadow-[0_10px_25px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading ? (
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : isVerifiedSuccess ? (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Đã kích hoạt thành công</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Xác thực tài khoản</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                      <span>Chưa nhận được mã?</span>
-                      {canResend ? (
-                        <button
-                          type="button"
-                          onClick={handleResendOtp}
-                          disabled={isResending}
-                          className="font-bold text-[#059669] hover:text-[#064e3b] inline-flex items-center gap-1 cursor-pointer transition-colors"
-                        >
-                          {isResending ? (
-                            <span className="animate-pulse">Đang gửi...</span>
-                          ) : (
-                            <>
-                              <RotateCcw className="w-3.5 h-3.5" />
-                              <span>Gửi lại mã OTP</span>
-                            </>
-                          )}
-                        </button>
-                      ) : (
-                        <span className="text-slate-400 font-medium">
-                          Gửi lại sau <strong className="text-[#059669]">{resendCooldown}s</strong>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  /* ── FORM CHÍNH: ĐĂNG NHẬP HOẶC ĐĂNG KÝ (EXPANDING SMOOTHLY) ── */
-                  <div>
-                    {/* Tiêu đề mượt mà */}
-                    <div className="mb-3.5 text-left transition-all duration-300">
-                      <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0f172a] mb-1">
-                        {mode === "login" ? "Chào mừng trở lại! 👋" : "Bắt đầu cùng EduMi 🚀"}
-                      </h1>
-                      <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
-                        {mode === "login" ? (
+                      <button
+                        type="button"
+                        onClick={() => handleVerifyOtp()}
+                        disabled={isLoading || isVerifiedSuccess || otpDigits.join("").length !== 6}
+                        className="w-full py-2.5 sm:py-3 px-5 rounded-xl bg-gradient-to-r from-[#10b981] via-[#059669] to-[#047857] hover:from-[#059669] hover:to-[#065f46] text-white font-bold text-xs sm:text-sm shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:shadow-[0_10px_25px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : isVerifiedSuccess ? (
                           <>
-                            Đăng nhập vào <span className="text-[#059669] font-semibold">EduMi</span> để tiếp tục học và luyện đề.
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Đã kích hoạt thành công</span>
                           </>
                         ) : (
                           <>
-                            Đăng ký tài khoản <span className="text-[#059669] font-semibold">EduMi</span> để bắt đầu học tập.
+                            <span>Xác thực tài khoản</span>
+                            <ArrowRight className="w-4 h-4" />
                           </>
                         )}
-                      </p>
-                    </div>
+                      </button>
 
-                    {/* Lắng nghe thông báo URL và kích hoạt Floating Toast */}
-                    <Suspense fallback={null}>
-                      <AuthToastListener
-                        onToast={showToast}
-                        onPrefillEmail={(prefilledEmail) => {
-                          setEmail(prefilledEmail);
-                          setMode("login");
-                        }}
-                      />
-                    </Suspense>
-
-                    {/* Google OAuth Button */}
-                    <button
-                      type="button"
-                      onClick={handleGoogleLogin}
-                      disabled={isLoading || isGoogleLoading}
-                      className="w-full flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-[#10b981]/50 text-slate-700 hover:text-slate-900 text-xs sm:text-sm font-medium transition-all duration-200 shadow-sm hover:shadow group cursor-pointer disabled:opacity-60 mb-3"
-                    >
-                      {isGoogleLoading ? (
-                        <div className="w-4 h-4 border-2 border-slate-400 border-t-[#10b981] rounded-full animate-spin" />
-                      ) : (
-                        <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5 flex-shrink-0" viewBox="0 0 24 24">
-                          <path
-                            fill="#4285F4"
-                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                          />
-                          <path
-                            fill="#34A853"
-                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                          />
-                          <path
-                            fill="#FBBC05"
-                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                          />
-                          <path
-                            fill="#EA4335"
-                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                          />
-                        </svg>
-                      )}
-                      <span>
-                        {isGoogleLoading
-                          ? "Đang kết nối Google..."
-                          : mode === "login"
-                          ? "Tiếp tục với Google"
-                          : "Đăng ký nhanh với Google"}
-                      </span>
-                    </button>
-
-                    {/* Cụm nội dung (Divider + Form + Button + Security) */}
-                    <div>
-                      {/* Divider */}
-                      <div className="relative my-3 text-center">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-slate-200" />
-                        </div>
-                        <div className="relative flex justify-center">
-                          <span
-                            key={hasSwitched ? mode : "initial"}
-                            className={`bg-white px-3 text-[10px] text-[#94a3b8] uppercase tracking-wider font-semibold ${
-                              hasSwitched ? "animate-fade-slide-rtl" : ""
-                            }`}
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span>Chưa nhận được mã?</span>
+                        {canResend ? (
+                          <button
+                            type="button"
+                            onClick={handleResendOtp}
+                            disabled={isResending}
+                            className="font-bold text-[#059669] hover:text-[#064e3b] inline-flex items-center gap-1 cursor-pointer transition-colors"
                           >
-                            {mode === "login" ? "Hoặc bằng Email" : "Hoặc tạo bằng Email"}
+                            {isResending ? (
+                              <span className="animate-pulse">Đang gửi...</span>
+                            ) : (
+                              <>
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Gửi lại mã OTP</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 font-medium">
+                            Gửi lại sau <strong className="text-[#059669]">{resendCooldown}s</strong>
                           </span>
-                        </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── FORM CHÍNH: ĐĂNG NHẬP HOẶC ĐĂNG KÝ (EXPANDING SMOOTHLY) ── */
+                    <div>
+                      {/* Tiêu đề mượt mà */}
+                      <div className="mb-3.5 text-left transition-all duration-300">
+                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0f172a] mb-1">
+                          {mode === "login" ? "Chào mừng trở lại! 👋" : "Bắt đầu cùng EduMi 🚀"}
+                        </h1>
+                        <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
+                          {mode === "login" ? (
+                            <>
+                              Đăng nhập vào <span className="text-[#059669] font-semibold">EduMi</span> để tiếp tục học và luyện đề.
+                            </>
+                          ) : (
+                            <>
+                              Đăng ký tài khoản <span className="text-[#059669] font-semibold">EduMi</span> để bắt đầu học tập.
+                            </>
+                          )}
+                        </p>
                       </div>
 
-                      {/* Form Fields */}
-                      <form onSubmit={handleSubmit} className="space-y-3">
-                        {/* Cả cụm trường thông tin: Role tabs, Họ và tên (khi ở Đăng ký), Email, Mật khẩu
-                            Fade cùng 1 lúc từ phải sang trái khi chuyển đổi form */}
-                        <div
-                          key={hasSwitched ? `fields-cluster-${mode}` : "fields-cluster-initial"}
-                          className={`space-y-3 ${hasSwitched ? "animate-fade-slide-rtl" : ""}`}
-                        >
-                          {/* KHU VỰC ĐĂNG KÝ (Role selector + Họ và tên) - Cụm ảnh 2 */}
-                          {mode === "register" && (
-                            <div className="space-y-3">
-                              {/* Role Selection Tabs */}
-                              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 border border-slate-200 rounded-xl">
-                                <button
-                                  type="button"
-                                  onClick={() => setRole("student")}
-                                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                    role === "student"
-                                      ? "bg-[#059669] text-white shadow-sm"
-                                      : "text-slate-600 hover:text-slate-900"
-                                  }`}
-                                >
-                                  <GraduationCap className="w-3.5 h-3.5" />
-                                  <span>Học sinh</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setRole("teacher")}
-                                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                    role === "teacher"
-                                      ? "bg-[#059669] text-white shadow-sm"
-                                      : "text-slate-600 hover:text-slate-900"
-                                  }`}
-                                >
-                                  <BookOpen className="w-3.5 h-3.5" />
-                                  <span>Giáo viên</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setRole("parent")}
-                                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                    role === "parent"
-                                      ? "bg-[#059669] text-white shadow-sm"
-                                      : "text-slate-600 hover:text-slate-900"
-                                  }`}
-                                >
-                                  <Users className="w-3.5 h-3.5" />
-                                  <span>Phụ huynh</span>
-                                </button>
-                              </div>
+                      {/* Lắng nghe thông báo URL và kích hoạt Floating Toast */}
+                      <Suspense fallback={null}>
+                        <AuthToastListener
+                          onToast={showToast}
+                          onPrefillEmail={(prefilledEmail) => {
+                            setEmail(prefilledEmail);
+                            setMode("login");
+                          }}
+                        />
+                      </Suspense>
 
-                              {/* Họ và tên Field */}
-                              <div>
-                                <label className="block text-xs font-semibold text-[#334155] mb-1 text-left">
-                                  Họ và tên
-                                </label>
-                                <div className="relative">
-                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94a3b8]">
-                                    <User className="w-4 h-4" />
-                                  </div>
-                                  <input
-                                    type="text"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    placeholder="Nguyễn Văn A"
-                                    required={mode === "register"}
-                                    className="w-full pl-9 pr-3 py-2 bg-[#f8fafc] border border-slate-200 focus:bg-white focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20 rounded-xl text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition-all outline-none"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                      {/* Google OAuth Button */}
+                      <button
+                        type="button"
+                        onClick={handleGoogleLogin}
+                        disabled={isLoading || isGoogleLoading}
+                        className="w-full flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-[#10b981]/50 text-slate-700 hover:text-slate-900 text-xs sm:text-sm font-medium transition-all duration-200 shadow-sm hover:shadow group cursor-pointer disabled:opacity-60 mb-3"
+                      >
+                        {isGoogleLoading ? (
+                          <div className="w-4 h-4 border-2 border-slate-400 border-t-[#10b981] rounded-full animate-spin" />
+                        ) : (
+                          <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5 flex-shrink-0" viewBox="0 0 24 24">
+                            <path
+                              fill="#4285F4"
+                              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            />
+                            <path
+                              fill="#34A853"
+                              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            />
+                            <path
+                              fill="#FBBC05"
+                              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                            />
+                            <path
+                              fill="#EA4335"
+                              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                            />
+                          </svg>
+                        )}
+                        <span>
+                          {isGoogleLoading
+                            ? "Đang kết nối Google..."
+                            : mode === "login"
+                              ? "Tiếp tục với Google"
+                              : "Đăng ký nhanh với Google"}
+                        </span>
+                      </button>
 
-                          {/* Email Field (Dùng chung cho cả 2) */}
-                          <div>
-                            <label className="block text-xs font-semibold text-[#334155] mb-1 text-left">
-                              Địa chỉ Email
-                            </label>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94a3b8]">
-                                <Mail className="w-4 h-4" />
-                              </div>
-                              <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="student@edumi.vn"
-                                required
-                                className="w-full pl-9 pr-3 py-2 bg-[#f8fafc] border border-slate-200 focus:bg-white focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20 rounded-xl text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition-all outline-none"
-                              />
-                            </div>
+                      {/* Cụm nội dung (Divider + Form + Button + Security) */}
+                      <div>
+                        {/* Divider */}
+                        <div className="relative my-3 text-center">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-slate-200" />
                           </div>
-
-                          {/* Password Field (Dùng chung cho cả 2) */}
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <label className="block text-xs font-semibold text-[#334155]">
-                                Mật khẩu
-                              </label>
-                              {mode === "login" && (
-                                <Link
-                                  href="/forgot-password"
-                                  className="text-[11px] text-[#059669] hover:text-[#047857] hover:underline font-semibold transition-colors"
-                                >
-                                  Quên mật khẩu?
-                                </Link>
-                              )}
-                            </div>
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94a3b8]">
-                                <Lock className="w-4 h-4" />
-                              </div>
-                              <input
-                                type={showPassword ? "text" : "password"}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                onFocus={() => setIsPasswordFocused(true)}
-                                onBlur={() => setIsPasswordFocused(false)}
-                                placeholder="••••••••"
-                                required
-                                className="w-full pl-9 pr-10 py-2 bg-[#f8fafc] border border-slate-200 focus:bg-white focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20 rounded-xl text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition-all outline-none"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#94a3b8] hover:text-[#475569] transition-colors cursor-pointer"
-                              >
-                                {showPassword ? (
-                                  <EyeOff className="w-4 h-4" />
-                                ) : (
-                                  <Eye className="w-4 h-4" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Submit Button (Chuyển đổi text mượt mà) */}
-                        <button
-                          type="submit"
-                          disabled={isLoading}
-                          className="w-full mt-2 py-2.5 sm:py-3 px-5 rounded-xl bg-gradient-to-r from-[#10b981] via-[#059669] to-[#047857] hover:from-[#059669] hover:to-[#065f46] text-white font-bold text-xs sm:text-sm shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:shadow-[0_10px_25px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {isLoading ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          ) : (
+                          <div className="relative flex justify-center">
                             <span
                               key={hasSwitched ? mode : "initial"}
-                              className={`${
-                                hasSwitched ? "animate-fade-slide-rtl" : ""
-                              } inline-flex items-center gap-2`}
+                              className={`bg-white px-3 text-[10px] text-[#94a3b8] uppercase tracking-wider font-semibold ${hasSwitched ? "animate-fade-slide-rtl" : ""
+                                }`}
                             >
-                              <span>{mode === "login" ? "Đăng nhập" : "Đăng ký ngay"}</span>
-                              <ArrowRight className="w-4 h-4" />
+                              {mode === "login" ? "Hoặc bằng Email" : "Hoặc tạo bằng Email"}
                             </span>
-                          )}
-                        </button>
-
-                        {/* Security text */}
-                        <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium select-none">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                          <span>Thông tin được bảo mật tuyệt đối</span>
+                          </div>
                         </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
 
-              </div>
+                        {/* Form Fields */}
+                        <form onSubmit={handleSubmit} className="space-y-3">
+                          {/* Cả cụm trường thông tin: Role tabs, Họ và tên (khi ở Đăng ký), Email, Mật khẩu
+                            Fade cùng 1 lúc từ phải sang trái khi chuyển đổi form */}
+                          <div
+                            key={hasSwitched ? `fields-cluster-${mode}` : "fields-cluster-initial"}
+                            className={`space-y-3 ${hasSwitched ? "animate-fade-slide-rtl" : ""}`}
+                          >
+                            {/* KHU VỰC ĐĂNG KÝ (Role selector + Họ và tên) - Cụm ảnh 2 */}
+                            {mode === "register" && (
+                              <div className="space-y-3">
+                                {/* Role Selection Tabs */}
+                                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 border border-slate-200 rounded-xl">
+                                  <button
+                                    type="button"
+                                    onClick={() => setRole("student")}
+                                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${role === "student"
+                                      ? "bg-[#059669] text-white shadow-sm"
+                                      : "text-slate-600 hover:text-slate-900"
+                                      }`}
+                                  >
+                                    <GraduationCap className="w-3.5 h-3.5" />
+                                    <span>Học sinh</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRole("teacher")}
+                                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${role === "teacher"
+                                      ? "bg-[#059669] text-white shadow-sm"
+                                      : "text-slate-600 hover:text-slate-900"
+                                      }`}
+                                  >
+                                    <BookOpen className="w-3.5 h-3.5" />
+                                    <span>Giáo viên</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRole("parent")}
+                                    className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${role === "parent"
+                                      ? "bg-[#059669] text-white shadow-sm"
+                                      : "text-slate-600 hover:text-slate-900"
+                                      }`}
+                                  >
+                                    <Users className="w-3.5 h-3.5" />
+                                    <span>Phụ huynh</span>
+                                  </button>
+                                </div>
+
+                                {/* Họ và tên Field */}
+                                <div>
+                                  <label className="block text-xs font-semibold text-[#334155] mb-1 text-left">
+                                    Họ và tên
+                                  </label>
+                                  <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94a3b8]">
+                                      <User className="w-4 h-4" />
+                                    </div>
+                                    <input
+                                      type="text"
+                                      value={fullName}
+                                      onChange={(e) => setFullName(e.target.value)}
+                                      placeholder="Nguyễn Văn A"
+                                      required={mode === "register"}
+                                      className="w-full pl-9 pr-3 py-2 bg-[#f8fafc] border border-slate-200 focus:bg-white focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20 rounded-xl text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition-all outline-none"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Email Field (Dùng chung cho cả 2) */}
+                            <div>
+                              <label className="block text-xs font-semibold text-[#334155] mb-1 text-left">
+                                Địa chỉ Email
+                              </label>
+                              <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94a3b8]">
+                                  <Mail className="w-4 h-4" />
+                                </div>
+                                <input
+                                  type="email"
+                                  value={email}
+                                  onChange={(e) => setEmail(e.target.value)}
+                                  placeholder="student@edumi.vn"
+                                  required
+                                  className="w-full pl-9 pr-3 py-2 bg-[#f8fafc] border border-slate-200 focus:bg-white focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20 rounded-xl text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition-all outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Password Field (Dùng chung cho cả 2) */}
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="block text-xs font-semibold text-[#334155]">
+                                  Mật khẩu
+                                </label>
+                                {mode === "login" && (
+                                  <Link
+                                    href="/forgot-password"
+                                    className="text-[11px] text-[#059669] hover:text-[#047857] hover:underline font-semibold transition-colors"
+                                  >
+                                    Quên mật khẩu?
+                                  </Link>
+                                )}
+                              </div>
+                              <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94a3b8]">
+                                  <Lock className="w-4 h-4" />
+                                </div>
+                                <input
+                                  type={showPassword ? "text" : "password"}
+                                  value={password}
+                                  onChange={(e) => setPassword(e.target.value)}
+                                  onFocus={() => setIsPasswordFocused(true)}
+                                  onBlur={() => setIsPasswordFocused(false)}
+                                  placeholder="••••••••"
+                                  required
+                                  className="w-full pl-9 pr-10 py-2 bg-[#f8fafc] border border-slate-200 focus:bg-white focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20 rounded-xl text-xs sm:text-sm text-[#0f172a] placeholder-[#94a3b8] transition-all outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#94a3b8] hover:text-[#475569] transition-colors cursor-pointer"
+                                >
+                                  {showPassword ? (
+                                    <EyeOff className="w-4 h-4" />
+                                  ) : (
+                                    <Eye className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Submit Button (Chuyển đổi text mượt mà) */}
+                          <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full mt-2 py-2.5 sm:py-3 px-5 rounded-xl bg-gradient-to-r from-[#10b981] via-[#059669] to-[#047857] hover:from-[#059669] hover:to-[#065f46] text-white font-bold text-xs sm:text-sm shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:shadow-[0_10px_25px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            {isLoading ? (
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <span
+                                key={hasSwitched ? mode : "initial"}
+                                className={`${hasSwitched ? "animate-fade-slide-rtl" : ""
+                                  } inline-flex items-center gap-2`}
+                              >
+                                <span>{mode === "login" ? "Đăng nhập" : "Đăng ký ngay"}</span>
+                                <ArrowRight className="w-4 h-4" />
+                              </span>
+                            )}
+                          </button>
+
+                          {/* Security text */}
+                          <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium select-none">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                            <span>Thông tin được bảo mật tuyệt đối</span>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
               </div>
             </div>
           </div>
@@ -956,23 +946,21 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
         <div
           role="alert"
           aria-live="assertive"
-          className={`fixed bottom-6 right-6 z-50 max-w-sm sm:max-w-md w-[calc(100vw-3rem)] p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18),0_4px_12px_rgba(0,0,0,0.08)] border backdrop-blur-xl bg-white/95 flex items-start gap-3.5 transition-all duration-300 animate-slide-up-fade ${
-            toast.type === "error"
-              ? "border-red-200/90"
-              : toast.type === "success"
+          className={`fixed bottom-6 right-6 z-50 max-w-sm sm:max-w-md w-[calc(100vw-3rem)] p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18),0_4px_12px_rgba(0,0,0,0.08)] border backdrop-blur-xl bg-white/95 flex items-start gap-3.5 transition-all duration-300 animate-slide-up-fade ${toast.type === "error"
+            ? "border-red-200/90"
+            : toast.type === "success"
               ? "border-emerald-200/90"
               : "border-amber-200/90"
-          }`}
+            }`}
         >
           {/* Icon Badge */}
           <div
-            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs ${
-              toast.type === "error"
-                ? "bg-red-50 text-red-600 border border-red-100"
-                : toast.type === "success"
+            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs ${toast.type === "error"
+              ? "bg-red-50 text-red-600 border border-red-100"
+              : toast.type === "success"
                 ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                 : "bg-amber-50 text-amber-600 border border-amber-100"
-            }`}
+              }`}
           >
             {toast.type === "error" ? (
               <AlertCircle className="w-5 h-5" />
