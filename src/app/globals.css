@@ -374,4 +374,94 @@ body {
 .animate-star-3 {
   animation: starTwinkle3 2.2s ease-in-out infinite;
 }
+@keyframes classTitleDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(-52px) rotate(-8deg) scale(1.08);
+    filter: blur(7px);
+  }
+  58% {
+    opacity: 1;
+    transform: translateY(7px) rotate(1deg) scale(0.98);
+    filter: blur(0);
+  }
+  78% {
+    transform: translateY(-3px) rotate(0deg) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+    filter: blur(0);
+  }
+}
 
+@keyframes classTypingCaret {
+  0%, 45% { opacity: 1; }
+  46%, 100% { opacity: 0; }
+}
+
+@keyframes classHeroMascotPop {
+  from {
+    opacity: 0;
+    transform: translateY(190px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.class-title-letter {
+  display: inline-block;
+  opacity: 0;
+  transform-origin: 50% 100%;
+  animation: classTitleDrop 0.72s cubic-bezier(0.17, 0.84, 0.33, 1.18) forwards;
+  will-change: transform, opacity;
+}
+
+.class-typewriter-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 3px;
+  vertical-align: -0.16em;
+  border-radius: 999px;
+  background: #092235;
+  animation: classTypingCaret 0.72s steps(1, end) infinite;
+}
+
+.class-hero-mascot-pop {
+  opacity: 0;
+  transform-origin: 50% 100%;
+  animation: classHeroMascotPop 1.05s cubic-bezier(0.16, 1, 0.3, 1) 0.45s forwards;
+  will-change: transform, opacity;
+}
+
+.class-card-reveal {
+  opacity: 0;
+  transform: translateY(38px) scale(0.985);
+  transition:
+    opacity 1.05s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1.05s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.class-card-reveal-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .class-title-letter,
+  .class-hero-mascot-pop,
+  .class-card-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+    transition: none;
+  }
+
+  .class-typewriter-caret {
+    display: none;
+  }
+}
