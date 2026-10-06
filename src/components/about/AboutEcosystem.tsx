@@ -99,13 +99,13 @@ export default function AboutEcosystem() {
             </div>
 
             {/* Right Mockup */}
-            <div className="lg:col-span-7 rounded-2xl overflow-hidden shadow-xl border border-slate-200 bg-slate-900 relative aspect-[16/9] group order-1 lg:order-2">
+            <div className="lg:col-span-7 rounded-2xl overflow-hidden shadow-xl border border-slate-200 bg-white relative aspect-[16/9] group order-1 lg:order-2">
               <Image
-                src="/about-mockup-dashboard.jpg"
+                src="/about-mockup-dashboard.png"
                 alt="EduMi Dashboard học tập thông minh"
                 fill
                 sizes="(max-width: 1024px) 100vw, 60vw"
-                className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                className="object-cover object-top group-hover:scale-[1.02] transition-transform duration-500"
               />
             </div>
           </div>
