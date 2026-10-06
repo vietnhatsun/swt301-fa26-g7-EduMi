@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { X, CheckCircle, Copy, Check, QrCode, ShieldCheck, Sparkles, Users, Key, ExternalLink } from "lucide-react";
 import { PricingPlan, GroupSize } from "./PremiumSections";
 
 interface CheckoutModalProps {
