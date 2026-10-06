@@ -12,6 +12,7 @@ import {
   Sparkles,
   Mail,
   Heart,
+  Crown,
 } from "lucide-react";
 
 // Social Icons SVG Components
@@ -140,6 +141,18 @@ export default function LandingFooter() {
                 </div>
                 <span className="text-xs sm:text-[13px] font-medium">
                   Bộ thẻ Flashcard
+                </span>
+              </Link>
+
+              <Link
+                href="/premium"
+                className="group flex items-center gap-3 text-amber-300 hover:text-amber-200 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-center text-amber-300 flex-shrink-0 group-hover:bg-amber-500/25 group-hover:text-amber-200 group-hover:border-amber-400/50 transition-all shadow-sm">
+                  <Crown className="w-4 h-4" />
+                </div>
+                <span className="text-xs sm:text-[13px] font-bold text-amber-300">
+                  Gói học Premium
                 </span>
               </Link>
             </div>

@@ -203,8 +203,32 @@ export default function PricingSection() {
           ))}
         </div>
 
+        {/* Link to Full Premium Hub */}
+        <div className="mt-10 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50 via-emerald-50 to-teal-50 border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 text-center sm:text-left">
+            <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-lg flex-shrink-0 shadow-2xs">
+              👑
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900">
+                Tìm kiếm gói học theo từng tổ hợp môn Toán, Văn, Lý, Hóa hay Bộ đề ĐGNL ĐHQG 2026?
+              </p>
+              <p className="text-xs text-slate-600">
+                Luyện đúng khối thi bạn cần với chi phí chỉ từ 149.000đ/tháng và nhận ưu đãi học nhóm đến 20%.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/premium"
+            className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 flex-shrink-0"
+          >
+            <span>Khám phá Gói Premium</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
         {/* Security & Payment guarantee note */}
-        <div className="mt-12 text-center text-xs text-slate-500 flex flex-wrap items-center justify-center gap-4">
+        <div className="mt-8 text-center text-xs text-slate-500 flex flex-wrap items-center justify-center gap-4">
           <span className="flex items-center gap-1.5 font-semibold text-slate-600">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             Thanh toán an toàn SePay / VietQR

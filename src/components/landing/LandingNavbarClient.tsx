@@ -263,29 +263,29 @@ export default function LandingNavbarClient({ initialUser }: { initialUser: User
               <span className="h-4.5 w-px bg-slate-200/90 mx-1.5 flex-shrink-0" />
 
               {/* Upgrade Button inside */}
-              <a
-                href="#pricing"
-                className="relative overflow-hidden group/premium h-8 px-3.5 rounded-full bg-gradient-to-r from-[#FFF5CC] via-[#FFEBB0] to-[#FFE082] hover:from-[#FFECA0] hover:to-[#FFD54F] text-amber-950 border border-amber-300/90 shadow-[0_0_10px_rgba(245,158,11,0.15)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)] font-black text-[11px] sm:text-xs tracking-wider uppercase flex items-center gap-1.5 transition-all flex-shrink-0"
+              <Link
+                href="/premium"
+                className="relative overflow-hidden group/premium h-8 px-3.5 rounded-full bg-gradient-to-r from-[#FFF5CC] via-[#FFEBB0] to-[#FFE082] hover:from-[#FFECA0] hover:to-[#FFD54F] text-amber-950 border border-amber-300/90 shadow-[0_0_10px_rgba(245,158,11,0.15)] hover:shadow-[0_0_16px_rgba(245,158,11,0.4)] font-black text-[11px] sm:text-xs tracking-wider uppercase flex items-center gap-1.5 transition-all flex-shrink-0 cursor-pointer"
                 title="Khám phá các gói học nâng cấp"
               >
                 <Crown className="w-3.5 h-3.5 text-amber-600 fill-amber-500 relative z-10" />
                 <span className="relative z-10">Nâng cấp</span>
                 {/* Diagonal light beam sweep on upgrade button */}
                 <span className="absolute inset-0 -translate-x-[150%] group-hover/premium:translate-x-[150%] transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/60 to-transparent skew-x-[-25deg] pointer-events-none" />
-              </a>
+              </Link>
             </div>
           </div>
 
           {/* ── Mobile Action Buttons (Right - Mobile/Tablet) ── */}
           <div className="flex lg:hidden items-center gap-2">
             {/* Mobile Premium Button */}
-            <a
-              href="#pricing"
-              className="h-8 px-3 rounded-full bg-gradient-to-r from-[#FFF5CC] to-[#FFE082] text-amber-950 border border-amber-300 shadow-2xs font-black text-[11px] tracking-wider uppercase flex items-center gap-1"
+            <Link
+              href="/premium"
+              className="h-8 px-3 rounded-full bg-gradient-to-r from-[#FFF5CC] to-[#FFE082] text-amber-950 border border-amber-300 shadow-2xs font-black text-[11px] tracking-wider uppercase flex items-center gap-1 cursor-pointer"
             >
               <Crown className="w-3 h-3 text-amber-600 fill-amber-500" />
               <span>PREMIUM</span>
-            </a>
+            </Link>
 
             {/* Hamburger Button */}
             <button
