@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, Suspense } from "react";
+import React, { useState, useRef, useEffect, Suspense, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -112,9 +112,14 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
   // ── FLOATING TOAST NOTIFICATION STATE (Cố định góc dưới bên phải) ──
   const [toast, setToast] = useState<ToastState | null>(null);
 
-  const showToast = (type: "error" | "success" | "warning", message: string, title?: string) => {
+  const showToast = useCallback((type: "error" | "success" | "warning", message: string, title?: string) => {
     setToast({ type, message, title });
-  };
+  }, []);
+
+  const handlePrefillEmail = useCallback((prefilledEmail: string) => {
+    setEmail(prefilledEmail);
+    setMode("login");
+  }, []);
 
   // Tự động ẩn toast sau 6 giây
   useEffect(() => {
@@ -284,10 +289,13 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
           return;
         }
 
-        // Đăng nhập thành công -> chuyển hướng sang trang cá nhân (/profile)
-        showToast("success", "Đăng nhập thành công! Đang chuyển hướng vào hồ sơ học sinh...", "Đăng nhập thành công 🎉");
+        const redirectUrl = data.redirectUrl || "/profile";
+        const roleLabel = data.roleLabel || "hồ sơ";
+
+        // Đăng nhập thành công -> chuyển hướng theo vai trò tài khoản
+        showToast("success", `Đăng nhập thành công! Đang chuyển hướng vào cổng ${roleLabel}...`, "Đăng nhập thành công 🎉");
         setTimeout(() => {
-          window.location.href = "/profile";
+          router.push(redirectUrl);
         }, 600);
       } catch (err: unknown) {
         console.error("[Login Client Error]:", err);
@@ -693,10 +701,7 @@ export default function AuthContainer({ initialMode }: AuthContainerProps) {
                       <Suspense fallback={null}>
                         <AuthToastListener
                           onToast={showToast}
-                          onPrefillEmail={(prefilledEmail) => {
-                            setEmail(prefilledEmail);
-                            setMode("login");
-                          }}
+                          onPrefillEmail={handlePrefillEmail}
                         />
                       </Suspense>
 

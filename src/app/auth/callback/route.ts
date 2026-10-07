@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import type { CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import {
@@ -6,11 +7,16 @@ import {
   SESSION_COOKIE_NAME,
   DEFAULT_SESSION_DURATION,
 } from "@/lib/auth-session";
+import { getRoleHomePath, isUserRole } from "@/lib/auth-roles";
+
+function teacherCodeFromId(id: string) {
+  return `GV-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/profile";
+  const requestedNext = searchParams.get("next");
 
   if (!code) {
     console.error("[Auth Callback]: No code found in request");
@@ -20,7 +26,7 @@ export async function GET(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  const cookiesToSetLater: { name: string; value: string; options: any }[] = [];
+  const cookiesToSetLater: { name: string; value: string; options: CookieOptions }[] = [];
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -50,16 +56,12 @@ export async function GET(request: NextRequest) {
   }
 
   const serviceClient = createServiceClient();
-
-  // 1. Kiểm tra tài khoản trong bảng users
   const { data: dbUser } = await serviceClient
     .from("users")
     .select("id, email, password_hash, full_name, role, status, is_verified, avatar_url")
     .eq("email", cleanEmail)
     .maybeSingle();
 
-  // 2. NẾU ĐÃ ĐĂNG KÝ BẰNG MẬT KHẨU (password_hash !== null):
-  // -> CHẶN NGAY! Không cho phép dùng Google để đăng nhập hay ghi đè tài khoản này.
   if (dbUser && dbUser.password_hash !== null) {
     try {
       await supabase.auth.signOut();
@@ -70,13 +72,14 @@ export async function GET(request: NextRequest) {
     const conflictResponse = NextResponse.redirect(
       `${origin}/login?error=account_exists_with_password&email=${encodeURIComponent(cleanEmail)}`
     );
-    // Xóa session cookie nếu có
-    conflictResponse.cookies.set("edumi_session", "", { path: "/", maxAge: 0 });
+    conflictResponse.cookies.set(SESSION_COOKIE_NAME, "", { path: "/", maxAge: 0 });
     return conflictResponse;
   }
 
-  // 3. NẾU LÀ TÀI KHOẢN GOOGLE HỢP LỆ (Chưa có trong DB, hoặc đã có và password_hash === null):
   let userId = dbUser?.id || authUser.id;
+  const userRole = isUserRole(dbUser?.role) ? dbUser.role : "student";
+  const roleHomePath = getRoleHomePath(userRole);
+  const redirectPath = userRole === "parent" ? roleHomePath : requestedNext?.startsWith("/") ? requestedNext : roleHomePath;
   const fullName =
     dbUser?.full_name ||
     authUser.user_metadata?.full_name ||
@@ -89,7 +92,6 @@ export async function GET(request: NextRequest) {
     null;
 
   if (!dbUser) {
-    // Người dùng mới đăng nhập Google lần đầu -> Tạo vào bảng users
     const { data: newUser } = await serviceClient
       .from("users")
       .insert({
@@ -97,7 +99,7 @@ export async function GET(request: NextRequest) {
         email: cleanEmail,
         full_name: fullName,
         avatar_url: avatarUrl,
-        role: "student",
+        role: userRole,
         status: "active",
         is_verified: true,
         password_hash: null,
@@ -109,7 +111,6 @@ export async function GET(request: NextRequest) {
       userId = newUser.id;
     }
   } else {
-    // Đã có trong DB -> Cập nhật trạng thái active & verified
     await serviceClient
       .from("users")
       .update({
@@ -121,63 +122,61 @@ export async function GET(request: NextRequest) {
       .eq("id", dbUser.id);
   }
 
-  // 4. Lấy hoặc tạo hồ sơ học sinh (student_profiles)
-  let { data: studentProfile } = await serviceClient
-    .from("student_profiles")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (!studentProfile) {
-    const studentCode = `EDM-${Math.floor(100000 + Math.random() * 900000)}`;
-    const { data: newProfile } = await serviceClient
+  let studentCode = "";
+  if (userRole === "student") {
+    let { data: studentProfile } = await serviceClient
       .from("student_profiles")
-      .insert({
-        user_id: userId,
-        student_code: studentCode,
-        current_streak: 0,
-        longest_streak: 0,
-        total_points: 0,
-      })
-      .select()
+      .select("*")
+      .eq("user_id", userId)
       .maybeSingle();
 
-    if (newProfile) {
-      studentProfile = newProfile;
+    if (!studentProfile) {
+      const generatedCode = `EDM-${Math.floor(100000 + Math.random() * 900000)}`;
+      const { data: newProfile } = await serviceClient
+        .from("student_profiles")
+        .insert({
+          user_id: userId,
+          student_code: generatedCode,
+          current_streak: 0,
+          longest_streak: 0,
+          total_points: 0,
+        })
+        .select()
+        .maybeSingle();
+
+      if (newProfile) {
+        studentProfile = newProfile;
+      }
+    }
+
+    studentCode = studentProfile?.student_code || "EDM-784920";
+  } else if (userRole === "teacher") {
+    studentCode = teacherCodeFromId(userId);
+
+    const { data: teacherProfile } = await serviceClient
+      .from("teacher_profiles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!teacherProfile) {
+      await serviceClient.from("teacher_profiles").insert({ user_id: userId });
     }
   }
 
-  // 5. Chuẩn bị response chuyển hướng
-  const response = NextResponse.redirect(`${origin}${next}`);
+  const response = NextResponse.redirect(`${origin}${redirectPath}`);
 
-  // Đính kèm các cookies của Supabase Auth
   cookiesToSetLater.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options);
   });
 
-  // 6. Cấp thêm cookie phiên HTTP-Only edumi_session
-  const sessionUser = {
-    id: userId,
-    email: cleanEmail,
-    fullName: fullName,
-    role: "student",
-    avatarUrl: avatarUrl,
-    studentCode: studentProfile?.student_code || "EDM-784920",
-    streakCount: studentProfile?.current_streak || 0,
-    longestStreak: studentProfile?.longest_streak || 0,
-    totalPoints: studentProfile?.total_points || 0,
-    schoolName: studentProfile?.school_name || "THPT EduMi",
-    gradeLevel: studentProfile?.grade_level || "Lớp 12",
-  };
-
-  // 6. Cấp thêm cookie phiên HTTP-Only edumi_session có chữ ký HMAC-SHA256
   const sessionToken = await createSessionToken({
     sub: userId,
     email: cleanEmail,
-    fullName: fullName,
-    role: "student",
-    avatarUrl: avatarUrl,
-    studentCode: studentProfile?.student_code || "EDM-784920",
+    fullName,
+    role: userRole,
+    avatarUrl,
+    studentCode,
   });
 
   response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
@@ -190,4 +189,3 @@ export async function GET(request: NextRequest) {
 
   return response;
 }
-

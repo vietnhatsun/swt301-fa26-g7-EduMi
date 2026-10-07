@@ -6,6 +6,11 @@ import {
   SESSION_COOKIE_NAME,
   DEFAULT_SESSION_DURATION,
 } from "@/lib/auth-session";
+import { getRoleHomePath, getRoleLabel, isRegisterableRole } from "@/lib/auth-roles";
+
+function teacherCodeFromId(id: string) {
+  return `GV-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +27,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // 1. Tìm tài khoản trong bảng users
     const { data: user, error: userError } = await supabase
       .from("users")
       .select("*")
@@ -44,7 +48,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Kiểm tra trạng thái kích hoạt tài khoản
     if (!user.is_verified || user.status === "pending_verification") {
       return NextResponse.json(
         {
@@ -63,7 +66,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Kiểm tra mật khẩu
     if (!user.password_hash) {
       return NextResponse.json(
         { error: "Tài khoản này được đăng ký qua Google. Vui lòng chọn 'Đăng nhập với Google'." },
@@ -79,25 +81,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Kiểm tra quyền hạn (Ưu tiên vai trò Student trong giai đoạn này)
-    if (user.role !== "student") {
+    if (!isRegisterableRole(user.role)) {
       return NextResponse.json(
-        {
-          error: `Tài khoản của bạn có vai trò là '${user.role}'. Hệ thống hiện tại đang ưu tiên mở cổng cho vai trò Học sinh (Student).`,
-        },
+        { error: "Vai trò tài khoản này chưa có không gian hồ sơ riêng trên EduMi." },
         { status: 403 }
       );
     }
 
-    // 5. Lấy thông tin student_profiles
     let { data: studentProfile } = await supabase
       .from("student_profiles")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Nếu chưa có student_profile, tự động tạo mã student_code cho học sinh
-    if (!studentProfile) {
+    if (user.role === "student" && !studentProfile) {
       const studentCode = `EDM-${Math.floor(100000 + Math.random() * 900000)}`;
       const { data: newProfile, error: profileInsertError } = await supabase
         .from("student_profiles")
@@ -116,38 +113,43 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Tạo payload phiên đăng nhập
+    const teacherCode = teacherCodeFromId(user.id);
+    const isTeacher = user.role === "teacher";
+    const isParent = user.role === "parent";
+    const fallbackCode = isTeacher ? teacherCode : isParent ? "" : studentProfile?.student_code || "EDM-784920";
+    const redirectUrl = getRoleHomePath(user.role);
     const sessionUser = {
       id: user.id,
       email: user.email,
       fullName: user.full_name,
       role: user.role,
       avatarUrl: user.avatar_url || null,
-      studentCode: studentProfile?.student_code || "EDM-784920",
-      streakCount: studentProfile?.current_streak || 0,
-      longestStreak: studentProfile?.longest_streak || 0,
-      totalPoints: studentProfile?.total_points || 0,
-      schoolName: studentProfile?.school_name || "THPT EduMi",
-      gradeLevel: studentProfile?.grade_level || "Lớp 12",
+      studentCode: fallbackCode,
+      teacherCode: isTeacher ? teacherCode : undefined,
+      streakCount: isTeacher || isParent ? 0 : studentProfile?.current_streak || 0,
+      longestStreak: isTeacher || isParent ? 0 : studentProfile?.longest_streak || 0,
+      totalPoints: isTeacher || isParent ? 0 : studentProfile?.total_points || 0,
+      schoolName: studentProfile?.school_name || "EduMi Platform",
+      gradeLevel: isTeacher ? "Giáo viên" : isParent ? "Phụ huynh" : studentProfile?.grade_level || "Lớp 12",
       phoneNumber: user.phone_number || "",
     };
 
-    // Tạo JWT Token có gắn chữ ký số HMAC-SHA256 và Claims bảo mật
     const sessionToken = await createSessionToken({
       sub: user.id,
       email: user.email,
       fullName: user.full_name,
       role: user.role,
-      studentCode: studentProfile?.student_code || "EDM-784920",
+      studentCode: sessionUser.studentCode,
       avatarUrl: user.avatar_url || null,
     });
 
-    // 7. Tạo response và đính kèm Cookie HTTP-Only an toàn
     const response = NextResponse.json(
       {
         success: true,
         message: "Đăng nhập thành công!",
         user: sessionUser,
+        redirectUrl,
+        roleLabel: getRoleLabel(user.role),
       },
       { status: 200 }
     );

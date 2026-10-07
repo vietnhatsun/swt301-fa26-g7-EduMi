@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createServiceClient } from "@/lib/supabase";
 import { sendVerificationOtpEmail } from "@/lib/mail";
+import { isRegisterableRole } from "@/lib/auth-roles";
 
 // Helper sinh student code ngẫu nhiên (VD: EDM-749201)
 function generateStudentCode(): string {
@@ -38,8 +39,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const validRoles = ["student", "teacher", "parent"];
-    const userRole = validRoles.includes(role) ? role : "student";
+    const userRole = isRegisterableRole(role) ? role : "student";
 
     const supabase = createServiceClient();
 
