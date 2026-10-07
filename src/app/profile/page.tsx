@@ -11,9 +11,10 @@ import ClassesTab from "@/components/profile/tabs/ClassesTab";
 import MaterialsTab from "@/components/profile/tabs/MaterialsTab";
 import HistoryTab from "@/components/profile/tabs/HistoryTab";
 import TransactionsTab from "@/components/profile/tabs/TransactionsTab";
+import TeacherProfileDashboard from "@/components/profile/teacher/TeacherProfileDashboard";
 import { createBrowserClient } from "@/lib/supabase";
 
-interface StudentSession {
+interface ProfileSession {
   id: string;
   email: string;
   fullName: string;
@@ -26,6 +27,11 @@ interface StudentSession {
   schoolName?: string;
   gradeLevel?: string;
   phoneNumber?: string;
+  teacherCode?: string;
+  headline?: string;
+  subjects?: string[];
+  ratingAvg?: number;
+  totalReviews?: number;
 }
 
 export default function ProfilePage() {
@@ -33,7 +39,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTabId>("overview");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [studentData, setStudentData] = useState<StudentSession | null>(null);
+  const [profileData, setProfileData] = useState<ProfileSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Kiểm tra phiên đăng nhập và tải thông tin học sinh
@@ -52,7 +58,7 @@ export default function ProfilePage() {
         const data = await res.json();
         if (data?.user) {
           if (isMounted) {
-            setStudentData(data.user);
+            setProfileData(data.user);
             setIsLoading(false);
           }
         } else {
@@ -83,7 +89,7 @@ export default function ProfilePage() {
     } catch (err) {
       console.error("[Logout Error]:", err);
     } finally {
-      window.location.href = "/login";
+      router.push("/login");
     }
   };
 
@@ -94,7 +100,7 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
           <p className="text-xs font-bold text-emerald-800 tracking-wider uppercase animate-pulse">
-            Đang tải hồ sơ học sinh...
+            Đang tải hồ sơ người dùng...
           </p>
         </div>
       </div>
@@ -102,7 +108,7 @@ export default function ProfilePage() {
   }
 
   // Dữ liệu an toàn hiển thị
-  const currentStudent = studentData || {
+  const currentProfile = profileData || {
     id: "",
     fullName: "Học sinh EduMi",
     email: "student@edumi.vn",
@@ -113,6 +119,12 @@ export default function ProfilePage() {
     longestStreak: 0,
     totalPoints: 0,
   };
+
+  if (currentProfile.role === "teacher") {
+    return <TeacherProfileDashboard teacher={currentProfile} onLogout={handleLogout} />;
+  }
+
+  const currentStudent = currentProfile;
 
   const renderTabContent = () => {
     switch (activeTab) {
