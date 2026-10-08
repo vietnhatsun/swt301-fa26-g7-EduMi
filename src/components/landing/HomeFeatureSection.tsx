@@ -38,7 +38,7 @@ export default function HomeFeatureSection() {
     <section className="bg-[#f8faf8] py-8">
       <div className="relative mx-auto h-[1071px] w-[1468px] overflow-hidden">
         <Image
-          src="/home-feature-new.png"
+          src="/community-home-assets.png"
           alt="Cộng đồng học tập EduMi vui nhộn"
           width={1468}
           height={1071}
