@@ -12,6 +12,7 @@ import MaterialsTab from "@/components/profile/tabs/MaterialsTab";
 import HistoryTab from "@/components/profile/tabs/HistoryTab";
 import TransactionsTab from "@/components/profile/tabs/TransactionsTab";
 import TeacherProfileDashboard from "@/components/profile/teacher/TeacherProfileDashboard";
+import StaffProfileDashboard from "@/components/profile/staff/StaffProfileDashboard";
 import { createBrowserClient } from "@/lib/supabase";
 
 interface ProfileSession {
@@ -28,6 +29,7 @@ interface ProfileSession {
   gradeLevel?: string;
   phoneNumber?: string;
   teacherCode?: string;
+  staffCode?: string;
   headline?: string;
   subjects?: string[];
   ratingAvg?: number;
@@ -122,6 +124,10 @@ export default function ProfilePage() {
 
   if (currentProfile.role === "teacher") {
     return <TeacherProfileDashboard teacher={currentProfile} onLogout={handleLogout} />;
+  }
+
+  if (currentProfile.role === "staff") {
+    return <StaffProfileDashboard staff={currentProfile} onLogout={handleLogout} />;
   }
 
   const currentStudent = currentProfile;

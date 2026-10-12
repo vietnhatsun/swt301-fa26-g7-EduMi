@@ -8,7 +8,7 @@ type DbUser = {
   id: string;
   email: string;
   full_name: string;
-  role: "student" | "teacher" | "parent" | "admin";
+  role: "student" | "teacher" | "parent" | "staff" | "admin";
   avatar_url: string | null;
   phone_number: string | null;
   status: string;
@@ -37,10 +37,30 @@ async function buildUserPayload(supabase: ReturnType<typeof createServiceClient>
       redirectUrl: getRoleHomePath(user.role),
     };
   }
+  if (user.role === "staff") {
+    const staffCode = `NV-${user.id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.full_name,
+      role: user.role,
+      avatarUrl: user.avatar_url || fallbackAvatar || null,
+      studentCode: staffCode,
+      staffCode,
+      streakCount: 0,
+      longestStreak: 0,
+      totalPoints: 0,
+      schoolName: "EduMi Platform",
+      gradeLevel: "Nhân viên",
+      phoneNumber: user.phone_number || "",
+      ratingAvg: 5,
+      redirectUrl: getRoleHomePath(user.role),
+    };
+  }
   if (user.role === "teacher") {
     const { data: teacherProfile } = await supabase
       .from("teacher_profiles")
-      .select("headline, bio, subjects, is_verified_educator, rating_avg, total_reviews")
+      .select("teacher_code, headline, bio, subjects, is_verified_educator, rating_avg, total_reviews, gender, teacher_role, work_experience, grade_levels, degree, experience_years, certificate_url, certificate_file_name, certificate_file_size, verification_status")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -50,13 +70,23 @@ async function buildUserPayload(supabase: ReturnType<typeof createServiceClient>
       fullName: user.full_name,
       role: user.role,
       avatarUrl: user.avatar_url || fallbackAvatar || null,
-      studentCode: teacherCodeFromId(user.id),
-      teacherCode: teacherCodeFromId(user.id),
-      headline: teacherProfile?.headline || "Giáo viên EduMi",
-      bio: teacherProfile?.bio || "Đồng hành cùng học viên bằng phương pháp học tập rõ ràng, gần gũi và hiệu quả.",
-      subjects: teacherProfile?.subjects || ["Tiếng Anh", "IELTS"],
+      studentCode: teacherProfile?.teacher_code || teacherCodeFromId(user.id),
+      teacherCode: teacherProfile?.teacher_code || teacherCodeFromId(user.id),
+      headline: teacherProfile?.headline || "",
+      bio: teacherProfile?.bio || "",
+      subjects: teacherProfile?.subjects || [],
+      gender: teacherProfile?.gender || null,
+      teacherRole: teacherProfile?.teacher_role || null,
+      workExperience: teacherProfile?.work_experience || "",
+      gradeLevels: teacherProfile?.grade_levels || [],
+      degree: teacherProfile?.degree || "",
+      experienceYears: teacherProfile?.experience_years || "",
+      certificateUrl: teacherProfile?.certificate_url || null,
+      certificateFileName: teacherProfile?.certificate_file_name || null,
+      certificateFileSize: teacherProfile?.certificate_file_size || null,
+      verificationStatus: teacherProfile?.verification_status || "draft",
       isVerifiedEducator: teacherProfile?.is_verified_educator ?? false,
-      ratingAvg: Number(teacherProfile?.rating_avg ?? 5),
+      ratingAvg: teacherProfile?.rating_avg ? Number(teacherProfile.rating_avg) : 0,
       totalReviews: teacherProfile?.total_reviews ?? 0,
       streakCount: 0,
       longestStreak: 0,

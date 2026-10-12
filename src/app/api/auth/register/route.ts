@@ -143,10 +143,12 @@ export async function POST(req: NextRequest) {
           })
           .select();
       } else if (userRole === "teacher") {
+        const teacherCode = `GV-${userId.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
         await supabase
           .from("teacher_profiles")
           .insert({
             user_id: userId,
+            teacher_code: teacherCode,
           })
           .select();
       }

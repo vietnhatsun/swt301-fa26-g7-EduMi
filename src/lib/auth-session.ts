@@ -13,7 +13,7 @@ export interface SessionClaims {
   sub: string; // User ID (UUID)
   email: string; // User Email
   fullName: string; // Tên hiển thị
-  role: "student" | "teacher" | "parent" | "admin"; // Phân quyền
+  role: "student" | "teacher" | "parent" | "staff" | "admin"; // Phân quyền
   studentCode?: string; // Mã học sinh (EDM-XXXXXX)
   avatarUrl?: string | null;
   iat: number; // Issued at (Unix timestamp tính bằng giây)

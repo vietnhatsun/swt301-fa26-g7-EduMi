@@ -6,7 +6,7 @@ import {
   SESSION_COOKIE_NAME,
   DEFAULT_SESSION_DURATION,
 } from "@/lib/auth-session";
-import { getRoleHomePath, getRoleLabel, isRegisterableRole } from "@/lib/auth-roles";
+import { getRoleHomePath, getRoleLabel, isUserRole } from "@/lib/auth-roles";
 
 function teacherCodeFromId(id: string) {
   return `GV-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!isRegisterableRole(user.role)) {
+    if (!isUserRole(user.role)) {
       return NextResponse.json(
         { error: "Vai trò tài khoản này chưa có không gian hồ sơ riêng trên EduMi." },
         { status: 403 }
@@ -113,10 +113,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const teacherCode = teacherCodeFromId(user.id);
+    let teacherCode: string | undefined;
+    if (user.role === "teacher") {
+      const { data: teacherProfile } = await supabase
+        .from("teacher_profiles")
+        .select("teacher_code")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!teacherProfile || !teacherProfile.teacher_code) {
+        teacherCode = teacherCodeFromId(user.id);
+        await supabase
+          .from("teacher_profiles")
+          .upsert({ user_id: user.id, teacher_code: teacherCode });
+      } else {
+        teacherCode = teacherProfile.teacher_code;
+      }
+    }
+
     const isTeacher = user.role === "teacher";
+    const isStudent = user.role === "student";
     const isParent = user.role === "parent";
-    const fallbackCode = isTeacher ? teacherCode : isParent ? "" : studentProfile?.student_code || "EDM-784920";
+    const isStaff = user.role === "staff";
+    const fallbackCode = isTeacher ? (teacherCode || "") : isStudent ? studentProfile?.student_code || "EDM-784920" : "";
     const redirectUrl = getRoleHomePath(user.role);
     const sessionUser = {
       id: user.id,
@@ -124,13 +143,14 @@ export async function POST(req: NextRequest) {
       fullName: user.full_name,
       role: user.role,
       avatarUrl: user.avatar_url || null,
-      studentCode: fallbackCode,
+      studentCode: isStudent ? studentProfile?.student_code : undefined,
       teacherCode: isTeacher ? teacherCode : undefined,
-      streakCount: isTeacher || isParent ? 0 : studentProfile?.current_streak || 0,
-      longestStreak: isTeacher || isParent ? 0 : studentProfile?.longest_streak || 0,
-      totalPoints: isTeacher || isParent ? 0 : studentProfile?.total_points || 0,
-      schoolName: studentProfile?.school_name || "EduMi Platform",
-      gradeLevel: isTeacher ? "Giáo viên" : isParent ? "Phụ huynh" : studentProfile?.grade_level || "Lớp 12",
+      staffCode: isStaff ? `NV-${user.id.replace(/-/g, "").slice(0, 6).toUpperCase()}` : undefined,
+      streakCount: isTeacher || isParent || isStaff ? 0 : studentProfile?.current_streak || 0,
+      longestStreak: isTeacher || isParent || isStaff ? 0 : studentProfile?.longest_streak || 0,
+      totalPoints: isTeacher || isParent || isStaff ? 0 : studentProfile?.total_points || 0,
+      schoolName: "EduMi Platform",
+      gradeLevel: isTeacher ? "Giáo viên" : isStaff ? "Nhân viên" : isParent ? "Phụ huynh" : studentProfile?.grade_level || "Lớp 12",
       phoneNumber: user.phone_number || "",
     };
 

@@ -11,6 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1149.0",
+    "@aws-sdk/s3-request-presigner": "^3.1149.0",
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@supabase/ssr": "^0.12.7",
@@ -22,12 +24,14 @@
     "husky": "^9.1.7",
     "lucide-react": "^1.47.0",
     "next": "16.3.1",
+    "pg": "^8.23.1",
     "prettier": "^3.9.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "resend": "^6.28.1",
     "tailwind-merge": "^3.6.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
