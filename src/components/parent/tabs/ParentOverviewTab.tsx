@@ -15,12 +15,14 @@ import {
   Sparkles,
   ChevronRight,
 } from "lucide-react";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 interface ParentOverviewTabProps {
   childName?: string;
   childGrade?: string;
   childSchool?: string;
   onNavigateTab?: (tab: string) => void;
+  onQuickLink?: (code: string) => void;
 }
 
 /* ── Mock data (sẽ thay bằng API thực) ── */
@@ -181,12 +183,24 @@ function getTrendIcon(trend: "up" | "down" | "stable") {
 }
 
 export default function ParentOverviewTab({
-  childName = "Nguyễn Văn Nam",
-  childGrade = "Lớp 12",
-  childSchool = "THPT Chuyên Lê Hồng Phong",
+  childName,
+  childGrade,
+  childSchool,
   onNavigateTab,
+  onQuickLink,
 }: ParentOverviewTabProps) {
   const [showFullInsight, setShowFullInsight] = useState(false);
+
+  if (!childName) {
+    return (
+      <ParentEmptyChildState
+        title="Chưa có dữ liệu tổng quan học tập"
+        description="Bạn cần liên kết tài khoản học sinh để theo dõi số giờ học trong tuần, điểm trung bình và bài tập cần nộp của con."
+        onNavigateTab={onNavigateTab || (() => {})}
+        onQuickLink={onQuickLink}
+      />
+    );
+  }
 
   // Greeting based on time of day
   const hour = new Date().getHours();

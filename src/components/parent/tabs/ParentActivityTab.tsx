@@ -12,6 +12,7 @@ import {
   Filter,
   Calendar,
 } from "lucide-react";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 /* ── Mock data ── */
 
@@ -164,11 +165,26 @@ const TYPE_FILTERS = [
 
 interface ParentActivityTabProps {
   childName?: string;
+  onNavigateTab?: (tab: string) => void;
+  onQuickLink?: (code: string) => void;
 }
 
 export default function ParentActivityTab({
-  childName = "Nguyễn Minh Khang",
+  childName,
+  onNavigateTab,
+  onQuickLink,
 }: ParentActivityTabProps) {
+  if (!childName) {
+    return (
+      <ParentEmptyChildState
+        title="Chưa có nhật ký hoạt động"
+        description="Vui lòng liên kết tài khoản học sinh để theo dõi chi tiết lịch sử làm bài kiểm tra, tham gia lớp học và tài liệu con đã tải về."
+        onNavigateTab={onNavigateTab || (() => {})}
+        onQuickLink={onQuickLink}
+      />
+    );
+  }
+
   const [selectedType, setSelectedType] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);

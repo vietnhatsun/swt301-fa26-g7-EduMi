@@ -13,6 +13,7 @@ import {
   Sparkles,
   PartyPopper,
 } from "lucide-react";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 /* ── Mock data ── */
 
@@ -73,13 +74,28 @@ const GOALS_DATA = {
 
 interface ParentGoalsTabProps {
   childName?: string;
+  onNavigateTab?: (tab: string) => void;
+  onQuickLink?: (code: string) => void;
 }
 
 export default function ParentGoalsTab({
-  childName = "Nguyễn Minh Khang",
+  childName,
+  onNavigateTab,
+  onQuickLink,
 }: ParentGoalsTabProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeView, setActiveView] = useState<"active" | "completed">("active");
+
+  if (!childName) {
+    return (
+      <ParentEmptyChildState
+        title="Chưa có mục tiêu học tập"
+        description="Vui lòng liên kết tài khoản học sinh để đặt mục tiêu tuần, tạo phần thưởng khích lệ và theo dõi con thực hiện."
+        onNavigateTab={onNavigateTab || (() => {})}
+        onQuickLink={onQuickLink}
+      />
+    );
+  }
 
   // Form state for new goal
   const [newTitle, setNewTitle] = useState("");

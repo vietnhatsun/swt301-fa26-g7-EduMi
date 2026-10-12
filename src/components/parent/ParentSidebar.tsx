@@ -131,89 +131,134 @@ export default function ParentSidebar({
           </button>
         </div>
 
-        {/* ── Child Selector ── */}
-        {!isCollapsed && linkedChildren.length > 0 && (
+        {/* ── Child Selector / Link Prompt ── */}
+        {!isCollapsed && (
           <div className="px-3 pt-4 pb-2">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsChildSelectorOpen(!isChildSelectorOpen)}
-                className="w-full p-3 rounded-xl bg-black/20 border border-white/10 hover:bg-black/30 transition-all cursor-pointer text-left"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5 truncate">
-                    <div className="w-8 h-8 rounded-full bg-amber-400 text-slate-900 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-                      {activeChild?.fullName?.charAt(0) || "?"}
+            {linkedChildren.length > 0 && activeChild ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsChildSelectorOpen(!isChildSelectorOpen)}
+                  className="w-full p-3 rounded-xl bg-black/20 border border-white/10 hover:bg-black/30 transition-all cursor-pointer text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 truncate">
+                      <div className="w-8 h-8 rounded-full bg-amber-400 text-slate-900 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
+                        {activeChild?.fullName?.charAt(0) || "?"}
+                      </div>
+                      <div className="truncate">
+                        <p className="text-xs font-bold text-white truncate">
+                          {activeChild?.fullName}
+                        </p>
+                        <p className="text-[10px] text-emerald-200/80 font-medium">
+                          {activeChild?.grade} · {activeChild?.studentCode}
+                        </p>
+                      </div>
                     </div>
-                    <div className="truncate">
-                      <p className="text-xs font-bold text-white truncate">
-                        {activeChild?.fullName || "Chưa liên kết"}
-                      </p>
-                      <p className="text-[10px] text-emerald-200/80 font-medium">
-                        {activeChild?.grade} · {activeChild?.studentCode}
-                      </p>
-                    </div>
-                  </div>
-                  {linkedChildren.length > 1 && (
                     <ChevronDown
                       className={`w-4 h-4 text-emerald-200 flex-shrink-0 transition-transform duration-200 ${
                         isChildSelectorOpen ? "rotate-180" : ""
                       }`}
                     />
-                  )}
-                </div>
-              </button>
+                  </div>
+                </button>
 
-              {/* Dropdown chọn con */}
-              {isChildSelectorOpen && linkedChildren.length > 1 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-[#064e3b] rounded-xl border border-white/15 shadow-xl overflow-hidden z-50">
-                  {linkedChildren.map((child) => (
-                    <button
-                      key={child.id}
-                      type="button"
-                      onClick={() => {
-                        onChildChange(child.id);
-                        setIsChildSelectorOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors cursor-pointer ${
-                        child.id === activeChildId
-                          ? "bg-amber-400/20 text-amber-300"
-                          : "text-emerald-100 hover:bg-white/10"
-                      }`}
-                    >
-                      <div
-                        className={`w-7 h-7 rounded-full font-bold text-[10px] flex items-center justify-center flex-shrink-0 ${
+                {/* Dropdown chọn con */}
+                {isChildSelectorOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#064e3b] rounded-xl border border-white/15 shadow-xl overflow-hidden z-50">
+                    {linkedChildren.map((child) => (
+                      <button
+                        key={child.id}
+                        type="button"
+                        onClick={() => {
+                          onChildChange(child.id);
+                          setIsChildSelectorOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors cursor-pointer ${
                           child.id === activeChildId
-                            ? "bg-amber-400 text-slate-900"
-                            : "bg-white/15 text-white"
+                            ? "bg-amber-400/20 text-amber-300"
+                            : "text-emerald-100 hover:bg-white/10"
                         }`}
                       >
-                        {child.fullName.charAt(0)}
-                      </div>
-                      <div className="truncate">
-                        <p className="text-xs font-bold truncate">
-                          {child.fullName}
-                        </p>
-                        <p className="text-[10px] opacity-70">
-                          {child.grade} · {child.studentCode}
-                        </p>
-                      </div>
+                        <div
+                          className={`w-7 h-7 rounded-full font-bold text-[10px] flex items-center justify-center flex-shrink-0 ${
+                            child.id === activeChildId
+                              ? "bg-amber-400 text-slate-900"
+                              : "bg-white/15 text-white"
+                          }`}
+                        >
+                          {child.fullName.charAt(0)}
+                        </div>
+                        <div className="truncate">
+                          <p className="text-xs font-bold truncate">
+                            {child.fullName}
+                          </p>
+                          <p className="text-[10px] opacity-70">
+                            {child.grade} · {child.studentCode}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onTabChange("link-child");
+                        setIsChildSelectorOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-bold text-amber-300 hover:bg-white/10 border-t border-white/10 transition-colors cursor-pointer"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>+ Liên kết con khác</span>
                     </button>
-                  ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Trạng thái chưa liên kết học sinh */
+              <button
+                type="button"
+                onClick={() => onTabChange("link-child")}
+                className="w-full p-3 rounded-xl bg-black/20 hover:bg-black/30 border border-dashed border-amber-300/40 hover:border-amber-300 transition-all cursor-pointer text-left group"
+                title="Bấm để nhập mã liên kết học sinh"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-amber-400/20 text-amber-300 border border-amber-300/40 flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:bg-amber-400 group-hover:text-slate-900 transition-all shadow-sm">
+                    <UserPlus className="w-4 h-4" />
+                  </div>
+                  <div className="truncate">
+                    <p className="text-xs font-bold text-amber-200 group-hover:text-amber-100 truncate">
+                      Chưa liên kết học sinh
+                    </p>
+                    <p className="text-[10px] text-emerald-200/80 font-medium">
+                      + Nhấn để liên kết mã ID
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
+              </button>
+            )}
           </div>
         )}
 
-        {isCollapsed && linkedChildren.length > 0 && (
+        {isCollapsed && (
           <div className="px-3 pt-4 pb-2 flex justify-center">
-            <div
-              className="w-10 h-10 rounded-full bg-amber-400 text-slate-900 font-bold text-sm flex items-center justify-center shadow-sm cursor-pointer"
-              title={activeChild?.fullName || "Học sinh"}
-            >
-              {activeChild?.fullName?.charAt(0) || "?"}
-            </div>
+            {linkedChildren.length > 0 && activeChild ? (
+              <div
+                className="w-10 h-10 rounded-full bg-amber-400 text-slate-900 font-bold text-sm flex items-center justify-center shadow-sm cursor-pointer"
+                title={activeChild?.fullName || "Học sinh"}
+              >
+                {activeChild?.fullName?.charAt(0) || "?"}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onTabChange("link-child")}
+                className="w-10 h-10 rounded-full bg-amber-400/20 text-amber-300 border border-dashed border-amber-300/50 flex items-center justify-center shadow-sm hover:scale-105 hover:bg-amber-400 hover:text-slate-900 transition-all cursor-pointer"
+                title="Chưa liên kết học sinh - Nhấn để liên kết"
+              >
+                <UserPlus className="w-4 h-4" />
+              </button>
+            )}
           </div>
         )}
 

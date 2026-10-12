@@ -9,6 +9,7 @@ import {
   BookOpen,
   Award,
 } from "lucide-react";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 /* ── Mock data ── */
 
@@ -150,11 +151,26 @@ const TEST_HISTORY = [
 
 interface ParentProgressTabProps {
   childName?: string;
+  onNavigateTab?: (tab: string) => void;
+  onQuickLink?: (code: string) => void;
 }
 
 export default function ParentProgressTab({
-  childName = "Nguyễn Minh Khang",
+  childName,
+  onNavigateTab,
+  onQuickLink,
 }: ParentProgressTabProps) {
+  if (!childName) {
+    return (
+      <ParentEmptyChildState
+        title="Chưa có dữ liệu tiến độ môn học"
+        description="Vui lòng liên kết tài khoản học sinh để theo dõi chi tiết điểm số, độ chính xác bài kiểm tra và các chuyên đề cần cải thiện của con."
+        onNavigateTab={onNavigateTab || (() => {})}
+        onQuickLink={onQuickLink}
+      />
+    );
+  }
+
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
 

@@ -169,6 +169,7 @@ export default function LandingNavbarClient({ initialUser }: { initialUser: User
             <div className="relative" ref={langRef}>
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => setIsLangOpen(!isLangOpen)}
                 className="h-10 px-3.5 rounded-full bg-white/85 hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-2xs backdrop-blur-md text-xs sm:text-[13px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                 title="Chọn ngôn ngữ"

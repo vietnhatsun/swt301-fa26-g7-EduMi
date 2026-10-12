@@ -36,6 +36,7 @@ function TextInput({
         id={id}
         name={id}
         type={type}
+        suppressHydrationWarning
         aria-label={placeholder}
         placeholder={placeholder}
         className="h-[54px] w-full rounded-[17px] border-[2px] border-[#c7e9c1] bg-[#fffef4]/88 pl-[52px] pr-4 text-[15px] font-bold text-[#123421] outline-none transition placeholder:text-[#80907f] focus:border-[#0aa36c] focus:bg-white focus:ring-4 focus:ring-[#0aa36c]/10"
@@ -90,6 +91,7 @@ export default function ConsultationFormSection() {
               <textarea
                 id="consultingTopic"
                 name="consultingTopic"
+                suppressHydrationWarning
                 aria-label="Bạn muốn được tư vấn về điều gì?"
                 placeholder="Bạn muốn được tư vấn về điều gì? (Không bắt buộc)"
                 rows={3}
@@ -100,6 +102,7 @@ export default function ConsultationFormSection() {
 
           <button
             type="submit"
+            suppressHydrationWarning
             className="mx-auto mt-5 flex h-[60px] w-[370px] items-center justify-center gap-4 rounded-full border-[4px] border-[#11130f] bg-[#ffd743] text-[21px] font-extrabold tracking-[-0.03em] text-[#11130f] shadow-[0_7px_0_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5"
           >
             Gửi thông tin ngay

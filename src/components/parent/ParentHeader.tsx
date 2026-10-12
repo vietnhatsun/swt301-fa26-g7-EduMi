@@ -12,6 +12,7 @@ import {
   LogOut,
   ShieldCheck,
   Users,
+  UserPlus,
 } from "lucide-react";
 import { ParentTabId } from "./ParentSidebar";
 
@@ -69,7 +70,7 @@ export default function ParentHeader({
       {/* ── Right: Active child indicator, Actions, and User Profile Chip ── */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Active child badge */}
-        {activeChildName && (
+        {activeChildName ? (
           <div
             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 shadow-sm"
             title={`Đang xem: ${activeChildName}`}
@@ -79,6 +80,18 @@ export default function ParentHeader({
               {activeChildName}
             </span>
           </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onTabChange?.("link-child")}
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-amber-800 shadow-sm transition-all cursor-pointer"
+            title="Nhấn để liên kết tài khoản học sinh"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-amber-600" />
+            <span className="text-xs font-bold text-amber-900">
+              Chưa liên kết con
+            </span>
+          </button>
         )}
 
         {/* Light mode indicator */}

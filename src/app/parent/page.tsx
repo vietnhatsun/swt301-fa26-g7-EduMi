@@ -9,37 +9,11 @@ import ParentProgressTab from "@/components/parent/tabs/ParentProgressTab";
 import ParentActivityTab from "@/components/parent/tabs/ParentActivityTab";
 import ParentGoalsTab from "@/components/parent/tabs/ParentGoalsTab";
 import ParentNotificationsTab from "@/components/parent/tabs/ParentNotificationsTab";
-import ParentLinkChildTab from "@/components/parent/tabs/ParentLinkChildTab";
+import ParentLinkChildTab, { LinkedChild } from "@/components/parent/tabs/ParentLinkChildTab";
 import ParentSettingsTab from "@/components/parent/tabs/ParentSettingsTab";
 import { createBrowserClient } from "@/lib/supabase";
 
-interface LinkedChild {
-  id: string;
-  fullName: string;
-  studentCode: string;
-  grade: string;
-  avatarUrl: string | null;
-  schoolName: string;
-}
-
-const MOCK_CHILDREN: LinkedChild[] = [
-  {
-    id: "child-1",
-    fullName: "Nguyễn Minh Khang",
-    studentCode: "EDM-784920",
-    grade: "Lớp 12A1",
-    avatarUrl: null,
-    schoolName: "THPT Chuyên Hà Nội - Amsterdam",
-  },
-  {
-    id: "child-2",
-    fullName: "Nguyễn Hà My",
-    studentCode: "EDM-632190",
-    grade: "Lớp 9B",
-    avatarUrl: null,
-    schoolName: "THCS Chu Văn An",
-  },
-];
+const LOCAL_STORAGE_CHILDREN_KEY = "edumi_parent_linked_children";
 
 export default function ParentPage() {
   const router = useRouter();
@@ -48,9 +22,27 @@ export default function ParentPage() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [parentName, setParentName] = useState("Nguyễn Văn Tuấn");
   const [parentEmail, setParentEmail] = useState("tuan.nguyen@gmail.com");
-  const [linkedChildren, setLinkedChildren] = useState<LinkedChild[]>(MOCK_CHILDREN);
-  const [activeChildId, setActiveChildId] = useState<string>("child-1");
+  
+  // Mặc định: Phụ huynh mới đăng nhập sẽ CHƯA liên kết học sinh nào
+  const [linkedChildren, setLinkedChildren] = useState<LinkedChild[]>([]);
+  const [activeChildId, setActiveChildId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+
+  // Khôi phục danh sách học sinh đã liên kết từ localStorage nếu có
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_CHILDREN_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setLinkedChildren(parsed);
+          setActiveChildId(parsed[0].id);
+        }
+      }
+    } catch (e) {
+      console.warn("[Parent Linked Children Note]: Cannot parse local children", e);
+    }
+  }, []);
 
   // Check auth or load profile
   useEffect(() => {
@@ -81,8 +73,76 @@ export default function ParentPage() {
     };
   }, [router]);
 
+  // Thêm học sinh khi liên kết thành công
+  const handleLinkChild = (newChild: LinkedChild) => {
+    setLinkedChildren((prev) => {
+      const exists = prev.some((c) => c.studentCode === newChild.studentCode);
+      const updated = exists
+        ? prev.map((c) => (c.studentCode === newChild.studentCode ? newChild : c))
+        : [...prev, newChild];
+      try {
+        localStorage.setItem(LOCAL_STORAGE_CHILDREN_KEY, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setActiveChildId(newChild.id);
+  };
+
+  // Hủy liên kết học sinh
+  const handleUnlinkChild = (childId: string) => {
+    setLinkedChildren((prev) => {
+      const updated = prev.filter((c) => c.id !== childId);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_CHILDREN_KEY, JSON.stringify(updated));
+      } catch (e) {}
+      if (activeChildId === childId) {
+        setActiveChildId(updated.length > 0 ? updated[0].id : "");
+      }
+      return updated;
+    });
+  };
+
+  // Thử nghiệm liên kết nhanh bằng mã
+  const handleQuickLink = (code: string) => {
+    if (code === "EDM-784920") {
+      handleLinkChild({
+        id: "child-1",
+        fullName: "Nguyễn Minh Khang",
+        studentCode: "EDM-784920",
+        grade: "Lớp 12A1",
+        avatarUrl: null,
+        schoolName: "THPT Chuyên Hà Nội - Amsterdam",
+        relationship: "Bố",
+        linkedAt: new Date().toLocaleDateString("vi-VN"),
+      });
+    } else if (code === "EDM-632190") {
+      handleLinkChild({
+        id: "child-2",
+        fullName: "Nguyễn Hà My",
+        studentCode: "EDM-632190",
+        grade: "Lớp 9B",
+        avatarUrl: null,
+        schoolName: "THCS Chu Văn An",
+        relationship: "Bố",
+        linkedAt: new Date().toLocaleDateString("vi-VN"),
+      });
+    } else {
+      handleLinkChild({
+        id: `child-${Date.now()}`,
+        fullName: `Học sinh (${code})`,
+        studentCode: code,
+        grade: "Lớp 11A",
+        avatarUrl: null,
+        schoolName: "Trường THPT EduMi",
+        relationship: "Bố",
+        linkedAt: new Date().toLocaleDateString("vi-VN"),
+      });
+    }
+  };
+
   const activeChild =
-    linkedChildren.find((c) => c.id === activeChildId) || linkedChildren[0];
+    linkedChildren.find((c) => c.id === activeChildId) ||
+    (linkedChildren.length > 0 ? linkedChildren[0] : null);
 
   const handleLogout = async () => {
     try {
@@ -122,14 +182,33 @@ export default function ParentPage() {
             childGrade={activeChild?.grade}
             childSchool={activeChild?.schoolName}
             onNavigateTab={(tab) => setActiveTab(tab as ParentTabId)}
+            onQuickLink={handleQuickLink}
           />
         );
       case "progress":
-        return <ParentProgressTab childName={activeChild?.fullName} />;
+        return (
+          <ParentProgressTab
+            childName={activeChild?.fullName}
+            onNavigateTab={(tab) => setActiveTab(tab as ParentTabId)}
+            onQuickLink={handleQuickLink}
+          />
+        );
       case "activity":
-        return <ParentActivityTab childName={activeChild?.fullName} />;
+        return (
+          <ParentActivityTab
+            childName={activeChild?.fullName}
+            onNavigateTab={(tab) => setActiveTab(tab as ParentTabId)}
+            onQuickLink={handleQuickLink}
+          />
+        );
       case "goals":
-        return <ParentGoalsTab childName={activeChild?.fullName} />;
+        return (
+          <ParentGoalsTab
+            childName={activeChild?.fullName}
+            onNavigateTab={(tab) => setActiveTab(tab as ParentTabId)}
+            onQuickLink={handleQuickLink}
+          />
+        );
       case "notifications":
         return (
           <ParentNotificationsTab
@@ -137,7 +216,14 @@ export default function ParentPage() {
           />
         );
       case "link-child":
-        return <ParentLinkChildTab />;
+        return (
+          <ParentLinkChildTab
+            linkedChildren={linkedChildren}
+            onLinkChild={handleLinkChild}
+            onUnlinkChild={handleUnlinkChild}
+            onNavigateTab={(tab) => setActiveTab(tab as ParentTabId)}
+          />
+        );
       case "settings":
         return (
           <ParentSettingsTab
@@ -152,6 +238,7 @@ export default function ParentPage() {
             childGrade={activeChild?.grade}
             childSchool={activeChild?.schoolName}
             onNavigateTab={(tab) => setActiveTab(tab as ParentTabId)}
+            onQuickLink={handleQuickLink}
           />
         );
     }
