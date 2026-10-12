@@ -436,39 +436,6 @@ export function PremiumHeader() {
           </div>
         </div>
       </div>
-
-      {/* AI Feature Overview */}
-      <div className="w-full bg-white rounded-3xl border border-emerald-100 shadow-[0_4px_20px_rgba(6,78,59,0.04)] p-6 sm:p-8 transform-gpu transition-[transform,box-shadow,border-color] duration-250 ease-out hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-          <div className="space-y-2.5 group/card p-2 rounded-2xl transform-gpu transition-colors duration-200 hover:bg-emerald-50/40">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center flex-shrink-0 group-hover/card:scale-105 group-hover/card:bg-emerald-600 group-hover/card:text-white transform-gpu transition-all duration-200">
-                <Bot className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-wide uppercase group-hover/card:text-emerald-800 transition-colors duration-200">
-                GIA SƯ CAPY AI GIẢI ĐỀ 24/7
-              </h3>
-            </div>
-            <p className="text-xs sm:text-[13px] text-slate-600 font-medium leading-relaxed">
-              Mô hình AI chuyên sâu phân tích chi tiết từng bước giải Toán, Lý, Hóa, Sinh, Sử, Địa, chỉ ra mẹo bấm máy Casio siêu tốc và phương pháp tư duy nhanh cho dạng bài Trắc nghiệm Đúng/Sai &amp; Trả lời ngắn theo ma trận 2026.
-            </p>
-          </div>
-
-          <div className="pt-6 md:pt-0 md:pl-8 space-y-2.5 group/card p-2 rounded-2xl transform-gpu transition-colors duration-200 hover:bg-amber-50/40">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center flex-shrink-0 group-hover/card:scale-105 group-hover/card:bg-amber-500 group-hover/card:text-slate-950 transform-gpu transition-all duration-200">
-                <FileCheck className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-wide uppercase group-hover/card:text-amber-900 transition-colors duration-200">
-                CHẤM CHỮA VĂN &amp; TỰ LUẬN CHUẨN BỘ GD
-              </h3>
-            </div>
-            <p className="text-xs sm:text-[13px] text-slate-600 font-medium leading-relaxed">
-              Hệ thống huấn luyện dựa trên hàng nghìn bài văn đạt điểm 9+ và barem chấm của Bộ GD&amp;ĐT, giúp nhận xét chi tiết cấu trúc luận điểm, sửa lỗi diễn đạt, chính tả và đề xuất cách phát triển ý để bứt phá điểm cao.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -747,13 +714,13 @@ export function PremiumDiscounts({
 ───────────────────────────────────────────────────────────────────────────── */
 
 interface PremiumPlansProps {
-  appliedDiscount: number;
+  appliedDiscount?: number;
   onSelectPlan: (plan: PricingPlan) => void;
   onPreviewDocs: () => void;
 }
 
 export function PremiumPlans({
-  appliedDiscount,
+  appliedDiscount = 0,
   onSelectPlan,
   onPreviewDocs,
 }: PremiumPlansProps) {
@@ -1014,7 +981,6 @@ export function PremiumPlans({
 
 export function PremiumTrustAndFaq() {
   const [isTableExpanded, setIsTableExpanded] = useState(true);
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   return (
     <div className="w-full space-y-8">
@@ -1174,84 +1140,6 @@ export function PremiumTrustAndFaq() {
             <span>Hỗ trợ giải đáp bài tập 24/7 từ đội ngũ Trợ giảng &amp; Thầy cô giỏi.</span>
           </div>
         </div>
-      </div>
-
-      {/* 3. FAQ Accordion */}
-      <div className="w-full bg-white rounded-3xl border border-emerald-100 shadow-[0_4px_20px_rgba(6,78,59,0.04)] p-6 sm:p-8 space-y-5 transform-gpu transition-[box-shadow,border-color] duration-200 hover:shadow-md hover:border-emerald-200">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>HỖ TRỢ GIẢI ĐÁP</span>
-          </div>
-          <h3 className="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-tight">
-            CÂU HỎI THƯỜNG GẶP (FAQ)
-          </h3>
-          <p className="text-xs text-slate-500 font-medium">
-            Tất cả những điều bạn cần biết trước khi nâng cấp gói học tại EduMi.
-          </p>
-        </div>
-
-        <div className="space-y-3 pt-2">
-          {FAQ_LIST.map((faq, index) => {
-            const isOpen = openFaqIndex === index;
-            return (
-              <div
-                key={index}
-                className={`rounded-2xl border transform-gpu transition-[transform,box-shadow,border-color,background-color] duration-200 overflow-hidden hover:scale-[1.008] ${
-                  isOpen
-                    ? "border-emerald-400 bg-emerald-50/50 shadow-xs"
-                    : "border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-emerald-300 hover:shadow-2xs"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                  className="w-full p-4 text-left font-bold text-xs sm:text-sm text-slate-900 flex items-center justify-between gap-3 cursor-pointer select-none"
-                >
-                  <span>{faq.question}</span>
-                  <div
-                    className={`w-6 h-6 rounded-full border border-slate-300 flex items-center justify-center flex-shrink-0 transition-transform duration-200 ${
-                      isOpen ? "bg-emerald-600 text-white rotate-180 border-emerald-600" : "bg-white text-slate-600"
-                    }`}
-                  >
-                    <ChevronDown className="w-3.5 h-3.5 stroke-[2.5]" />
-                  </div>
-                </button>
-
-                {isOpen && (
-                  <div className="px-4 pb-4 pt-1 text-xs sm:text-[13px] text-slate-600 font-medium leading-relaxed border-t border-emerald-100/60 animate-in fade-in duration-150">
-                    {faq.answer}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 4. Bottom Mentor Course Banner */}
-      <div className="w-full rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-5 shadow-lg transform-gpu transition-[transform,box-shadow] duration-250 hover:scale-[1.01] hover:shadow-xl border border-transparent">
-        <div className="flex items-center gap-4 text-center md:text-left">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center flex-shrink-0 hidden sm:flex">
-            <GraduationCap className="w-6 h-6 text-emerald-400" />
-          </div>
-          <div>
-            <h4 className="text-sm sm:text-base font-black uppercase text-amber-300">
-              LỚP HỌC TRỰC TUYẾN CÙNG THỦ KHOA &amp; GIÁO VIÊN GIỎI
-            </h4>
-            <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed mt-1">
-              Khám phá các khóa học chuyên sâu theo chuyên đề, tương tác trực tiếp và nhận hướng dẫn 1-1 để tối ưu điểm 9+.
-            </p>
-          </div>
-        </div>
-
-        <Link
-          href="/classes"
-          className="w-full md:w-auto px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm tracking-wider uppercase transition-all duration-150 transform-gpu cursor-pointer flex items-center justify-center gap-2 flex-shrink-0 shadow-md hover:scale-105 active:scale-95"
-        >
-          <span>Xem các lớp học</span>
-          <ArrowRight className="w-4 h-4 stroke-[3]" />
-        </Link>
       </div>
     </div>
   );
