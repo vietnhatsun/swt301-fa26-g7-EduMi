@@ -133,8 +133,8 @@ export default function LandingNavbarClient({ initialUser }: { initialUser: User
                 </Link>
               </li>
               <li>
-                <a
-                  href="#exams"
+                <Link
+                  href="/exam"
                   className={`relative overflow-hidden group/navitem flex items-center justify-center font-bold text-xs sm:text-[13px] transition-all duration-300 cursor-pointer ${
                     scrollProgress > 0.4
                       ? "px-3.5 sm:px-4 py-1.5 rounded-full text-slate-700 hover:text-white hover:bg-emerald-600 border border-transparent hover:border-emerald-400 hover:shadow-[0_0_14px_rgba(16,185,129,0.4)]"
@@ -144,7 +144,7 @@ export default function LandingNavbarClient({ initialUser }: { initialUser: User
                   <span className="relative z-10">Phòng Thi</span>
                   {/* Diagonal light beam sweep across card */}
                   <span className="absolute inset-0 -translate-x-[150%] group-hover/navitem:translate-x-[150%] transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/50 to-transparent skew-x-[-25deg] pointer-events-none" />
-                </a>
+                </Link>
               </li>
               <li>
                 <a
@@ -389,13 +389,13 @@ export default function LandingNavbarClient({ initialUser }: { initialUser: User
             >
               Tính năng nổi bật
             </a>
-            <a
-              href="#exams"
+            <Link
+              href="/exam"
               onClick={() => setIsMobileMenuOpen(false)}
               className="px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors"
             >
-              Kho đề thi THPT & ĐGNL
-            </a>
+              Phòng Thi Thử THPT & ĐGNL
+            </Link>
             <a
               href="#ai-tutor"
               onClick={() => setIsMobileMenuOpen(false)}

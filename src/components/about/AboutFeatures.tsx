@@ -53,7 +53,7 @@ const featuresData: FeatureCardProps[] = [
     imageSrc: "/about-exam.jpg",
     imageAlt: "EduMi Phòng thi thử bấm giờ",
     buttonText: "Khám phá phòng thi",
-    linkHref: "/#exams",
+    linkHref: "/exam",
     delayClass: "delay-300",
   },
   {

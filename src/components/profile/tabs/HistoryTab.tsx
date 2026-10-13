@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   BookOpen,
   Clock,
@@ -14,12 +15,27 @@ import {
   Check,
   X,
 } from "lucide-react";
+import {
+  getExamSubmissions,
+  ExamSubmissionRecord,
+  getExamAndQuestionsForSubmission,
+} from "@/components/exam/exam-storage";
+import ExamResultView from "@/components/exam/ExamResultView";
+import { ExamItem, ExamQuestion, MOCK_EXAMS, getExamQuestions } from "@/components/exam/exam-data";
 
 interface TestHistoryItem {
   id: string;
   title: string;
   subject: string;
-  subjectCode: "math" | "literature" | "english" | "physics";
+  subjectCode:
+    | "math"
+    | "literature"
+    | "english"
+    | "physics"
+    | "chemistry"
+    | "biology"
+    | "history"
+    | "geography";
   date: string;
   duration: string;
   score: string;
@@ -27,9 +43,11 @@ interface TestHistoryItem {
   correctCount: string;
   status: "Đã hoàn thành" | "Đạt" | "Cần cố gắng";
   badgeColor: string;
+  submissionRecord?: ExamSubmissionRecord;
 }
 
 export default function HistoryTab() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -37,8 +55,37 @@ export default function HistoryTab() {
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
+  const [realSubmissions, setRealSubmissions] = useState<ExamSubmissionRecord[]>([]);
+  const [reviewModalData, setReviewModalData] = useState<{
+    exam: ExamItem;
+    questions: ExamQuestion[];
+    userAnswers: Record<string, "A" | "B" | "C" | "D">;
+    violations: number;
+    timeSpentSeconds: number;
+    mode: "exam" | "practice";
+  } | null>(null);
+
   const subjectDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load real exam submissions from localStorage & listen for updates
+  useEffect(() => {
+    const loadSubmissions = () => {
+      setRealSubmissions(getExamSubmissions());
+    };
+    loadSubmissions();
+
+    const handleSubmitted = () => {
+      loadSubmissions();
+    };
+
+    window.addEventListener("edumi_exam_submitted", handleSubmitted);
+    window.addEventListener("storage", handleSubmitted);
+    return () => {
+      window.removeEventListener("edumi_exam_submitted", handleSubmitted);
+      window.removeEventListener("storage", handleSubmitted);
+    };
+  }, []);
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -162,6 +209,10 @@ export default function HistoryTab() {
     { id: "literature", label: "Ngữ văn", icon: "📖" },
     { id: "english", label: "Tiếng Anh", icon: "🇬🇧" },
     { id: "physics", label: "Vật lý", icon: "⚡" },
+    { id: "chemistry", label: "Hóa học", icon: "🧪" },
+    { id: "biology", label: "Sinh học", icon: "🧬" },
+    { id: "history", label: "Lịch sử", icon: "🏛️" },
+    { id: "geography", label: "Địa lý", icon: "🌍" },
   ];
 
   const statusOptions = [
@@ -170,6 +221,25 @@ export default function HistoryTab() {
     { id: "Đã hoàn thành", label: "Đã hoàn thành", desc: "Bài thi đã nộp và chấm điểm" },
     { id: "Cần cố gắng", label: "Cần cố gắng", desc: "Cần ôn tập và rèn luyện thêm" },
   ];
+
+  // Convert real submissions from localStorage into test history items
+  const formattedRealHistory: TestHistoryItem[] = realSubmissions.map((sub) => ({
+    id: sub.id,
+    title: sub.examTitle,
+    subject: sub.subject,
+    subjectCode: sub.subjectCode,
+    date: sub.date,
+    duration: sub.duration,
+    score: sub.score,
+    rawScore: sub.rawScore,
+    correctCount: `${sub.correctCount}/${sub.totalQuestions} câu đúng`,
+    status: sub.status,
+    badgeColor: sub.badgeColor,
+    submissionRecord: sub,
+  }));
+
+  // Combine real submissions first, followed by default history items
+  const combinedHistory = [...formattedRealHistory, ...historyData];
 
   const isFiltered =
     searchQuery.trim() !== "" ||
@@ -184,7 +254,7 @@ export default function HistoryTab() {
     setIsStatusDropdownOpen(false);
   };
 
-  const filteredData = historyData.filter((item) => {
+  const filteredData = combinedHistory.filter((item) => {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
@@ -196,6 +266,63 @@ export default function HistoryTab() {
       selectedStatus === "all" || item.status === selectedStatus;
     return matchesSearch && matchesSubject && matchesStatus;
   });
+
+  // Handle open review modal
+  const handleOpenReview = (test: TestHistoryItem) => {
+    if (test.submissionRecord) {
+      const { exam, questions } = getExamAndQuestionsForSubmission(test.submissionRecord);
+      setReviewModalData({
+        exam,
+        questions,
+        userAnswers: test.submissionRecord.userAnswers,
+        violations: test.submissionRecord.violations,
+        timeSpentSeconds: test.submissionRecord.durationSeconds,
+        mode: test.submissionRecord.mode,
+      });
+      return;
+    }
+
+    // Fallback for mock items without stored submissions
+    let foundExam = MOCK_EXAMS.find(
+      (e) =>
+        e.title.toLowerCase().includes(test.title.toLowerCase().slice(0, 15)) ||
+        e.subject.toLowerCase() === test.subject.toLowerCase()
+    );
+    if (!foundExam) {
+      foundExam = MOCK_EXAMS[0];
+    }
+
+    const examToUse: ExamItem = {
+      ...foundExam,
+      title: test.title,
+      subject: (test.subject as any) || foundExam.subject,
+    };
+
+    const questions = getExamQuestions(foundExam.id);
+    const mockAnswers: Record<string, "A" | "B" | "C" | "D"> = {};
+    const totalQ = questions.length;
+    const targetCorrect = Math.min(
+      totalQ,
+      Math.max(1, Math.round((test.rawScore / 10) * totalQ))
+    );
+
+    questions.forEach((q, idx) => {
+      if (idx < targetCorrect) {
+        mockAnswers[q.id] = q.correctAnswer;
+      } else {
+        mockAnswers[q.id] = q.correctAnswer === "A" ? "B" : "A";
+      }
+    });
+
+    setReviewModalData({
+      exam: examToUse,
+      questions,
+      userAnswers: mockAnswers,
+      violations: 0,
+      timeSpentSeconds: parseInt(test.duration) * 60 || 1800,
+      mode: "exam",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -582,6 +709,7 @@ export default function HistoryTab() {
 
                   <button
                     type="button"
+                    onClick={() => handleOpenReview(test)}
                     className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-600 hover:text-white border border-slate-200 hover:border-emerald-600 text-slate-700 text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                   >
                     <span>Xem lại</span>
@@ -593,6 +721,44 @@ export default function HistoryTab() {
           </div>
         )}
       </div>
+
+      {/* ── MODAL XEM LẠI BÀI THI & LỜI GIẢI CHI TIẾT ── */}
+      {reviewModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4 md:p-6 overflow-y-auto animate-in fade-in duration-200">
+          <div className="relative w-full max-w-5xl max-h-[94vh] overflow-y-auto bg-slate-50/95 rounded-3xl sm:rounded-[36px] shadow-2xl border border-white/60 p-3 sm:p-6 my-auto">
+            {/* Thanh điều hướng cố định trên cùng modal */}
+            <div className="sticky top-0 z-20 flex justify-between items-center pb-3 pt-1 px-2 bg-slate-50/95 backdrop-blur border-b border-slate-200/60 mb-2">
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-emerald-600" />
+                Lịch sử bài thi & Lời giải chi tiết
+              </span>
+              <button
+                type="button"
+                onClick={() => setReviewModalData(null)}
+                className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs"
+              >
+                <X className="w-4 h-4" />
+                <span className="hidden sm:inline">Đóng</span>
+              </button>
+            </div>
+
+            <ExamResultView
+              exam={reviewModalData.exam}
+              questions={reviewModalData.questions}
+              userAnswers={reviewModalData.userAnswers}
+              violations={reviewModalData.violations}
+              timeSpentSeconds={reviewModalData.timeSpentSeconds}
+              mode={reviewModalData.mode}
+              onBack={() => setReviewModalData(null)}
+              backLabel="Đóng và quay lại danh sách lịch sử"
+              onRetake={() => {
+                setReviewModalData(null);
+                router.push(`/exam/${reviewModalData.exam.id}`);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
