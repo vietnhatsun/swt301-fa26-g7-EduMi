@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Plus, Minus, Send, CheckCircle2, MessageCircle } from "lucide-react";
-import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import InteractivePeekingCapy from "@/components/about/InteractivePeekingCapy";
 
 interface FAQItem {
@@ -45,7 +44,6 @@ const FAQ_LIST: FAQItem[] = [
 ];
 
 export default function AboutFAQConsultation() {
-  const { ref, isRevealed } = useScrollReveal(0.05);
   const [openIndex, setOpenIndex] = useState<number | null>(0); // Open first by default
 
   // Form State
@@ -72,20 +70,19 @@ export default function AboutFAQConsultation() {
 
   return (
     <section
-      ref={ref}
-      className="relative w-full py-16 sm:py-20 lg:py-24 bg-transparent overflow-hidden"
+      id="consultation"
+      className="relative w-full py-14 sm:py-20 bg-transparent overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* ── 50/50 Equal Two-Column Layout ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
           {/* ── Left Column: Frequently Asked Questions (Folder Accordion) ── */}
-          <div
-            className={`flex flex-col space-y-6 transition-all duration-700 ease-out transform ${
-              isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
+          <div className="flex flex-col space-y-6">
             {/* Left Header Container (Equal Height Rhythm) */}
             <div className="flex flex-col justify-end min-h-[100px] space-y-2">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-100 border-2 border-slate-900 text-xs font-black uppercase tracking-wider text-slate-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] w-fit">
+                <span>PHẦN 05 • TƯ VẤN &amp; HỎI ĐÁP</span>
+              </div>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-950 tracking-tight drop-shadow-[1px_1px_0px_rgba(255,255,255,0.8)]">
                 Frequently Asked
               </h2>
@@ -144,11 +141,7 @@ export default function AboutFAQConsultation() {
           </div>
 
           {/* ── Right Column: Consultation / Contact Registration Form Card ── */}
-          <div
-            className={`flex flex-col space-y-6 transition-all duration-700 delay-150 ease-out transform ${
-              isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
+          <div className="flex flex-col space-y-6">
             {/* Right Header Container (Equal Height Rhythm) */}
             <div className="flex flex-col justify-end min-h-[100px] space-y-2">
               <h3 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-950 tracking-tight drop-shadow-[2px_2px_0px_rgba(255,255,255,0.9)]">

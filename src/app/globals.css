@@ -465,3 +465,26 @@ body {
     display: none;
   }
 }
+
+/* ── Student Reviews Auto-Marquee Right-to-Left ── */
+@keyframes studentReviewsMarquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-reviews-marquee,
+.reviews-marquee-track {
+  display: flex !important;
+  width: max-content !important;
+  will-change: transform;
+  animation: studentReviewsMarquee 36s linear infinite !important;
+}
+
+.animate-reviews-marquee:hover,
+.reviews-marquee-track:hover {
+  animation-play-state: paused !important;
+}
