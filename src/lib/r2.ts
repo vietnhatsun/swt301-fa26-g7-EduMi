@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || "";
@@ -101,4 +101,22 @@ export async function generatePresignedDownloadUrl({
   return getSignedUrl(client, command, {
     expiresIn: expiresInSeconds,
   });
+}
+
+interface DeleteObjectOptions {
+  key: string;
+  bucket?: string;
+}
+
+/**
+ * Xóa object khỏi Cloudflare R2 để tránh file mồ côi sau khi xóa metadata trong DB.
+ */
+export async function deleteR2Object({ key, bucket = R2_BUCKET_NAME }: DeleteObjectOptions): Promise<void> {
+  const client = getR2Client();
+  const command = new DeleteObjectCommand({
+    Bucket: bucket,
+    Key: key,
+  });
+
+  await client.send(command);
 }

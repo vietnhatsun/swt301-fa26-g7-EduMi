@@ -421,7 +421,17 @@ export const metadata = {
   description: "Khám phá kho tài liệu học tập chọn lọc cùng EduMi.",
 };
 
-export default function MaterialsPage() {
+type MaterialsPageProps = {
+  searchParams: Promise<{ subject?: string }>;
+};
+
+export default async function MaterialsPage({ searchParams }: MaterialsPageProps) {
+  const { subject } = await searchParams;
+  const selectedSubject = subject?.trim();
+  const visibleMaterialCards = selectedSubject
+    ? materialCards.filter((card) => card.subject === selectedSubject)
+    : materialCards;
+
   return (
     <main className={`${beVietnam.className} min-h-screen overflow-hidden bg-[#7f9b5d] text-[#10213a]`}>
       <LandingNavbar />
@@ -475,7 +485,7 @@ export default function MaterialsPage() {
         <FilterBar />
 
         <section className="relative z-10 mx-auto mt-6 grid max-w-[1390px] grid-cols-4 gap-6 px-6">
-          {materialCards.map((card, index) => (
+          {visibleMaterialCards.map((card, index) => (
             <ClassCardReveal key={card.title} index={index} columns={4}>
               <MaterialCardItem card={card} />
             </ClassCardReveal>

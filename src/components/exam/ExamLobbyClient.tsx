@@ -73,8 +73,14 @@ export default function ExamLobbyClient() {
     setIsModalOpen(true);
   };
 
-  // Direct URL support: ?code=EDM-8899 or ?pin=EDM-8899
+  // Direct URL support: ?subject=Toán học, ?code=EDM-8899 or ?pin=EDM-8899
   useEffect(() => {
+    const subject = searchParams.get("subject")?.trim();
+    if (subject) {
+      const matchedSubject = MOCK_EXAMS.find((exam) => exam.subject === subject)?.subject;
+      if (matchedSubject) setSelectedSubject(matchedSubject);
+    }
+
     const code = searchParams.get("code") || searchParams.get("pin");
     if (code) {
       const trimmed = code.trim();

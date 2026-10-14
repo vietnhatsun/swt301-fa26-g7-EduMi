@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -689,12 +689,18 @@ type TeacherClassStatus = "upcoming" | "completed" | "future";
 type TeacherClassCard = {
   id: string;
   title: string;
+  description: string;
   subject: string;
   subjectColor: string;
   coverImage: string;
   teacher: string;
   schedule: string;
   roomName: string;
+  difficulty: string;
+  ratingAvg: number;
+  ratingCount: number;
+  studentCount: number;
+  rejectReason: string | null;
   status: TeacherClassStatus;
   statusLabel: string;
   statusColor: string;
@@ -704,7 +710,7 @@ type TeacherClassCard = {
   nextSessionTime?: string;
 };
 
-const teacherClassCards: TeacherClassCard[] = [
+const teacherClassCards = [
   {
     id: "teach-01",
     title: "Toán 12: Chuyên đề Hàm số, Tích phân & Logarit VIP",
@@ -808,11 +814,104 @@ const teacherClassCards: TeacherClassCard[] = [
     nextSessionTime: "Thứ 7 (26/09), 09:00",
   },
 ];
+type TeacherClassApiItem = {
+  id: string;
+  title: string;
+  description: string;
+  subject: string;
+  gradeLevel: string;
+  scheduleDays: string;
+  timeSlot: string;
+  difficulty: string;
+  ratingAvg: number;
+  ratingCount: number;
+  scheduleWeekdays?: string[];
+  startTime?: string | null;
+  endTime?: string | null;
+  totalLessons: number;
+  tuitionFee: number;
+  coverImage: string | null;
+  status: "draft" | "pending" | "approved" | "rejected" | "hidden" | "completed";
+  studentCount: number;
+  completedLessons: number;
+  progress: number;
+  rejectReason: string | null;
+  createdAt: string;
+};
+
+function getTeacherClassSubjectTone(subject: string) {
+  if (subject.includes("Toán")) return "bg-blue-50 text-blue-700 border-blue-200";
+  if (subject.includes("Anh") || subject.includes("IELTS")) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (subject.includes("Vật")) return "bg-purple-50 text-purple-700 border-purple-200";
+  if (subject.includes("Hóa")) return "bg-amber-50 text-amber-700 border-amber-200";
+  if (subject.includes("Văn")) return "bg-rose-50 text-rose-700 border-rose-200";
+  return "bg-slate-50 text-slate-700 border-slate-200";
+}
+
+function getTeacherClassCover(subject: string, coverImage?: string | null) {
+  if (coverImage) return coverImage;
+  if (subject.includes("Anh") || subject.includes("IELTS")) return "/classes/class-english.jpg";
+  if (subject.includes("Vật") || subject.includes("Hóa")) return "/classes/class-physics.jpg";
+  if (subject.includes("Văn")) return "/classes/class-literature.jpg";
+  return "/classes/class-math.jpg";
+}
+
+function mapApiClass(item: TeacherClassApiItem): TeacherClassCard {
+  const approvedLike = item.status === "approved" || item.status === "completed";
+  const status: TeacherClassStatus = item.status === "completed" ? "completed" : approvedLike ? "upcoming" : "future";
+  const statusLabel = item.status === "pending" ? "Đã gửi duyệt" : item.status === "rejected" ? "Từ chối" : item.status === "hidden" ? "Đã ẩn" : item.status === "completed" ? "Đã hoàn thành" : "Đã duyệt";
+  const statusColor = item.status === "pending" ? "bg-amber-50 text-amber-800 border-amber-200/80" : item.status === "rejected" ? "bg-rose-50 text-rose-700 border-rose-200/80" : item.status === "approved" ? "bg-emerald-50 text-emerald-800 border-emerald-200/80" : "bg-slate-100 text-slate-700 border-slate-200";
+
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description || "Lớp học đang được cập nhật mô tả chi tiết.",
+    subject: item.subject,
+    subjectColor: getTeacherClassSubjectTone(item.subject),
+    coverImage: getTeacherClassCover(item.subject, item.coverImage),
+    teacher: "Lớp giảng dạy của bạn",
+    schedule: `${item.scheduleDays} (${item.timeSlot})`,
+    roomName: item.status,
+    difficulty: item.difficulty || "Trung bình",
+    ratingAvg: item.ratingAvg || 0,
+    ratingCount: item.ratingCount || 0,
+    studentCount: item.studentCount || 0,
+    rejectReason: item.rejectReason || null,
+    status,
+    statusLabel,
+    statusColor,
+    progress: item.progress || 0,
+    completedLessons: item.completedLessons || 0,
+    totalLessons: item.totalLessons || 0,
+    nextSessionTime: item.rejectReason ? `Lý do: ${item.rejectReason}` : `${item.scheduleDays}, ${item.timeSlot}`,
+  };
+}
 
 function TeacherClassesPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState<"all" | "in_progress" | "completed">("all");
+  const [classes, setClasses] = useState<TeacherClassCard[]>([]);
+  const [classNotice, setClassNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
+
+  const fetchClasses = useCallback(async () => {
+    setIsLoadingClasses(true);
+    try {
+      const res = await fetch("/api/teacher/classes");
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Không thể tải lớp học.");
+      setClasses((data.classes || []).map((item: TeacherClassApiItem) => mapApiClass(item)));
+    } catch (error) {
+      setClassNotice({ type: "error", message: error instanceof Error ? error.message : "Không thể tải dữ liệu lớp học thật." });
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(fetchClasses);
+  }, [fetchClasses]);
 
   const subjectOptions = [
     { id: "all", label: "Tất cả môn học" },
@@ -830,7 +929,7 @@ function TeacherClassesPanel() {
   ];
 
   const isFiltered = searchQuery.trim() !== "" || selectedSubject !== "all" || selectedStatus !== "all";
-  const filteredClasses = teacherClassCards.filter((cls) => {
+  const filteredClasses = classes.filter((cls) => {
     if (searchQuery.trim()) {
       const keyword = searchQuery.toLowerCase();
       const haystack = `${cls.title} ${cls.subject} ${cls.teacher}`.toLowerCase();
@@ -869,7 +968,19 @@ function TeacherClassesPanel() {
         </div>
       </section>
 
-      <TeacherCreateClassForm />
+      {classNotice && (
+        <div className={`rounded-2xl border px-4 py-3 text-sm font-bold ${classNotice.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
+          {classNotice.message}
+        </div>
+      )}
+
+      <TeacherCreateClassForm
+        onCreated={(createdClass) => {
+          setClasses((current) => [mapApiClass(createdClass), ...current]);
+          setClassNotice({ type: "success", message: "Lớp học đã được gửi staff duyệt." });
+        }}
+        onError={(message) => setClassNotice({ type: "error", message })}
+      />
 
       <section className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-[0_2px_14px_rgba(0,0,0,0.03)] sm:rounded-3xl sm:p-4">
         <div className="flex flex-col items-stretch justify-between gap-3 md:flex-row md:items-center">
@@ -902,7 +1013,7 @@ function TeacherClassesPanel() {
 
       {filteredClasses.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-2">
-          {filteredClasses.map((cls) => <TeacherClassListCard key={cls.id} cls={cls} />)}
+          {isLoadingClasses ? <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm font-bold text-slate-500 xl:col-span-2">Đang tải lớp học...</div> : filteredClasses.map((cls) => <TeacherClassListCard key={cls.id} cls={cls} />)}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center space-y-3 rounded-3xl border border-slate-200/80 bg-white p-12 text-center shadow-xs">
@@ -921,7 +1032,121 @@ function TeacherClassesPanel() {
   );
 }
 
-function TeacherCreateClassForm() {
+function TeacherCreateClassForm({ onCreated, onError }: { onCreated: (createdClass: TeacherClassApiItem) => void; onError: (message: string) => void }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [subject, setSubject] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("");
+  const [difficulty, setDifficulty] = useState("");
+  const [scheduleWeekdays, setScheduleWeekdays] = useState<string[]>([]);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [totalLessons, setTotalLessons] = useState("");
+  const [tuitionFee, setTuitionFee] = useState("");
+  const [coverImage, setCoverImage] = useState("");
+  const [coverFileName, setCoverFileName] = useState("");
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const subjects = ["Toán học", "Ngữ văn", "Tiếng Anh", "Vật lý", "Hóa học", "Sinh học", "Lịch sử", "Địa lý", "IELTS"];
+  const grades = ["Lớp 10", "Lớp 11", "Lớp 12", "Ôn thi THPT"];
+  const difficulties = ["Cơ bản", "Trung bình", "Nâng cao"];
+
+  const handleCoverImageFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      onError("Vui lòng chọn ảnh bìa định dạng JPG, PNG hoặc WEBP.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      onError("Ảnh bìa lớp học tối đa 5MB.");
+      event.target.value = "";
+      return;
+    }
+
+    setIsUploadingCover(true);
+    try {
+      const presignRes = await fetch("/api/upload/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name, fileType: file.type, fileSize: file.size, category: "class-cover" }),
+      });
+      const presign = await presignRes.json();
+      if (!presignRes.ok || !presign.success) throw new Error(presign.error || "Không thể tạo liên kết upload ảnh bìa.");
+
+      const uploadRes = await fetch(presign.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+      if (!uploadRes.ok) throw new Error("Upload ảnh bìa lớp học thất bại.");
+
+      setCoverImage(presign.publicUrl || URL.createObjectURL(file));
+      setCoverFileName(file.name);
+    } catch (error) {
+      onError(error instanceof Error ? error.message : "Upload ảnh bìa lớp học thất bại.");
+      event.target.value = "";
+    } finally {
+      setIsUploadingCover(false);
+    }
+  };
+  const handleSubmit = async () => {
+    if (!title.trim() || !subject || !gradeLevel || !difficulty || scheduleWeekdays.length === 0 || !startTime || !endTime || !totalLessons || Number(totalLessons) <= 0 || !tuitionFee || Number(tuitionFee) < 0) {
+      onError("Vui lòng nhập đầy đủ tên lớp, môn học, khối lớp, lịch học, khung giờ, số buổi và học phí hợp lệ.");
+      return;
+    }
+
+    if (startTime >= endTime) {
+      onError("Giờ kết thúc phải sau giờ bắt đầu. Ví dụ: 19:30 - 21:00.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/teacher/classes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          description,
+          subject,
+          gradeLevel,
+          difficulty,
+          scheduleWeekdays,
+          startTime,
+          endTime,
+          totalLessons: Number(totalLessons),
+          tuitionFee: Number(tuitionFee),
+          coverImage: coverImage || getTeacherClassCover(subject),
+          hasOnlineRoom: true,
+          autoRecord: true,
+          allowPinnedNote: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Không thể đăng lớp học.");
+      onCreated(data.class);
+      setTitle("");
+      setDescription("");
+      setSubject("");
+      setGradeLevel("");
+      setDifficulty("");
+      setScheduleWeekdays([]);
+      setStartTime("");
+      setEndTime("");
+      setTotalLessons("");
+      setTuitionFee("");
+      setCoverImage("");
+      setCoverFileName("");
+      if (coverInputRef.current) coverInputRef.current.value = "";
+    } catch (error) {
+      onError(error instanceof Error ? error.message : "Đăng lớp học thất bại.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section className="overflow-hidden rounded-[28px] border border-emerald-100 bg-white shadow-[0_12px_34px_rgba(6,78,59,0.06)]">
       <div className="flex flex-col gap-4 border-b border-emerald-50 bg-gradient-to-r from-emerald-50/90 via-white to-amber-50/70 p-5 lg:flex-row lg:items-center lg:justify-between">
@@ -931,26 +1156,51 @@ function TeacherCreateClassForm() {
           </span>
           <div>
             <h2 className="text-xl font-black text-slate-950">Đăng lớp học mới</h2>
-            <p className="mt-1 text-sm font-semibold text-slate-500">Tạo lớp giảng dạy, thiết lập lịch học và thông tin hiển thị cho học viên.</p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">Tạo lớp giảng dạy, gửi staff duyệt trước khi hiển thị cho học viên.</p>
           </div>
         </div>
-        <button type="button" className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 text-sm font-black text-white shadow-lg shadow-emerald-700/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-800">
-          <Send className="h-4 w-4" />
+        <button type="button" disabled={isSubmitting} onClick={handleSubmit} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 text-sm font-black text-white shadow-lg shadow-emerald-700/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">
+          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           Đăng lớp học
         </button>
       </div>
 
-      <div className="grid gap-4 p-5 lg:grid-cols-[1.25fr_0.8fr_0.8fr_0.9fr]">
-        <FormControl label="Tên lớp học" value="Toán 12: Chuyên đề Hàm số VIP" />
-        <FormControl label="Môn học" value="Toán học" select />
-        <FormControl label="Khối lớp" value="THPT" select />
-        <FormControl label="Hình thức" value="Online" select />
+      <div className="grid gap-4 p-5 lg:grid-cols-[1.25fr_0.7fr_0.7fr_0.7fr]">
+        <ClassTextInput label="Tên lớp học" value={title} onChange={setTitle} placeholder="VD: Toán 12 - Chuyên đề hàm số VIP" />
+        <ClassSelectInput label="Môn học" value={subject} onChange={setSubject} options={subjects} placeholder="Chọn môn học" />
+        <ClassSelectInput label="Khối lớp" value={gradeLevel} onChange={setGradeLevel} options={grades} placeholder="Chọn khối lớp" />
+        <ClassSelectInput label="Độ khó" value={difficulty} onChange={setDifficulty} options={difficulties} placeholder="Chọn độ khó" />
       </div>
-      <div className="grid gap-4 border-t border-slate-100 px-5 pb-5 pt-4 lg:grid-cols-[1fr_1fr_1fr_1fr]">
-        <FormControl label="Lịch học" value="Thứ 2, Thứ 5" />
-        <FormControl label="Khung giờ" value="19:30 - 21:00" />
-        <FormControl label="Sĩ số tối đa" value="32 học viên" />
-        <FormControl label="Học phí" value="300,000 / buổi" />
+      <div className="grid gap-4 border-t border-slate-100 px-5 pb-5 pt-4 lg:grid-cols-[1.25fr_0.9fr_0.7fr_0.8fr]">
+        <ClassWeekdayPicker value={scheduleWeekdays} onChange={setScheduleWeekdays} />
+        <div className="grid grid-cols-2 gap-3">
+          <ClassTextInput label="Giờ bắt đầu" value={startTime} onChange={setStartTime} placeholder="19:30" type="time" />
+          <ClassTextInput label="Giờ kết thúc" value={endTime} onChange={setEndTime} placeholder="21:00" type="time" />
+        </div>
+        <ClassTextInput label="Số buổi" value={totalLessons} onChange={setTotalLessons} placeholder="VD: 36" type="number" />
+        <ClassTextInput label="Học phí cả khóa" value={tuitionFee} onChange={setTuitionFee} placeholder="VD: 3000000" type="number" />
+      </div>
+      <div className="grid gap-4 border-t border-slate-100 px-5 pb-5 pt-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <label className="block">
+          <span className="text-xs font-extrabold text-slate-500">Mô tả lớp học</span>
+          <textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Mô tả mục tiêu học tập, lộ trình, đối tượng phù hợp và điểm nổi bật của lớp..." className="mt-1 min-h-[118px] w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800 shadow-inner outline-none transition-all placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white" />
+        </label>
+        <div>
+          <span className="text-xs font-extrabold text-slate-500">Ảnh bìa lớp học</span>
+          <button type="button" onClick={() => coverInputRef.current?.click()} disabled={isUploadingCover} className="group relative mt-1 flex min-h-[118px] w-full overflow-hidden rounded-xl border border-dashed border-emerald-300 bg-emerald-50/60 text-left shadow-inner transition-all hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-70">
+            {coverImage ? (
+              <Image src={coverImage} alt="Ảnh bìa lớp học" fill sizes="320px" className="object-cover transition duration-300 group-hover:scale-[1.03]" />
+            ) : (
+              <span className="flex w-full flex-col items-center justify-center gap-2 px-4 text-center text-sm font-black text-emerald-800">
+                {isUploadingCover ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                {isUploadingCover ? "Đang tải ảnh..." : "Tải ảnh bìa lớp học"}
+                <span className="text-[11px] font-bold text-emerald-700/70">JPG, PNG, WEBP tối đa 5MB</span>
+              </span>
+            )}
+            {coverImage ? <span className="absolute inset-x-3 bottom-3 truncate rounded-full bg-white/90 px-3 py-1 text-xs font-black text-emerald-800 shadow-sm">{coverFileName || "Đã tải ảnh bìa"}</span> : null}
+          </button>
+          <input ref={coverInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleCoverImageFile} />
+        </div>
       </div>
       <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/60 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
@@ -961,12 +1211,69 @@ function TeacherCreateClassForm() {
             </span>
           ))}
         </div>
-        <button type="button" className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-xs font-black text-emerald-800 shadow-sm transition-all hover:bg-emerald-50">
-          <Eye className="h-4 w-4" />
-          Xem trước lớp
-        </button>
+        <span className="text-xs font-bold italic text-slate-400">Lớp học cần staff duyệt trước khi công khai.</span>
       </div>
     </section>
+  );
+}
+
+const CLASS_WEEKDAYS = [
+  { id: "mon", label: "T2" },
+  { id: "tue", label: "T3" },
+  { id: "wed", label: "T4" },
+  { id: "thu", label: "T5" },
+  { id: "fri", label: "T6" },
+  { id: "sat", label: "T7" },
+  { id: "sun", label: "CN" },
+];
+
+function ClassWeekdayPicker({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
+  const toggle = (weekday: string) => {
+    onChange(value.includes(weekday) ? value.filter((item) => item !== weekday) : [...value, weekday]);
+  };
+
+  return (
+    <label className="block">
+      <span className="text-xs font-extrabold text-slate-500">Lịch học</span>
+      <div className="mt-1 grid grid-cols-7 gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-1.5 shadow-inner">
+        {CLASS_WEEKDAYS.map((weekday) => {
+          const active = value.includes(weekday.id);
+          return (
+            <button
+              key={weekday.id}
+              type="button"
+              onClick={() => toggle(weekday.id)}
+              className={`h-9 rounded-lg text-xs font-black transition ${active ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/20" : "bg-white text-slate-500 hover:bg-emerald-50 hover:text-emerald-700"}`}
+            >
+              {weekday.label}
+            </button>
+          );
+        })}
+      </div>
+    </label>
+  );
+}
+function ClassTextInput({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; type?: string }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-extrabold text-slate-500">{label}</span>
+      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="mt-1 flex h-11 w-full items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 shadow-inner outline-none transition-all placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white" />
+    </label>
+  );
+}
+
+function ClassSelectInput({ label, value, onChange, options, placeholder }: { label: string; value: string; onChange: (value: string) => void; options: string[]; placeholder: string }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-extrabold text-slate-500">{label}</span>
+      <span className="relative mt-1 block">
+        <select value={value} onChange={(event) => onChange(event.target.value)} className="flex h-11 w-full appearance-none items-center rounded-xl border border-slate-200 bg-slate-50 px-3 pr-9 text-sm font-bold text-slate-800 shadow-inner outline-none transition-all invalid:text-slate-400 focus:border-emerald-400 focus:bg-white" required>
+          <option value="" disabled>{placeholder}</option>
+          {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      </span>
+    </label>
   );
 }
 
@@ -998,107 +1305,167 @@ function FilterSelect({ icon, value, options, onChange }: { icon: React.ReactNod
 }
 
 function TeacherClassListCard({ cls }: { cls: TeacherClassCard }) {
+  const ratingText = cls.ratingAvg > 0 ? `${cls.ratingAvg.toFixed(1)} (${cls.ratingCount})` : "Chưa có đánh giá";
+
   return (
-    <article className="group flex flex-col gap-4 rounded-2xl border border-emerald-100/80 bg-white p-3.5 shadow-[0_4px_20px_rgba(6,78,59,0.04)] transition-all hover:shadow-[0_12px_32px_rgba(6,78,59,0.08)] sm:flex-row sm:gap-5 sm:rounded-3xl sm:p-4">
-      <div className="relative h-44 min-h-[160px] w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-100 shadow-2xs sm:h-auto sm:min-h-[190px] sm:w-44 sm:rounded-2xl md:w-52 lg:w-56">
-        <Image src={cls.coverImage} alt={cls.title} fill sizes="(max-width: 640px) 100vw, 240px" className="object-cover object-center transition-transform duration-300 group-hover:scale-105" />
-        <div className="absolute left-2.5 top-2.5 z-10">
-          <span className={`rounded-full border bg-white/95 px-2.5 py-0.5 text-[10px] font-bold shadow-xs backdrop-blur-md ${cls.subjectColor}`}>{cls.subject}</span>
+    <article className="group flex h-auto flex-col overflow-hidden rounded-[18px] bg-white p-3 shadow-[0_8px_24px_rgba(25,60,35,0.08)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(25,60,35,0.13)] sm:h-[286px]">
+      <div className="grid min-h-0 flex-1 gap-4 sm:grid-cols-[40%_60%]">
+        <div className="relative min-h-[190px] overflow-hidden rounded-[14px] bg-emerald-50 sm:min-h-0">
+          <Image src={cls.coverImage} alt={cls.title} fill sizes="(max-width: 640px) 100vw, 220px" className="object-cover transition duration-300 group-hover:scale-[1.03]" />
+        </div>
+        <div className="flex min-w-0 flex-col py-1 pr-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className={`inline-flex h-8 w-fit items-center gap-2 rounded-full px-3.5 text-[14px] font-extrabold ${cls.subjectColor}`}>
+              <BookOpen className="h-4 w-4" />
+              {cls.subject}
+            </span>
+            <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${cls.statusColor}`}>{cls.statusLabel}</span>
+          </div>
+          <h2 className="line-clamp-2 text-[18px] font-black leading-[1.16] tracking-[-0.035em] text-[#10213a]">
+            {cls.title}
+          </h2>
+          <p className="mt-2 line-clamp-2 text-[13.5px] font-medium leading-[1.42] text-[#64728a]">
+            {cls.description}
+          </p>
+          {cls.rejectReason && (
+            <div className="mt-2 line-clamp-2 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-[12px] font-bold leading-snug text-rose-700">
+              Lý do từ chối: {cls.rejectReason}
+            </div>
+          )}
+          <div className="mt-auto flex items-center gap-2.5 pb-1 pt-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-black text-emerald-800">
+              GV
+            </span>
+            <span className="truncate text-[13px] font-extrabold text-[#23324a]">{cls.teacher}</span>
+          </div>
         </div>
       </div>
-
-      <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
-        <div>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold sm:text-[11px] ${cls.statusColor}`}>{cls.statusLabel}</span>
-            <span className="truncate text-[11px] font-medium text-slate-400">{cls.roomName.split(" ").slice(0, 2).join(" ")}</span>
-          </div>
-          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover:text-emerald-800 sm:text-base">{cls.title}</h3>
-          <div className="mt-2.5 space-y-1 text-xs text-slate-600">
-            <div className="flex items-center gap-2">
-              <UserRound className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
-              <span className="truncate font-semibold text-slate-800">{cls.teacher}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-              <span className="truncate">{cls.schedule}</span>
-            </div>
-          </div>
+      <div className="mt-3 flex min-h-[46px] flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-4 text-[12px] font-bold text-[#66758d]">
+          <span className="flex items-center gap-1 whitespace-nowrap"><BookOpen className="h-4 w-4" />{cls.totalLessons} buổi</span>
+          <span className="flex items-center gap-1 whitespace-nowrap"><BarChart3 className="h-4 w-4" />{cls.difficulty}</span>
+          <span className="flex items-center gap-1 whitespace-nowrap"><UserRound className="h-4 w-4" />{cls.studentCount.toLocaleString("vi-VN")} học viên</span>
+          <span className="flex items-center gap-1 whitespace-nowrap"><Star className="h-4 w-4 fill-amber-400 text-amber-400" />{ratingText}</span>
         </div>
-
-        <div>
-          <div className="mt-3 border-t border-slate-100 pt-2.5">
-            <div className="mb-1.5 flex items-center justify-between text-xs">
-              <span className="text-[11px] font-medium text-slate-500">Tiến độ khóa học</span>
-              <span className="text-[11px] font-bold text-slate-800">{cls.completedLessons}/{cls.totalLessons} buổi ({cls.progress}%)</span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-emerald-600 transition-all duration-300" style={{ width: `${cls.progress}%` }} />
-            </div>
-          </div>
-
-          <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-            <span className="truncate text-[11px] font-medium text-slate-400">{cls.nextSessionTime ? `Lịch: ${cls.nextSessionTime}` : "Đang cập nhật"}</span>
-            {cls.status === "upcoming" && (
-              <div className="flex shrink-0 items-center gap-1.5">
-                <button type="button" className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs transition-all hover:bg-emerald-100">
-                  <Pin className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="hidden sm:inline">Vào + Ghim Note</span>
-                  <span className="sm:hidden">+ Note</span>
-                </button>
-                <button type="button" className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-emerald-700">
-                  <Video className="h-3.5 w-3.5" />
-                  Vào lớp
-                </button>
-              </div>
-            )}
-            {cls.status === "completed" && (
-              <button type="button" className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition-all hover:bg-slate-200">
-                <PlayCircle className="h-3.5 w-3.5 text-emerald-600" />
-                Xem Record
-              </button>
-            )}
-            {cls.status === "future" && (
-              <button type="button" className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-100">
-                <FileText className="h-3.5 w-3.5 text-slate-500" />
-                Tài liệu
-              </button>
-            )}
-          </div>
-        </div>
+        <Link href="#" className="flex h-[38px] shrink-0 items-center justify-center gap-2 rounded-full bg-[#00a66f] px-4 text-[13px] font-black text-white transition hover:bg-[#008b5f]">
+          Xem lớp học <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
     </article>
   );
 }
+type MaterialStatus = "draft" | "pending" | "approved" | "rejected" | "hidden";
+
 type TeacherMaterialCard = {
   id: string;
   title: string;
+  description?: string;
   cardCode: string;
   subject: string;
+  topic?: string;
   fileType: "PDF" | "DOCX" | "SLIDE";
+  fileName?: string;
+  fileKey?: string;
+  fileSize?: number;
   pages: number;
-  downloads: number;
-  publishedLabel: string;
+  viewCount: number;
+  downloadCount: number;
   bgColor: string;
   accentColor: string;
   pattern: "waves" | "clouds" | "confetti" | "stripes";
+  status?: MaterialStatus;
+  rejectReason?: string | null;
 };
 
-const teacherMaterials: TeacherMaterialCard[] = [
-  { id: "tm-01", title: "Tuyển tập 50 đề luyện thi THPT Quốc Gia môn Toán 2026 có lời giải", cardCode: "TOÁN 12", subject: "Toán học", fileType: "PDF", pages: 180, downloads: 45120, publishedLabel: "Đăng hôm nay", bgColor: "bg-[#e07328]", accentColor: "text-[#e07328]", pattern: "waves" },
-  { id: "tm-02", title: "Cẩm nang Collocations & Idioms Tiếng Anh thi Đại học điểm 9+", cardCode: "IELTS 9+", subject: "Tiếng Anh", fileType: "PDF", pages: 96, downloads: 45240, publishedLabel: "Đăng hôm qua", bgColor: "bg-[#be4c73]", accentColor: "text-[#be4c73]", pattern: "clouds" },
-  { id: "tm-03", title: "Sơ đồ tư duy Vật lý 12: Dao động cơ và Sóng cơ trọng tâm", cardCode: "VẬT LÝ 12", subject: "Vật lý", fileType: "PDF", pages: 72, downloads: 45360, publishedLabel: "Đăng 3 ngày trước", bgColor: "bg-[#bf5447]", accentColor: "text-[#bf5447]", pattern: "confetti" },
-  { id: "tm-04", title: "Hệ thống luận điểm và mở bài kết bài Ngữ văn 12 đạt điểm cao", cardCode: "NGỮ VĂN", subject: "Ngữ văn", fileType: "DOCX", pages: 64, downloads: 45490, publishedLabel: "Đăng 1 tuần trước", bgColor: "bg-[#7356bc]", accentColor: "text-[#7356bc]", pattern: "stripes" },
-  { id: "tm-05", title: "Phân dạng bài tập Este Lipit nâng cao 8+ kèm đáp án chi tiết", cardCode: "HÓA HỌC", subject: "Hóa học", fileType: "PDF", pages: 85, downloads: 38200, publishedLabel: "Đăng 2 tuần trước", bgColor: "bg-[#0d9488]", accentColor: "text-[#0d9488]", pattern: "waves" },
-  { id: "tm-06", title: "Slide tổng ôn Di truyền học và Tiến hóa Sinh 12 trực quan", cardCode: "SINH HỌC", subject: "Sinh học", fileType: "SLIDE", pages: 110, downloads: 32450, publishedLabel: "Đăng 1 tháng trước", bgColor: "bg-[#0284c7]", accentColor: "text-[#0284c7]", pattern: "clouds" },
-  { id: "tm-07", title: "Niên biểu Lịch sử Việt Nam 1919 - 1975 dễ nhớ theo mốc", cardCode: "LỊCH SỬ", subject: "Lịch sử", fileType: "PDF", pages: 58, downloads: 29800, publishedLabel: "Đăng 1 tháng trước", bgColor: "bg-[#b45309]", accentColor: "text-[#b45309]", pattern: "confetti" },
-  { id: "tm-08", title: "Kỹ năng khai thác Atlat Địa lý Việt Nam đạt điểm tối đa", cardCode: "ĐỊA LÝ 12", subject: "Địa lý", fileType: "PDF", pages: 92, downloads: 31200, publishedLabel: "Đăng 1 tháng trước", bgColor: "bg-[#4f46e5]", accentColor: "text-[#4f46e5]", pattern: "stripes" },
+type TeacherMaterialApiItem = {
+  id: string;
+  title: string;
+  description: string;
+  subject: string;
+  topic: string;
+  gradeLevel: string;
+  fileType: "PDF" | "DOCX";
+  fileName: string;
+  fileKey: string;
+  fileSize: number;
+  pageCount: number;
+  status: MaterialStatus;
+  viewCount: number;
+  downloadCount: number;
+  rejectReason: string | null;
+  createdAt: string;
+};
+
+
+const MATERIAL_CARD_STYLES = [
+  { bgColor: "bg-[#e07328]", accentColor: "text-[#e07328]", pattern: "waves" as const },
+  { bgColor: "bg-[#be4c73]", accentColor: "text-[#be4c73]", pattern: "clouds" as const },
+  { bgColor: "bg-[#bf5447]", accentColor: "text-[#bf5447]", pattern: "confetti" as const },
+  { bgColor: "bg-[#7356bc]", accentColor: "text-[#7356bc]", pattern: "stripes" as const },
+  { bgColor: "bg-[#0d9488]", accentColor: "text-[#0d9488]", pattern: "waves" as const },
+  { bgColor: "bg-[#0284c7]", accentColor: "text-[#0284c7]", pattern: "clouds" as const },
 ];
+function getMaterialCardStyle(seed: string, fallbackIndex: number) {
+  let hash = fallbackIndex;
+
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+
+  return MATERIAL_CARD_STYLES[hash % MATERIAL_CARD_STYLES.length];
+}
+
+function mapApiMaterial(item: TeacherMaterialApiItem, index: number): TeacherMaterialCard {
+  const style = getMaterialCardStyle(`${item.id}-${item.subject}-${item.title}`, index);
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    cardCode: item.gradeLevel || item.subject.toUpperCase(),
+    subject: item.subject,
+    topic: item.topic,
+    fileType: item.fileType,
+    fileName: item.fileName,
+    fileKey: item.fileKey,
+    fileSize: item.fileSize,
+    pages: item.pageCount || (item.fileType === "DOCX" ? 24 : 48),
+    viewCount: item.viewCount || 0,
+    downloadCount: item.downloadCount || 0,
+    bgColor: style.bgColor,
+    accentColor: style.accentColor,
+    pattern: style.pattern,
+    status: item.status,
+    rejectReason: item.rejectReason,
+  };
+}
 
 function TeacherMaterialsPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTime, setSelectedTime] = useState("all");
   const [selectedSubject, setSelectedSubject] = useState("all");
+  const [materials, setMaterials] = useState<TeacherMaterialCard[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const fetchMaterials = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/teacher/materials");
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Không thể tải tài liệu.");
+      const apiMaterials = (data.materials || []).map((item: TeacherMaterialApiItem, index: number) => mapApiMaterial(item, index));
+      setMaterials(apiMaterials);
+    } catch (error) {
+      console.error("[Teacher materials fetch error]:", error);
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Không thể tải dữ liệu tài liệu thật." });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(fetchMaterials);
+  }, [fetchMaterials]);
 
   const timeOptions = [
     { id: "all", label: "Tất cả" },
@@ -1116,7 +1483,7 @@ function TeacherMaterialsPanel() {
   ];
 
   const isFiltered = searchQuery.trim() !== "" || selectedTime !== "all" || selectedSubject !== "all";
-  const filteredMaterials = teacherMaterials.filter((item) => {
+  const filteredMaterials = materials.filter((item) => {
     if (searchQuery.trim()) {
       const keyword = searchQuery.toLowerCase();
       const haystack = `${item.title} ${item.subject} ${item.cardCode}`.toLowerCase();
@@ -1132,142 +1499,231 @@ function TeacherMaterialsPanel() {
     setSelectedSubject("all");
   };
 
+  const handleDeleteMaterial = async (materialId: string) => {
+    if (!window.confirm("Bạn muốn xóa tài liệu này khỏi kho đã đăng?")) return;
+    try {
+      const res = await fetch(`/api/teacher/materials?id=${encodeURIComponent(materialId)}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Không thể xóa tài liệu.");
+      setMaterials((current) => current.filter((item) => item.id !== materialId));
+      setNotice({ type: "success", message: data.message || "Đã xóa tài liệu." });
+    } catch (error) {
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Xóa tài liệu thất bại." });
+    }
+  };
+
   return (
     <div className="space-y-5">
       <section className="relative h-[170px] overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0b5a43] via-[#07966c] to-[#08a777] px-6 py-8 shadow-[0_14px_36px_rgba(6,78,59,0.15)] sm:h-[180px] sm:px-10">
-        <div className="pointer-events-none absolute inset-0 opacity-80">
-          <span className="absolute left-[24%] top-[18%] h-6 w-6 rounded-full border border-white/30 bg-white/15 shadow-[0_0_18px_rgba(255,255,255,0.25)]" />
-          <span className="absolute left-[52%] top-[28%] h-5 w-5 rounded-full border border-white/25 bg-white/10" />
-          <span className="absolute left-[72%] top-[14%] h-8 w-8 rounded-full border border-white/30 bg-white/15" />
-          <span className="absolute left-[60%] top-[21%] text-3xl text-amber-200">✦</span>
-          <span className="absolute left-[69%] bottom-[28%] text-xl text-emerald-100">✦</span>
-        </div>
         <div className="relative z-10 max-w-2xl space-y-2">
           <p className="text-[11px] font-black uppercase tracking-wider text-emerald-200/90">Tài liệu · Kho giảng dạy</p>
           <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">Khám phá tài liệu của bạn</h1>
-          <p className="text-sm font-semibold text-emerald-100 sm:text-base">Quản lý học liệu đã đăng, xem lượt tải và chia sẻ tài nguyên học tập.</p>
+          <p className="text-sm font-semibold text-emerald-100 sm:text-base">Đăng tài liệu PDF/DOCX, gửi staff duyệt và quản lý trạng thái học liệu đã tải lên.</p>
         </div>
         <div className="absolute bottom-0 right-0 top-0 w-52 overflow-hidden sm:w-72 md:w-96">
           <Image src="/classes/banner-classes.jpg" alt="EduMi tài liệu" fill priority sizes="(max-width: 640px) 220px, 390px" className="object-cover object-right [mask-image:linear-gradient(to_left,black_65%,transparent)]" />
         </div>
       </section>
 
-      <TeacherUploadMaterialForm />
+      {notice && (
+        <div className={`rounded-2xl border px-4 py-3 text-sm font-bold ${notice.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
+          {notice.message}
+        </div>
+      )}
+
+      <TeacherUploadMaterialForm
+        onUploaded={(material) => {
+          setMaterials((current) => [mapApiMaterial(material, 0), ...current]);
+          setNotice({ type: "success", message: "Tài liệu đã được gửi staff duyệt." });
+        }}
+        onError={(message) => setNotice({ type: "error", message })}
+      />
 
       <section className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-[0_2px_14px_rgba(0,0,0,0.03)] sm:rounded-3xl sm:p-4">
         <div className="flex flex-col items-stretch justify-between gap-3 md:flex-row md:items-center">
           <div className="relative min-w-[220px] flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Tìm tài liệu, môn học, bộ đề..."
-              className="w-full rounded-xl border border-slate-200/90 bg-slate-50/70 py-2.5 pl-9.5 pr-9 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 hover:bg-white focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
-            />
-            {searchQuery && (
-              <button type="button" onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600">
-                <X className="h-4 w-4" />
-              </button>
-            )}
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Tìm tài liệu, môn học, bộ đề..." className="w-full rounded-xl border border-slate-200/90 bg-slate-50/70 py-2.5 pl-9 pr-9 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 hover:bg-white focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20" />
+            {searchQuery && <button type="button" onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600"><X className="h-4 w-4" /></button>}
           </div>
           <div className="flex flex-wrap items-center gap-2.5 sm:flex-nowrap">
             <FilterSelect icon={<Clock className="h-3.5 w-3.5 text-emerald-600" />} value={selectedTime} options={timeOptions} onChange={setSelectedTime} />
             <FilterSelect icon={<BookOpen className="h-3.5 w-3.5 text-emerald-600" />} value={selectedSubject} options={subjectOptions} onChange={setSelectedSubject} />
-            {isFiltered && (
-              <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/80 px-3 py-2.5 text-xs font-bold text-rose-700 transition-all hover:bg-rose-100">
-                <RotateCcw className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Đặt lại</span>
-              </button>
-            )}
+            {isFiltered && <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/80 px-3 py-2.5 text-xs font-bold text-rose-700 transition-all hover:bg-rose-100"><RotateCcw className="h-3.5 w-3.5" />Đặt lại</button>}
           </div>
         </div>
       </section>
 
       <div className="flex flex-col justify-between gap-3 px-1 text-xs sm:flex-row sm:items-center">
         <div className="flex items-center gap-3 font-medium text-slate-600">
-          <span className="flex items-center gap-1.5">
-            <FolderOpen className="h-4 w-4 text-emerald-600" />
-            <span>Đang hiển thị <strong className="text-slate-900">{filteredMaterials.length}</strong> tài liệu đã đăng</span>
-          </span>
-          <span className="text-slate-300">·</span>
-          <span className="flex items-center gap-1.5 text-slate-500">
-            <HardDrive className="h-3.5 w-3.5 text-slate-400" />
-            Kho tài liệu giảng dạy EduMi
-          </span>
+          <span className="flex items-center gap-1.5"><FolderOpen className="h-4 w-4 text-emerald-600" />Đang hiển thị <strong className="text-slate-900">{filteredMaterials.length}</strong> tài liệu</span>
+          {isLoading && <span className="inline-flex items-center gap-1 text-emerald-700"><Loader2 className="h-3.5 w-3.5 animate-spin" />Đang đồng bộ</span>}
         </div>
-        <span className="text-[11px] italic text-slate-400">Tài liệu hiển thị trong hồ sơ giáo viên và kho học liệu chung</span>
+        <span className="text-[11px] italic text-slate-400">Tài liệu cần được staff duyệt trước khi hiển thị công khai</span>
       </div>
 
       {filteredMaterials.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
-          {filteredMaterials.map((item) => <TeacherMaterialListCard key={item.id} item={item} />)}
+          {filteredMaterials.map((item) => <TeacherMaterialListCard key={item.id} item={item} onDeleted={handleDeleteMaterial} />)}
         </div>
       ) : (
         <div className="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-10 text-center shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-            <Search className="h-7 w-7 text-emerald-600" />
-          </div>
-          <div className="mx-auto max-w-md space-y-1">
-            <h3 className="text-base font-bold text-slate-800">Không tìm thấy tài liệu phù hợp</h3>
-            <p className="text-sm text-slate-500">Không có tài liệu nào khớp với từ khóa hoặc bộ lọc bạn đang chọn.</p>
-          </div>
-          <button type="button" onClick={resetFilters} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-emerald-700">
-            <RotateCcw className="h-3.5 w-3.5" />
-            Đặt lại bộ lọc
-          </button>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><Search className="h-7 w-7 text-emerald-600" /></div>
+          <h3 className="text-base font-bold text-slate-800">Không tìm thấy tài liệu phù hợp</h3>
+          <button type="button" onClick={resetFilters} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-emerald-700"><RotateCcw className="h-3.5 w-3.5" />Đặt lại bộ lọc</button>
         </div>
       )}
     </div>
   );
 }
 
-function TeacherUploadMaterialForm() {
+function TeacherUploadMaterialForm({ onUploaded, onError }: { onUploaded: (material: TeacherMaterialApiItem) => void; onError: (message: string) => void }) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [title, setTitle] = useState("");
+  const [subject, setSubject] = useState("");
+  const [topic, setTopic] = useState<"Đọc hiểu" | "Bài tập">("Đọc hiểu");
+  const [gradeLevel, setGradeLevel] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFileType, setSelectedFileType] = useState<"PDF" | "DOCX">("PDF");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const subjectOptions = ["Toán học", "Ngữ văn", "Tiếng Anh", "Vật lý", "Hóa học", "Sinh học", "Lịch sử", "Địa lý", "Tin học", "IELTS"];
+  const gradeOptions = ["Lớp 9", "Lớp 10", "Lớp 11", "Lớp 12", "THPT", "Ôn thi THPT Quốc gia", "ĐGNL", "IELTS"];
+
+  const materialMimeType = selectedFileType === "DOCX" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/pdf";
+  const acceptedFileTypes = selectedFileType === "DOCX" ? ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" : ".pdf,application/pdf";
+  const selectedFileExt = selectedFile?.name.split(".").pop()?.toLowerCase();
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !subject.trim() || !gradeLevel.trim()) return onError("Vui lòng nhập tên tài liệu, chọn môn học và lớp học.");
+    if (!selectedFile) return onError("Vui lòng chọn file tài liệu trước khi đăng.");
+    if ((selectedFileType === "PDF" && selectedFileExt !== "pdf") || (selectedFileType === "DOCX" && selectedFileExt !== "docx")) {
+      return onError(`File đã chọn chưa khớp với loại ${selectedFileType}. Vui lòng chọn đúng định dạng.`);
+    }
+
+    setIsSubmitting(true);
+    try {
+      const presignRes = await fetch("/api/upload/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: selectedFile.name, fileType: materialMimeType, fileSize: selectedFile.size, category: "material" }),
+      });
+      const presign = await presignRes.json();
+      if (!presignRes.ok || !presign.success) throw new Error(presign.error || "Không thể tạo liên kết upload R2.");
+
+      const uploadRes = await fetch(presign.uploadUrl, { method: "PUT", headers: { "Content-Type": materialMimeType }, body: selectedFile });
+      if (!uploadRes.ok) throw new Error("Upload tài liệu lên R2 thất bại.");
+
+      const saveRes = await fetch("/api/teacher/materials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, subject, topic, gradeLevel, fileType: selectedFileType, fileName: selectedFile.name, fileSize: selectedFile.size, fileKey: presign.fileKey, filePublicUrl: presign.publicUrl, visibility: "public", allowDownload: true }),
+      });
+      const saved = await saveRes.json();
+      if (!saveRes.ok || !saved.success) throw new Error(saved.error || "Không thể lưu tài liệu.");
+
+      onUploaded(saved.material);
+      setTitle("");
+      setSubject("");
+      setTopic("Đọc hiểu");
+      setGradeLevel("");
+      setDescription("");
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (error) {
+      onError(error instanceof Error ? error.message : "Đăng tài liệu thất bại.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section className="overflow-hidden rounded-[28px] border border-emerald-100 bg-white shadow-[0_12px_34px_rgba(6,78,59,0.06)]">
       <div className="flex flex-col gap-4 border-b border-emerald-50 bg-gradient-to-r from-emerald-50/90 via-white to-orange-50/70 p-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/25">
-            <FileText className="h-5 w-5" />
-          </span>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/25"><FileText className="h-5 w-5" /></span>
           <div>
             <h2 className="text-xl font-black text-slate-950">Đăng tài liệu giảng dạy</h2>
-            <p className="mt-1 text-sm font-semibold text-slate-500">Tải học liệu lên kho EduMi và gắn thông tin để học viên tìm thấy nhanh hơn.</p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">Hỗ trợ PDF và DOCX. File lưu trên Cloudflare R2, staff duyệt trước khi công khai.</p>
           </div>
         </div>
-        <button type="button" className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 text-sm font-black text-white shadow-lg shadow-emerald-700/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-800">
-          <Upload className="h-4 w-4" />
-          Đăng tài liệu
-        </button>
+        <button type="button" onClick={handleSubmit} disabled={isSubmitting} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 text-sm font-black text-white shadow-lg shadow-emerald-700/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}Gửi duyệt</button>
       </div>
 
-      <div className="grid gap-4 p-5 lg:grid-cols-[1.3fr_0.75fr_0.75fr_0.8fr]">
-        <FormControl label="Tên tài liệu" value="Bộ đề Toán 12 luyện thi 2026" />
-        <FormControl label="Môn học" value="Toán học" select />
-        <FormControl label="Loại file" value="PDF" select />
-        <FormControl label="Quyền xem" value="Công khai" select />
+      <div className="grid gap-4 p-5 lg:grid-cols-[1.2fr_0.7fr_0.65fr_0.65fr_0.65fr]">
+        <TextInput label="Tên tài liệu" value={title} onChange={setTitle} placeholder="VD: Bộ đề luyện thi Toán 12 có lời giải" />
+        <SelectInput label="Môn học" value={subject} onChange={setSubject} placeholder="Chọn môn học" options={subjectOptions} />
+        <label>
+          <span className="text-xs font-extrabold text-slate-500">Chủ đề</span>
+          <div className="relative mt-1">
+            <select value={topic} onChange={(event) => setTopic(event.target.value as "Đọc hiểu" | "Bài tập")} className="h-[42px] w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 pr-9 text-sm font-black text-slate-700 shadow-inner outline-none transition-all focus:border-emerald-400 focus:bg-white">
+              <option value="Đọc hiểu">Đọc hiểu</option>
+              <option value="Bài tập">Bài tập</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          </div>
+        </label>
+        <SelectInput label="Lớp học" value={gradeLevel} onChange={setGradeLevel} placeholder="Chọn lớp học" options={gradeOptions} />
+        <label>
+          <span className="text-xs font-extrabold text-slate-500">Loại file</span>
+          <div className="relative mt-1">
+            <select value={selectedFileType} onChange={(event) => { setSelectedFileType(event.target.value as "PDF" | "DOCX"); setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="h-[42px] w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 pr-9 text-sm font-black text-slate-700 shadow-inner outline-none transition-all focus:border-emerald-400 focus:bg-white">
+              <option value="PDF">PDF</option>
+              <option value="DOCX">DOCX</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          </div>
+        </label>
       </div>
+
       <div className="grid gap-4 border-t border-slate-100 px-5 pb-5 pt-4 lg:grid-cols-[1fr_1fr]">
-        <button type="button" className="flex min-h-[92px] items-center justify-center gap-3 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/60 px-4 text-sm font-black text-emerald-800 transition-all hover:bg-emerald-50">
-          <Upload className="h-5 w-5" />
-          Kéo thả hoặc chọn file PDF, DOCX, SLIDE
-        </button>
+        <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-[92px] items-center justify-center gap-3 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/60 px-4 text-sm font-black text-emerald-800 transition-all hover:bg-emerald-50"><Upload className="h-5 w-5" />{selectedFile ? selectedFile.name : `Chọn file ${selectedFileType} để gửi duyệt`}</button>
+        <input ref={fileInputRef} type="file" accept={acceptedFileTypes} className="hidden" onChange={(event) => setSelectedFile(event.target.files?.[0] || null)} />
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 shadow-inner">
           <span className="text-xs font-extrabold text-slate-500">Mô tả ngắn</span>
-          <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">Tài liệu tổng hợp dạng bài trọng tâm, có lời giải chi tiết và gợi ý phương pháp học hiệu quả.</p>
+          <textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Tóm tắt nội dung, mục tiêu học tập hoặc điểm nổi bật của tài liệu..." className="mt-2 min-h-[72px] w-full resize-none bg-transparent text-sm font-semibold leading-6 text-slate-700 outline-none placeholder:text-slate-400" />
         </div>
       </div>
+
       <div className="flex flex-wrap gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-4">
-        {["Hiển thị trên hồ sơ", "Cho phép tải về", "Gợi ý cho học viên phù hợp"].map((item) => (
-          <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-extrabold text-amber-800">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            {item}
-          </span>
-        ))}
+        {["Lưu R2", "Chờ staff duyệt", "Hỗ trợ PDF/DOCX"].map((item) => <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-extrabold text-amber-800"><CheckCircle2 className="h-3.5 w-3.5" />{item}</span>)}
       </div>
     </section>
   );
 }
-function TeacherMaterialListCard({ item }: { item: TeacherMaterialCard }) {
+
+function SelectInput({ label, value, onChange, placeholder, options }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; options: string[] }) {
+  return (
+    <label>
+      <span className="text-xs font-extrabold text-slate-500">{label}</span>
+      <div className="relative mt-1">
+        <select value={value} onChange={(event) => onChange(event.target.value)} className="h-[42px] w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 pr-9 text-sm font-black text-slate-700 shadow-inner outline-none transition-all invalid:text-slate-400 focus:border-emerald-400 focus:bg-white">
+          <option value="" disabled>{placeholder}</option>
+          {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      </div>
+    </label>
+  );
+}
+function TextInput({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string }) {
+  return <label><span className="text-xs font-extrabold text-slate-500">{label}</span><input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold text-slate-700 shadow-inner outline-none transition-all placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white" /></label>;
+}
+function getMaterialStatusBadge(status?: MaterialStatus) {
+  if (status === "approved") return { label: "Chấp thuận", className: "border-emerald-200 bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" };
+  if (status === "rejected") return { label: "Từ chối", className: "border-rose-200 bg-rose-50 text-rose-700", dot: "bg-rose-500" };
+  if (status === "hidden") return { label: "Đã ẩn", className: "border-slate-200 bg-slate-50 text-slate-600", dot: "bg-slate-400" };
+  return { label: "Đã gửi", className: "border-amber-200 bg-amber-50 text-amber-700", dot: "bg-amber-500" };
+}
+
+function TeacherMaterialListCard({ item, onDeleted }: { item: TeacherMaterialCard; onDeleted: (materialId: string) => void }) {
+  const statusBadge = getMaterialStatusBadge(item.status);
+
+  const handleView = () => {
+    window.open(`/materials/preview?id=${encodeURIComponent(item.id)}`, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <article className={`group relative flex min-h-[350px] select-none flex-col justify-between overflow-hidden rounded-[26px] p-5 text-white shadow-md transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl sm:min-h-[365px] sm:rounded-[30px] ${item.bgColor}`}>
       <TeacherMaterialPattern pattern={item.pattern} />
@@ -1278,38 +1734,38 @@ function TeacherMaterialListCard({ item }: { item: TeacherMaterialCard }) {
           <span className="truncate text-[11px] font-bold uppercase tracking-wide text-white/90">edumi | {item.subject.toLowerCase()}</span>
           <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px] font-extrabold text-white backdrop-blur-xs">{item.fileType}</span>
         </div>
-        <button type="button" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/15 text-white/80 transition-all hover:bg-amber-400 hover:text-white" title="Đánh dấu nổi bật">
-          <Star className="h-3.5 w-3.5" />
-        </button>
+        <button type="button" onClick={() => onDeleted(item.id)} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/15 text-white/80 transition-all hover:bg-rose-500 hover:text-white" title="Xóa tài liệu"><Trash2 className="h-3.5 w-3.5" /></button>
       </div>
 
       <div className="relative z-10 my-auto py-2">
         <h2 className="mb-2 origin-left text-2xl font-black uppercase leading-none tracking-tight text-white drop-shadow-md transition-transform group-hover:scale-105 sm:text-3xl">{item.cardCode}</h2>
         <h3 className="mb-3 line-clamp-2 text-xs font-bold leading-snug text-white/95 drop-shadow-xs sm:text-sm">{item.title}</h3>
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-white/90">
-          <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-white text-white" />{item.downloads.toLocaleString("vi-VN")} lượt xem</span>
+          <span className="flex items-center gap-1"><Eye className="h-3 w-3 text-white" />{item.viewCount.toLocaleString("vi-VN")} lượt xem</span>
           <span className="opacity-70">|</span>
-          <span className="flex items-center gap-1"><FileText className="h-3 w-3 text-white/90" />{item.pages} trang</span>
+          <span className="flex items-center gap-1"><Download className="h-3 w-3 text-white" />{item.downloadCount.toLocaleString("vi-VN")} lượt tải</span>
         </div>
-        <p className="mt-2 text-[11px] font-semibold text-white/75">{item.publishedLabel}</p>
+        {item.status === "rejected" && item.rejectReason && (
+          <p className="mt-2 line-clamp-2 rounded-xl bg-white/15 px-3 py-2 text-[11px] font-bold leading-snug text-white/95 backdrop-blur-sm">
+            Lý do từ chối: {item.rejectReason}
+          </p>
+        )}
       </div>
 
-      <div className="relative z-10 grid grid-cols-2 gap-2 pt-3">
-        <button type="button" className="group/btn flex w-full items-center justify-center gap-1 rounded-2xl bg-white px-2 py-2.5 text-xs font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:shadow-md">
+      <div className="relative z-10 flex items-center gap-2 pt-3">
+        <span className={`inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border px-3 py-2.5 text-xs font-black shadow-sm ${statusBadge.className}`}>
+          <span className={`h-2 w-2 rounded-full ${statusBadge.dot}`} />
+          {statusBadge.label}
+        </span>
+        <button type="button" onClick={handleView} className="group/btn flex h-10 min-w-[104px] items-center justify-center gap-1 rounded-2xl bg-white px-3 text-xs font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:shadow-md">
           <Eye className={`h-3.5 w-3.5 ${item.accentColor}`} />
           Xem
-          <ChevronRight className="h-3 w-3 shrink-0 text-slate-400 transition-transform group-hover/btn:translate-x-0.5" />
-        </button>
-        <button type="button" className="group/btn flex w-full items-center justify-center gap-1 rounded-2xl bg-white px-2 py-2.5 text-xs font-bold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:shadow-md">
-          <Download className={`h-3.5 w-3.5 ${item.accentColor}`} />
-          Tải về
           <ChevronRight className="h-3 w-3 shrink-0 text-slate-400 transition-transform group-hover/btn:translate-x-0.5" />
         </button>
       </div>
     </article>
   );
 }
-
 function TeacherMaterialPattern({ pattern }: { pattern: TeacherMaterialCard["pattern"] }) {
   if (pattern === "waves") {
     return (

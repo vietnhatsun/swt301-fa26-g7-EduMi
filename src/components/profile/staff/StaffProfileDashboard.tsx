@@ -428,7 +428,7 @@ function UserManagementPanel({
   const [localUsers, setLocalUsers] = useState<StaffUserItem[]>(users);
 
   useEffect(() => {
-    setLocalUsers(users);
+    queueMicrotask(() => setLocalUsers(users));
   }, [users]);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -1129,231 +1129,546 @@ function UserManagementPanel({
   );
 }
 
+const CLASS_REJECT_REASONS = [
+  "Thông tin lớp học chưa đầy đủ, cần bổ sung mô tả, lộ trình hoặc mục tiêu học tập.",
+  "Lịch học hoặc khung giờ chưa rõ ràng, cần điều chỉnh trước khi duyệt.",
+  "Môn học, khối lớp hoặc độ khó chưa phù hợp với nội dung lớp học.",
+  "Học phí hoặc số buổi chưa hợp lý, cần kiểm tra lại thông tin đăng ký.",
+  "Nội dung lớp học cần chỉnh sửa để phù hợp tiêu chuẩn hiển thị của EduMi.",
+];
 function ClassManagementPanel() {
-  const pendingClasses = [
-    { title: "Toán 12 - Chuyên đề Hàm số", teacher: "Thầy Đức", subject: "Toán học", level: "THPT", lessons: "36 buổi", price: "399.000đ", submitted: "2 giờ trước", image: "/classes/class-math.jpg", desc: "Luyện chuyên đề hàm số, logarit và tích phân theo lộ trình thi THPT." },
-    { title: "IELTS Foundation - Listening", teacher: "Cô Bảo Ngọc", subject: "Tiếng Anh", level: "IELTS", lessons: "28 buổi", price: "599.000đ", submitted: "5 giờ trước", image: "/classes/class-english.jpg", desc: "Rèn nghe theo chủ điểm, bổ sung từ vựng và chiến lược làm bài IELTS." },
-    { title: "Vật lý 10 - Nền tảng chuyển động", teacher: "Thầy Minh Quân", subject: "Vật lý", level: "THPT", lessons: "24 buổi", price: "349.000đ", submitted: "1 ngày trước", image: "/classes/class-physics.jpg", desc: "Nắm chắc chuyển động, lực và các bài tập vật lý cốt lõi." },
-  ];
-  const classes = [
-    { title: "Toán 12: Hàm số, Tích phân & Logarit", teacher: "Thầy Đức", subject: "Toán học", students: "124", status: "Đang học" },
-    { title: "Ngữ pháp Tiếng Anh: 12 Thì nâng cao", teacher: "Cô Thu Hà", subject: "Tiếng Anh", students: "98", status: "Đang học" },
-    { title: "Vật lý 10: Dao động và Sóng", teacher: "Thầy Trần Minh", subject: "Vật lý", students: "76", status: "Tạm ẩn" },
-    { title: "Hóa học 11: Từ nền tảng đến nâng cao", teacher: "Cô Mai Anh", subject: "Hóa học", students: "81", status: "Đang học" },
-    { title: "Ngữ văn 12: Nghị luận xã hội", teacher: "Cô Hoàng An", subject: "Ngữ văn", students: "64", status: "Hoàn thành" },
-  ];
+  type StaffClassItem = {
+    id: string;
+    teacherId: string;
+    teacherName: string;
+    teacherEmail: string;
+    title: string;
+    description: string;
+    subject: string;
+    gradeLevel: string;
+    scheduleDays: string;
+    timeSlot: string;
+    totalLessons: number;
+    tuitionFee: number;
+    coverImage: string | null;
+    status: "draft" | "pending" | "approved" | "rejected" | "hidden" | "completed";
+    studentCount: number;
+    completedLessons: number;
+    rejectReason: string | null;
+    createdAt: string;
+  };
+
+  const [classes, setClasses] = useState<StaffClassItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [rejectingClass, setRejectingClass] = useState<StaffClassItem | null>(null);
+  const [selectedClassRejectReason, setSelectedClassRejectReason] = useState(CLASS_REJECT_REASONS[0]);
+  const [customClassRejectReason, setCustomClassRejectReason] = useState("");
+  const [viewingClass, setViewingClass] = useState<StaffClassItem | null>(null);
+
+  const fetchClasses = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/staff/classes");
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Không thể tải lớp học.");
+      setClasses(data.classes || []);
+    } catch (error) {
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Không thể tải danh sách lớp học." });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(fetchClasses);
+  }, [fetchClasses]);
+
+  const handleReview = async (classId: string, action: "approve" | "reject" | "hide", rejectReason = "") => {
+    if (action === "reject" && !rejectReason.trim()) return;
+    setProcessingId(classId);
+    try {
+      const res = await fetch("/api/staff/classes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ classId, action, rejectReason }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Không thể cập nhật lớp học.");
+      setClasses((current) => current.map((item) => (item.id === classId ? data.class : item)));
+      if (action === "reject") {
+        setRejectingClass(null);
+        setCustomClassRejectReason("");
+        setSelectedClassRejectReason(CLASS_REJECT_REASONS[0]);
+      }
+      setNotice({ type: "success", message: data.message || "Đã cập nhật lớp học." });
+    } catch (error) {
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Cập nhật lớp học thất bại." });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const confirmClassReject = () => {
+    if (!rejectingClass) return;
+    const reason = customClassRejectReason.trim() || selectedClassRejectReason;
+    if (!reason.trim()) {
+      setNotice({ type: "error", message: "Vui lòng nhập lý do từ chối lớp học." });
+      return;
+    }
+    void handleReview(rejectingClass.id, "reject", reason);
+  };
+  const pendingClasses = classes.filter((item) => item.status === "pending");
+  const reviewedClasses = classes.filter((item) => item.status !== "pending");
+
+  const formatCurrency = (value: number) => `${Number(value || 0).toLocaleString("vi-VN")}đ`;
+  const formatSubmitted = (createdAt: string) => {
+    if (!createdAt) return "Mới gửi";
+    const [date] = createdAt.split("T");
+    return date ? date.split("-").reverse().join("/") : "Mới gửi";
+  };
+  const getCover = (item: StaffClassItem) => item.coverImage || (item.subject.includes("Anh") || item.subject.includes("IELTS") ? "/classes/class-english.jpg" : item.subject.includes("Vật") || item.subject.includes("Hóa") ? "/classes/class-physics.jpg" : item.subject.includes("Văn") ? "/classes/class-literature.jpg" : "/classes/class-math.jpg");
+  const getStatusTone = (status: StaffClassItem["status"]) => status === "approved" ? "bg-emerald-50 text-emerald-700" : status === "hidden" ? "bg-amber-50 text-amber-700" : status === "rejected" ? "bg-rose-50 text-rose-700" : status === "completed" ? "bg-blue-50 text-blue-700" : "bg-slate-50 text-slate-700";
+  const getStatusLabel = (status: StaffClassItem["status"]) => status === "approved" ? "Đã duyệt" : status === "hidden" ? "Đã ban" : status === "rejected" ? "Từ chối" : status === "completed" ? "Hoàn thành" : "Bản nháp";
 
   return (
     <div className="space-y-5">
+      {notice && <div className={`rounded-2xl border px-4 py-3 text-sm font-bold ${notice.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-700"}`}>{notice.message}</div>}
+
       <section className="rounded-3xl border border-amber-100 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-black text-slate-950">Xác minh lớp học</h2>
             <p className="mt-1 text-sm font-bold text-slate-500">Chấp nhận hoặc từ chối đơn đăng ký lớp học mới từ giảng viên.</p>
           </div>
-          <span className="rounded-full bg-amber-50 px-4 py-2 text-sm font-black text-amber-700">{pendingClasses.length} chờ duyệt</span>
+          <span className="rounded-full bg-amber-50 px-4 py-2 text-sm font-black text-amber-700">{isLoading ? "Đang tải" : `${pendingClasses.length} chờ duyệt`}</span>
         </div>
-        <div className="grid gap-4 xl:grid-cols-2">
-          {pendingClasses.map((item) => (
-            <article key={item.title} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
-              <div className="grid gap-4 p-4 sm:grid-cols-[170px_1fr]">
-                <div className="relative h-40 overflow-hidden rounded-2xl bg-slate-100 sm:h-full">
-                  <Image src={item.image} alt={item.title} fill sizes="170px" className="object-cover" />
-                </div>
-                <div className="min-w-0">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <span className="rounded-2xl bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">{item.subject}</span>
-                    <span className="text-xs font-bold text-slate-400">{item.submitted}</span>
+        {pendingClasses.length > 0 ? (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {pendingClasses.map((item) => (
+              <article key={item.id} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+                <div className="grid gap-4 p-4 sm:grid-cols-[170px_1fr]">
+                  <div className="relative h-40 overflow-hidden rounded-2xl bg-slate-100 sm:h-full">
+                    <Image src={getCover(item)} alt={item.title} fill sizes="170px" className="object-cover" />
                   </div>
-                  <h3 className="line-clamp-2 text-lg font-black leading-tight text-slate-950">{item.title}</h3>
-                  <p className="mt-2 line-clamp-2 text-sm font-semibold leading-5 text-slate-500">{item.desc}</p>
-                  <p className="mt-3 text-sm font-black text-slate-700">{item.teacher}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-black text-slate-500">
-                    <span>{item.lessons}</span>
-                    <span>•</span>
-                    <span>{item.level}</span>
-                    <span>•</span>
-                    <span>{item.price}</span>
+                  <div className="min-w-0">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <span className="rounded-2xl bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">{item.subject}</span>
+                      <span className="text-xs font-bold text-slate-400">{formatSubmitted(item.createdAt)}</span>
+                    </div>
+                    <h3 className="line-clamp-2 text-lg font-black leading-tight text-slate-950">{item.title}</h3>
+                    <p className="mt-2 line-clamp-2 text-sm font-semibold leading-5 text-slate-500">{item.description || "Lớp học mới đang chờ staff kiểm tra nội dung và lịch học."}</p>
+                    <p className="mt-3 text-sm font-black text-slate-700">{item.teacherName}</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-black text-slate-500">
+                      <span>{item.totalLessons} buổi</span><span>•</span><span>{item.gradeLevel}</span><span>•</span><span>{formatCurrency(item.tuitionFee)} / khóa</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="grid gap-2 border-t border-slate-100 p-4 sm:grid-cols-3">
-                <button className="flex h-10 items-center justify-center gap-2 rounded-2xl bg-emerald-600 text-sm font-black text-white shadow-lg shadow-emerald-600/20"><CheckCircle className="h-4 w-4" /> Chấp nhận</button>
-                <button className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-700"><Eye className="h-4 w-4" /> Xem</button>
-                <button className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-rose-50 text-sm font-black text-rose-600"><XCircle className="h-4 w-4" /> Từ chối</button>
-              </div>
-            </article>
-          ))}
-        </div>
+                <div className="grid gap-2 border-t border-slate-100 p-4 sm:grid-cols-3">
+                  <button disabled={processingId === item.id} onClick={() => handleReview(item.id, "approve")} className="flex h-10 items-center justify-center gap-2 rounded-2xl bg-emerald-600 text-sm font-black text-white shadow-lg shadow-emerald-600/20 disabled:opacity-60"><CheckCircle className="h-4 w-4" /> Chấp nhận</button>
+                  <button onClick={() => setViewingClass(item)} className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-700"><Eye className="h-4 w-4" /> Xem</button>
+                  <button disabled={processingId === item.id} onClick={() => { setRejectingClass(item); setSelectedClassRejectReason(CLASS_REJECT_REASONS[0]); setCustomClassRejectReason(""); }} className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-rose-50 text-sm font-black text-rose-600 disabled:opacity-60"><XCircle className="h-4 w-4" /> Từ chối</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm font-bold text-slate-500">Không có lớp học nào đang chờ duyệt.</div>
+        )}
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="grid gap-3 xl:grid-cols-[1fr_180px_180px_auto]">
-          <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4">
-            <Search className="h-5 w-5 text-slate-400" />
-            <span className="text-sm font-bold text-slate-400">Tìm theo tên lớp, giáo viên, môn học...</span>
-          </div>
-          {["Môn học", "Trạng thái"].map((label) => (
-            <button key={label} className="flex h-12 items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-600">{label}<ChevronDown className="h-4 w-4" /></button>
-          ))}
-          <button className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"><Download className="h-4 w-4" /> Xuất danh sách</button>
+          <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4"><Search className="h-5 w-5 text-slate-400" /><span className="text-sm font-bold text-slate-400">Tìm theo tên lớp, giáo viên, môn học...</span></div>
+          {["Môn học", "Trạng thái"].map((label) => <button key={label} className="flex h-12 items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-600">{label}<ChevronDown className="h-4 w-4" /></button>)}
+          <button onClick={fetchClasses} className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"><RotateCcw className="h-4 w-4" /> Làm mới</button>
         </div>
       </section>
 
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 p-5">
-          <h2 className="text-xl font-black text-slate-950">Danh sách lớp học</h2>
-          <span className="text-sm font-bold text-slate-400">Hiển thị 5 / 892 lớp học</span>
-        </div>
+        <div className="flex items-center justify-between border-b border-slate-100 p-5"><h2 className="text-xl font-black text-slate-950">Danh sách lớp học</h2><span className="text-sm font-bold text-slate-400">Hiển thị {reviewedClasses.length} / {classes.length} lớp học</span></div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Lớp học</th>
-                <th className="px-4 py-3">Giảng viên</th>
-                <th className="px-4 py-3">Môn học</th>
-                <th className="px-4 py-3">Học viên</th>
-                <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3">Hành động</th>
-              </tr>
-            </thead>
+            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-3">Lớp học</th><th className="px-4 py-3">Giảng viên</th><th className="px-4 py-3">Môn học</th><th className="px-4 py-3">Số buổi</th><th className="px-4 py-3">Đánh giá</th><th className="px-4 py-3">Hành động</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {classes.map((item) => {
-                const statusTone = item.status === "Đang học" ? "bg-emerald-50 text-emerald-700" : item.status === "Tạm ẩn" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700";
-                return (
-                  <tr key={item.title} className="hover:bg-slate-50/70">
-                    <td className="px-4 py-4"><p className="font-black text-slate-950">{item.title}</p></td>
-                    <td className="px-4 py-4 font-bold text-slate-600">{item.teacher}</td>
-                    <td className="px-4 py-4"><span className="rounded-xl bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">{item.subject}</span></td>
-                    <td className="px-4 py-4 font-bold text-slate-600">{item.students}</td>
-                    <td className="px-4 py-4"><span className={`rounded-xl px-3 py-1 text-xs font-black ${statusTone}`}>● {item.status}</span></td>
-                    <td className="px-4 py-4"><div className="flex items-center gap-2"><button className="flex h-8 items-center gap-1 rounded-xl border border-slate-200 px-2 text-xs font-black text-slate-700"><Eye className="h-4 w-4" /> Xem</button><button className="flex h-8 items-center gap-1 rounded-xl border border-rose-100 bg-rose-50 px-2 text-xs font-black text-rose-600"><ShieldCheck className="h-4 w-4" /> Ban</button></div></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function MaterialManagementPanel() {
-  const pendingMaterials = [
-    { title: "Tuyển tập 50 đề thi thử THPT Quốc Gia môn Toán", teacher: "Cô Nguyễn Thảo", subject: "Toán học", code: "TOÁN 12", type: "PDF", pages: "128 trang", views: "45.120", submitted: "1 giờ trước", bg: "from-[#e36f1f] to-[#bf5a18]", accent: "bg-orange-400/25", pattern: "waves" },
-    { title: "IELTS 9+ Collocations & Idioms Handbook", teacher: "Thầy Minh Quân", subject: "Tiếng Anh", code: "IELTS 9+", type: "PDF", pages: "84 trang", views: "45.240", submitted: "4 giờ trước", bg: "from-[#c04576] to-[#a64b71]", accent: "bg-pink-200/20", pattern: "waves" },
-    { title: "Sơ đồ tư duy Vật lý 12: Dao động và Sóng cơ", teacher: "Thầy Trần Minh", subject: "Vật lý", code: "VẬT LÝ 12", type: "PDF", pages: "72 trang", views: "45.360", submitted: "Hôm qua", bg: "from-[#c45143] to-[#9f3d36]", accent: "bg-red-200/20", pattern: "confetti" },
-  ];
-
-  const materials = [
-    { title: "Toán 12 - Bộ công thức tích phân nhanh", teacher: "Cô Nguyễn Thảo", subject: "Toán học", type: "PDF", downloads: "12.4K", rating: "5.0" },
-    { title: "Ngữ pháp Tiếng Anh 12 thì nâng cao", teacher: "Cô Thu Hà", subject: "Tiếng Anh", type: "PDF", downloads: "9.8K", rating: "4.9" },
-    { title: "Vật lý 10 - Chuyển động thẳng biến đổi đều", teacher: "Thầy Minh Quân", subject: "Vật lý", type: "DOCX", downloads: "6.7K", rating: "4.8" },
-    { title: "Hóa học 11 - Cân bằng phản ứng oxi hóa khử", teacher: "Cô Mai Anh", subject: "Hóa học", type: "PDF", downloads: "8.1K", rating: "5.0" },
-    { title: "Ngữ văn 12 - Dàn ý nghị luận xã hội", teacher: "Cô Hoàng An", subject: "Ngữ văn", type: "DOCX", downloads: "5.4K", rating: "4.7" },
-  ];
-
-  return (
-    <div className="space-y-5">
-      <section className="rounded-3xl border border-amber-100 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-slate-950">Kiểm duyệt tài liệu</h2>
-            <p className="mt-1 text-sm font-bold text-slate-500">Chấp nhận hoặc từ chối tài liệu học tập mới do giảng viên tải lên.</p>
-          </div>
-          <span className="rounded-full bg-amber-50 px-4 py-2 text-sm font-black text-amber-700">{pendingMaterials.length} chờ duyệt</span>
-        </div>
-        <div className="grid gap-4 xl:grid-cols-3">
-          {pendingMaterials.map((item) => (
-            <article key={item.title} className={`relative min-h-[430px] overflow-hidden rounded-3xl bg-gradient-to-br ${item.bg} p-6 text-white shadow-sm`}>
-              <div className="pointer-events-none absolute inset-0 opacity-70">
-                {item.pattern === "waves" ? (
-                  <>
-                    <span className={`absolute -left-16 top-20 h-40 w-80 rounded-[50%] ${item.accent}`} />
-                    <span className={`absolute -bottom-16 right-0 h-40 w-80 rounded-[50%] ${item.accent}`} />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.10)_0_14px,transparent_14px_42px)]" />
-                )}
-              </div>
-              <div className="relative z-10 flex h-full flex-col">
-                <div className="mb-14 flex items-center justify-between gap-3 text-xs font-black uppercase tracking-wide">
-                  <span>EDUMI | {item.subject}</span>
-                  <span className="rounded-full bg-white/20 px-2 py-1">{item.type}</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-4xl font-black leading-none">{item.code}</h3>
-                  <p className="mt-5 line-clamp-2 text-xl font-black leading-tight">{item.title}</p>
-                  <p className="mt-4 text-sm font-bold text-white/85">{item.teacher}</p>
-                  <div className="mt-5 flex items-center gap-3 text-sm font-black text-white/90">
-                    <span>★ {item.views} lượt xem</span>
-                    <span className="h-5 w-px bg-white/40" />
-                    <span>{item.pages}</span>
-                  </div>
-                </div>
-                <div className="mt-8 grid gap-2 sm:grid-cols-3">
-                  <button className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-emerald-700"><CheckCircle className="h-4 w-4" /> Chấp nhận</button>
-                  <button className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-slate-800"><Eye className="h-4 w-4" /> Xem</button>
-                  <button className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white/90 text-sm font-black text-rose-600"><XCircle className="h-4 w-4" /> Từ chối</button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 xl:grid-cols-[1fr_180px_180px_auto]">
-          <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4">
-            <Search className="h-5 w-5 text-slate-400" />
-            <span className="text-sm font-bold text-slate-400">Tìm theo tên tài liệu, giáo viên, môn học...</span>
-          </div>
-          {["Loại tài liệu", "Đánh giá"].map((label) => (
-            <button key={label} className="flex h-12 items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-600">{label}<ChevronDown className="h-4 w-4" /></button>
-          ))}
-          <button className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"><Download className="h-4 w-4" /> Xuất danh sách</button>
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 p-5">
-          <h2 className="text-xl font-black text-slate-950">Danh sách tài liệu</h2>
-          <span className="text-sm font-bold text-slate-400">Hiển thị 5 / 1.320 tài liệu</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Tài liệu</th>
-                <th className="px-4 py-3">Giảng viên</th>
-                <th className="px-4 py-3">Môn học</th>
-                <th className="px-4 py-3">Loại</th>
-                <th className="px-4 py-3">Lượt tải</th>
-                <th className="px-4 py-3">Đánh giá</th>
-                <th className="px-4 py-3">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {materials.map((item) => (
-                <tr key={item.title} className="hover:bg-slate-50/70">
-                  <td className="px-4 py-4"><p className="font-black text-slate-950">{item.title}</p></td>
-                  <td className="px-4 py-4 font-bold text-slate-600">{item.teacher}</td>
-                  <td className="px-4 py-4"><span className="rounded-xl bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{item.subject}</span></td>
-                  <td className="px-4 py-4 font-bold text-slate-600">{item.type}</td>
-                  <td className="px-4 py-4 font-bold text-slate-600">{item.downloads}</td>
-                  <td className="px-4 py-4"><span className="rounded-xl bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">★ {item.rating}</span></td>
-                  <td className="px-4 py-4"><div className="flex items-center gap-2"><button className="flex h-8 items-center gap-1 rounded-xl border border-slate-200 px-2 text-xs font-black text-slate-700"><Eye className="h-4 w-4" /> Xem</button><button className="flex h-8 items-center gap-1 rounded-xl border border-rose-100 bg-rose-50 px-2 text-xs font-black text-rose-600"><ShieldCheck className="h-4 w-4" /> Ban</button></div></td>
+              {reviewedClasses.map((item) => (
+                <tr key={item.id} className="hover:bg-slate-50/70">
+                  <td className="px-4 py-4"><p className="font-black text-slate-950">{item.title}</p>{item.rejectReason && <p className="mt-1 text-xs font-bold text-rose-500">Lý do: {item.rejectReason}</p>}</td>
+                  <td className="px-4 py-4 font-bold text-slate-600">{item.teacherName}</td>
+                  <td className="px-4 py-4"><span className="rounded-xl bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">{item.subject}</span></td>
+                  <td className="px-4 py-4 font-bold text-slate-600">{item.totalLessons} buổi</td>
+                  <td className="px-4 py-4"><span className={`rounded-xl px-3 py-1 text-xs font-black ${getStatusTone(item.status)}`}>● {getStatusLabel(item.status)}</span></td>
+                  <td className="px-4 py-4"><div className="flex items-center gap-2"><button onClick={() => setViewingClass(item)} className="flex h-8 items-center gap-1 rounded-xl border border-slate-200 px-2 text-xs font-black text-slate-700"><Eye className="h-4 w-4" /> Xem</button><button disabled={processingId === item.id} onClick={() => handleReview(item.id, "hide")} className="flex h-8 items-center gap-1 rounded-xl border border-rose-100 bg-rose-50 px-2 text-xs font-black text-rose-600 disabled:opacity-60"><ShieldCheck className="h-4 w-4" /> Ban</button></div></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
+    
+
+      {viewingClass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-emerald-100 bg-white shadow-2xl shadow-slate-950/20">
+            <div className="relative h-40 bg-emerald-900">
+              <Image src={getCover(viewingClass)} alt={viewingClass.title} fill sizes="720px" className="object-cover opacity-70" />
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/85 via-emerald-900/50 to-transparent" />
+              <button type="button" onClick={() => setViewingClass(null)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-slate-600 shadow-sm transition hover:bg-white hover:text-slate-900">
+                <X className="h-5 w-5" />
+              </button>
+              <div className="absolute bottom-5 left-5 right-16">
+                <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-xs font-black text-emerald-700">{viewingClass.subject}</span>
+                <h3 className="mt-3 line-clamp-2 text-2xl font-black leading-tight text-white">{viewingClass.title}</h3>
+              </div>
+            </div>
+
+            <div className="grid gap-4 p-5 sm:grid-cols-2">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Giảng viên</p>
+                <p className="mt-1 text-sm font-black text-slate-900">{viewingClass.teacherName}</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">{viewingClass.teacherEmail || "Chưa có email"}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Trạng thái</p>
+                <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-black ${getStatusTone(viewingClass.status)}`}>● {getStatusLabel(viewingClass.status)}</span>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Lịch học</p>
+                <p className="mt-1 text-sm font-black text-slate-900">{viewingClass.scheduleDays}</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">{viewingClass.timeSlot}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Thông tin khóa</p>
+                <p className="mt-1 text-sm font-black text-slate-900">{viewingClass.totalLessons} buổi · {viewingClass.gradeLevel}</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">{formatCurrency(viewingClass.tuitionFee)} / khóa</p>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 px-5 pb-5">
+              <p className="pt-4 text-xs font-black uppercase tracking-wide text-slate-400">Mô tả lớp học</p>
+              <p className="mt-2 rounded-2xl bg-slate-50 p-4 text-sm font-semibold leading-6 text-slate-600">
+                {viewingClass.description || "Lớp học chưa có mô tả chi tiết."}
+              </p>
+              {viewingClass.rejectReason && (
+                <p className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm font-bold leading-6 text-rose-700">
+                  Lý do từ chối: {viewingClass.rejectReason}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {rejectingClass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-[28px] border border-rose-100 bg-white p-5 shadow-2xl shadow-slate-950/20">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-black text-slate-950">Từ chối lớp học</h3>
+                <p className="mt-1 text-sm font-bold text-slate-500">
+                  Lớp: <strong className="text-slate-800">{rejectingClass.title}</strong> · {rejectingClass.teacherName}
+                </p>
+              </div>
+              <button type="button" onClick={() => setRejectingClass(null)} className="cursor-pointer text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-2">
+              {CLASS_REJECT_REASONS.map((reason) => (
+                <label key={reason} className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-2.5 text-xs font-bold transition ${selectedClassRejectReason === reason && !customClassRejectReason ? "border-rose-400 bg-rose-50/70 text-rose-950" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:bg-slate-100/70"}`}>
+                  <input
+                    type="radio"
+                    name="classRejectReason"
+                    checked={selectedClassRejectReason === reason && !customClassRejectReason}
+                    onChange={() => {
+                      setSelectedClassRejectReason(reason);
+                      setCustomClassRejectReason("");
+                    }}
+                    className="mt-0.5 accent-rose-600"
+                  />
+                  <span>{reason}</span>
+                </label>
+              ))}
+            </div>
+
+            <label className="mt-4 block">
+              <span className="text-xs font-black uppercase tracking-wide text-slate-500">Lý do khác</span>
+              <textarea
+                value={customClassRejectReason}
+                onChange={(event) => setCustomClassRejectReason(event.target.value)}
+                placeholder="Nhập lý do cụ thể nếu các mẫu trên chưa phù hợp..."
+                className="mt-2 min-h-[92px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-100"
+              />
+            </label>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setRejectingClass(null)} className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50">
+                Hủy
+              </button>
+              <button type="button" disabled={processingId === rejectingClass.id} onClick={confirmClassReject} className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-rose-600 px-5 py-2 text-xs font-black text-white shadow-md shadow-rose-600/20 transition hover:bg-rose-700 disabled:opacity-50">
+                {processingId === rejectingClass.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                Xác nhận từ chối
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+type StaffMaterialItem = {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  teacherEmail: string;
+  title: string;
+  description: string;
+  subject: string;
+  gradeLevel: string;
+  fileType: "PDF" | "DOCX";
+  fileName: string;
+  fileSize: number;
+  fileKey: string;
+  pageCount: number;
+  status: "draft" | "pending" | "approved" | "rejected" | "hidden";
+  downloadCount: number;
+  viewCount: number;
+  ratingAvg: number;
+  ratingCount: number;
+  rejectReason: string | null;
+  createdAt: string;
+};
 
+const MATERIAL_REVIEW_STYLES = [
+  { bg: "from-[#e36f1f] to-[#bf5a18]", accent: "bg-orange-400/25", pattern: "waves" },
+  { bg: "from-[#c04576] to-[#a64b71]", accent: "bg-pink-200/20", pattern: "waves" },
+  { bg: "from-[#c45143] to-[#9f3d36]", accent: "bg-red-200/20", pattern: "confetti" },
+  { bg: "from-[#7356bc] to-[#5b45a3]", accent: "bg-violet-200/20", pattern: "confetti" },
+];
+
+const MATERIAL_REJECT_REASONS = [
+  "File tài liệu bị lỗi, không mở được hoặc không đúng định dạng PDF/DOCX.",
+  "Nội dung tài liệu chưa đầy đủ, cần bổ sung mô tả, tiêu đề hoặc thông tin lớp học.",
+  "Tài liệu chưa phù hợp với môn học, lớp học hoặc chủ đề đã chọn.",
+  "Tài liệu có chất lượng trình bày chưa đạt, cần chỉnh sửa bố cục hoặc nội dung trước khi duyệt.",
+  "Tài liệu có dấu hiệu trùng lặp hoặc cần xác minh thêm nguồn nội dung.",
+];
+
+function formatFileSize(size: number) {
+  if (!size) return "0 MB";
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function MaterialManagementPanel() {
+  const [materials, setMaterials] = useState<StaffMaterialItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [rejectingMaterial, setRejectingMaterial] = useState<StaffMaterialItem | null>(null);
+  const [selectedMaterialRejectReason, setSelectedMaterialRejectReason] = useState(MATERIAL_REJECT_REASONS[0]);
+  const [customMaterialRejectReason, setCustomMaterialRejectReason] = useState("");
+
+  const fetchMaterials = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/staff/materials");
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Không thể tải danh sách tài liệu.");
+      setMaterials(data.materials || []);
+    } catch (error) {
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Không thể tải tài liệu." });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(fetchMaterials);
+  }, [fetchMaterials]);
+
+  const handleReview = async (materialId: string, action: "approve" | "reject" | "hide", rejectReason = "") => {
+    setProcessingId(materialId);
+    try {
+      const res = await fetch("/api/staff/materials", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ materialId, action, rejectReason }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Không thể cập nhật tài liệu.");
+      setNotice({ type: "success", message: data.message });
+      setMaterials((current) => current.map((item) => (item.id === materialId ? { ...item, status: action === "approve" ? "approved" : action === "reject" ? "rejected" : "hidden", rejectReason: action === "reject" ? rejectReason : null } : item)));
+      if (action === "reject") {
+        setRejectingMaterial(null);
+        setCustomMaterialRejectReason("");
+        setSelectedMaterialRejectReason(MATERIAL_REJECT_REASONS[0]);
+      }
+    } catch (error) {
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Thao tác duyệt thất bại." });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const confirmMaterialReject = () => {
+    if (!rejectingMaterial) return;
+    const reason = customMaterialRejectReason.trim() || selectedMaterialRejectReason;
+    if (!reason.trim()) {
+      setNotice({ type: "error", message: "Vui lòng nhập lý do từ chối tài liệu." });
+      return;
+    }
+    void handleReview(rejectingMaterial.id, "reject", reason);
+  };
+
+  const handleView = (materialId: string) => {
+    window.open(`/materials/preview?id=${encodeURIComponent(materialId)}`, "_blank", "noopener,noreferrer");
+  };
+
+  const pendingMaterials = materials.filter((item) => item.status === "pending");
+  const reviewedMaterials = materials.filter((item) => item.status === "approved");
+
+  return (
+    <div className="space-y-5">
+      {notice && <div className={`rounded-2xl border px-4 py-3 text-sm font-bold ${notice.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-700"}`}>{notice.message}</div>}
+
+      <section className="rounded-3xl border border-amber-100 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-slate-950">Kiểm duyệt tài liệu</h2>
+            <p className="mt-1 text-sm font-bold text-slate-500">Chấp nhận hoặc từ chối tài liệu PDF/DOCX do giáo viên tải lên Cloudflare R2.</p>
+          </div>
+          <span className="rounded-full bg-amber-50 px-4 py-2 text-sm font-black text-amber-700">{isLoading ? "Đang tải" : `${pendingMaterials.length} chờ duyệt`}</span>
+        </div>
+        {pendingMaterials.length ? (
+          <div className="grid gap-4 xl:grid-cols-3">
+            {pendingMaterials.map((item, index) => {
+              const style = MATERIAL_REVIEW_STYLES[index % MATERIAL_REVIEW_STYLES.length];
+              return (
+                <article key={item.id} className={`relative min-h-[430px] overflow-hidden rounded-3xl bg-gradient-to-br ${style.bg} p-6 text-white shadow-sm`}>
+                  <div className="pointer-events-none absolute inset-0 opacity-70">
+                    {style.pattern === "waves" ? <><span className={`absolute -left-16 top-20 h-40 w-80 rounded-[50%] ${style.accent}`} /><span className={`absolute -bottom-16 right-0 h-40 w-80 rounded-[50%] ${style.accent}`} /></> : <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.10)_0_14px,transparent_14px_42px)]" />}
+                  </div>
+                  <div className="relative z-10 flex h-full flex-col">
+                    <div className="mb-14 flex items-center justify-between gap-3 text-xs font-black uppercase tracking-wide"><span>EDUMI | {item.subject}</span><span className="rounded-full bg-white/20 px-2 py-1">{item.fileType}</span></div>
+                    <div className="flex-1">
+                      <h3 className="text-4xl font-black leading-none">{item.gradeLevel || item.subject.toUpperCase()}</h3>
+                      <p className="mt-5 line-clamp-2 text-xl font-black leading-tight">{item.title}</p>
+                      <p className="mt-4 text-sm font-bold text-white/85">{item.teacherName}</p>
+                      <p className="mt-2 line-clamp-2 text-sm font-semibold text-white/75">{item.description || item.fileName}</p>
+                      <div className="mt-5 flex items-center gap-3 text-sm font-black text-white/90"><span>{formatFileSize(item.fileSize)}</span><span className="h-5 w-px bg-white/40" /><span>{item.pageCount || "--"} trang</span></div>
+                    </div>
+                    <div className="mt-8 grid gap-2 sm:grid-cols-3">
+                      <button disabled={processingId === item.id} onClick={() => handleReview(item.id, "approve")} className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-emerald-700 disabled:opacity-60"><CheckCircle className="h-4 w-4" /> Chấp nhận</button>
+                      <button onClick={() => handleView(item.id)} className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-black text-slate-800"><Eye className="h-4 w-4" /> Xem</button>
+                      <button disabled={processingId === item.id} onClick={() => { setRejectingMaterial(item); setSelectedMaterialRejectReason(MATERIAL_REJECT_REASONS[0]); setCustomMaterialRejectReason(""); }} className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white/90 text-sm font-black text-rose-600 disabled:opacity-60"><XCircle className="h-4 w-4" /> Từ chối</button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm font-bold text-slate-500">Không có tài liệu nào đang chờ duyệt.</div>
+        )}
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-3 xl:grid-cols-[1fr_180px_180px_auto]">
+          <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4"><Search className="h-5 w-5 text-slate-400" /><span className="text-sm font-bold text-slate-400">Tìm theo tên tài liệu, giáo viên, môn học...</span></div>
+          {["Loại tài liệu", "Đánh giá"].map((label) => <button key={label} className="flex h-12 items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-600">{label}<ChevronDown className="h-4 w-4" /></button>)}
+          <button onClick={fetchMaterials} className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"><RotateCcw className="h-4 w-4" /> Làm mới</button>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 p-5"><h2 className="text-xl font-black text-slate-950">Danh sách tài liệu</h2><span className="text-sm font-bold text-slate-400">Hiển thị {reviewedMaterials.length} / {materials.length} tài liệu</span></div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-3">Tài liệu</th><th className="px-4 py-3">Giảng viên</th><th className="px-4 py-3">Môn học</th><th className="px-4 py-3">Loại</th><th className="px-4 py-3">Lượt xem</th><th className="px-4 py-3">Đánh giá</th><th className="px-4 py-3">Hành động</th></tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {reviewedMaterials.map((item) => (
+                <tr key={item.id} className="hover:bg-slate-50/70">
+                  <td className="px-4 py-4"><p className="font-black text-slate-950">{item.title}</p></td>
+                  <td className="px-4 py-4 font-bold text-slate-600">{item.teacherName}</td>
+                  <td className="px-4 py-4"><span className="rounded-xl bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{item.subject}</span></td>
+                  <td className="px-4 py-4 font-bold text-slate-600">{item.fileType}</td>
+                  <td className="px-4 py-4 font-bold text-slate-600">{item.viewCount}</td>
+                  <td className="px-4 py-4"><span className="rounded-xl bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">★ {item.ratingAvg || "Mới"}</span></td>
+                  <td className="px-4 py-4"><div className="flex items-center gap-2"><button onClick={() => handleView(item.id)} className="flex h-8 items-center gap-1 rounded-xl border border-slate-200 px-2 text-xs font-black text-slate-700"><Eye className="h-4 w-4" /> Xem</button><button disabled={processingId === item.id} onClick={() => handleReview(item.id, "hide")} className="flex h-8 items-center gap-1 rounded-xl border border-rose-100 bg-rose-50 px-2 text-xs font-black text-rose-600 disabled:cursor-not-allowed disabled:opacity-55"><ShieldCheck className="h-4 w-4" /> Ban</button></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {rejectingMaterial && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg rounded-[28px] border border-rose-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-700">
+                <ShieldAlert className="h-6 w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-black text-slate-950">Từ chối tài liệu giảng dạy</h3>
+                <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500">
+                  Tài liệu: <strong className="text-slate-800">{rejectingMaterial.title}</strong> · {rejectingMaterial.teacherName}
+                </p>
+              </div>
+              <button type="button" onClick={() => setRejectingMaterial(null)} className="cursor-pointer text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <label className="text-xs font-extrabold text-slate-700">Chọn lý do từ chối để thông báo tới giáo viên:</label>
+              <div className="space-y-1.5">
+                {MATERIAL_REJECT_REASONS.map((reason) => (
+                  <label key={reason} className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-2.5 text-xs font-bold transition ${selectedMaterialRejectReason === reason && !customMaterialRejectReason ? "border-rose-400 bg-rose-50/70 text-rose-950" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:bg-slate-100/70"}`}>
+                    <input
+                      type="radio"
+                      name="materialRejectReason"
+                      checked={selectedMaterialRejectReason === reason && !customMaterialRejectReason}
+                      onChange={() => {
+                        setSelectedMaterialRejectReason(reason);
+                        setCustomMaterialRejectReason("");
+                      }}
+                      className="mt-0.5 text-rose-600 focus:ring-rose-500"
+                    />
+                    <span>{reason}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div>
+                <label className="text-xs font-extrabold text-slate-700">Hoặc nhập lý do chi tiết khác:</label>
+                <textarea
+                  rows={2}
+                  value={customMaterialRejectReason}
+                  onChange={(event) => setCustomMaterialRejectReason(event.target.value)}
+                  placeholder="Nhập lý do cụ thể hoặc hướng dẫn giáo viên chỉnh sửa tài liệu..."
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-semibold text-slate-800 shadow-inner outline-none transition focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+              <button type="button" onClick={() => setRejectingMaterial(null)} className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50">
+                Hủy bỏ
+              </button>
+              <button type="button" disabled={processingId === rejectingMaterial.id} onClick={confirmMaterialReject} className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-rose-600 px-5 py-2 text-xs font-black text-white shadow-md shadow-rose-600/20 transition hover:bg-rose-700 disabled:opacity-50">
+                {processingId === rejectingMaterial.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                <span>Xác nhận từ chối</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 function PlaceholderPanel({ title }: { title: string }) {
   return (
     <div className="rounded-[28px] border border-emerald-100 bg-white p-12 text-center shadow-sm">
@@ -1400,7 +1715,7 @@ export default function StaffProfileDashboard({ staff, onLogout }: StaffProfileD
   };
 
   useEffect(() => {
-    fetchOverviewData();
+    void Promise.resolve().then(fetchOverviewData);
   }, []);
 
   const handleTeacherStatsChange = useCallback((counts: { pending: number; approved: number; total: number }) => {

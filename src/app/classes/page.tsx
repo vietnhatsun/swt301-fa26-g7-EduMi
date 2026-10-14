@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import TypewriterDescription from "@/components/classes/TypewriterDescription";
 import ClassCardReveal from "@/components/classes/ClassCardReveal";
+import { createServiceClient } from "@/lib/supabase";
 import {
   ArrowRight,
   BarChart3,
@@ -29,163 +31,156 @@ const beVietnam = Be_Vietnam_Pro({
   display: "swap",
 });
 
-const classCards = [
-  {
-    subject: "Toán",
-    icon: <Sigma className="h-4 w-4" />,
-    badgeClass: "bg-sky-100 text-sky-700",
-    title: "Toán 9 - Nắm chắc kiến thức vững vàng vào 10",
-    description: "Hệ thống kiến thức trọng tâm, bài tập có lời giải chi tiết và mẹo làm nhanh.",
-    teacher: "Cô Nguyễn Thảo",
-    avatar: "NT",
-    cover: "/classes/class-math.jpg",
-    lessons: "48 bài học",
-    level: "Trung bình",
-    students: "12.4K",
-  },
-  {
-    subject: "Vật lý",
-    icon: <Sparkles className="h-4 w-4" />,
-    badgeClass: "bg-orange-100 text-orange-600",
-    title: "Vật lý 10 - Khám phá thế giới quanh ta",
-    description: "Hiểu bản chất, liên hệ thực tế, học Vật lý dễ dàng và thú vị hơn.",
-    teacher: "Thầy Trần Minh",
-    avatar: "TM",
-    cover: "/classes/class-physics.jpg",
-    lessons: "36 bài học",
-    level: "Trung bình",
-    students: "9.8K",
-  },
-  {
-    subject: "Hóa học",
-    icon: <FlaskConical className="h-4 w-4" />,
-    badgeClass: "bg-fuchsia-100 text-fuchsia-600",
-    title: "Hóa học 11 - Từ nền tảng đến nâng cao",
-    description: "Học chắc lý thuyết, làm chủ bài tập và chinh phục các dạng đề khó.",
-    teacher: "Cô Lê Mai Anh",
-    avatar: "MA",
-    cover: "/about-documents.jpg",
-    lessons: "42 bài học",
-    level: "Nâng cao",
-    students: "8.1K",
-  },
-  {
-    subject: "Sinh học",
-    icon: <Leaf className="h-4 w-4" />,
-    badgeClass: "bg-emerald-100 text-emerald-700",
-    title: "Sinh học 10 - Thế giới sống quanh ta",
-    description: "Khám phá thế giới sinh vật kỳ thú qua hình ảnh, ví dụ thực tế sinh động.",
-    teacher: "Thầy Phạm Đức",
-    avatar: "PĐ",
-    cover: "/about-classroom.jpg",
-    lessons: "38 bài học",
-    level: "Dễ - Trung bình",
-    students: "7.6K",
-  },
-  {
-    subject: "Ngữ văn",
-    icon: <BookOpen className="h-4 w-4" />,
-    badgeClass: "bg-rose-100 text-rose-600",
-    title: "Ngữ văn 9 - Cảm thụ và làm văn hiệu quả",
-    description: "Học văn bằng cảm hứng, phương pháp rõ ràng và bài mẫu chọn lọc.",
-    teacher: "Cô Trần Khánh Linh",
-    avatar: "KL",
-    cover: "/classes/class-literature.jpg",
-    lessons: "40 bài học",
-    level: "Trung bình",
-    students: "6.9K",
-  },
-  {
-    subject: "Tiếng Anh",
-    icon: <Globe2 className="h-4 w-4" />,
-    badgeClass: "bg-blue-100 text-blue-700",
-    title: "Tiếng Anh 9 - Giao tiếp tự tin, thi cử vững vàng",
-    description: "Phát triển toàn diện 4 kỹ năng với phương pháp học hiện đại.",
-    teacher: "Thầy Lê Hoàng",
-    avatar: "LH",
-    cover: "/classes/class-english.jpg",
-    lessons: "50 bài học",
-    level: "Trung bình",
-    students: "15.2K",
-  },
-  {
-    subject: "Lịch sử",
-    icon: <BookOpen className="h-4 w-4" />,
-    badgeClass: "bg-amber-100 text-amber-700",
-    title: "Lịch sử 12 - Chinh phục mốc sự kiện trọng tâm",
-    description: "Hệ thống dòng thời gian, sơ đồ tư duy và bài luyện theo chủ đề giúp ghi nhớ sâu hơn.",
-    teacher: "Cô Hà Minh Châu",
-    avatar: "HC",
-    cover: "/classes/banner-classes.jpg",
-    lessons: "44 bài học",
-    level: "Trung bình",
-    students: "10.6K",
-  },
-  {
-    subject: "Địa lý",
-    icon: <Globe2 className="h-4 w-4" />,
-    badgeClass: "bg-cyan-100 text-cyan-700",
-    title: "Địa lý 12 - Atlat, biểu đồ và kỹ năng làm bài",
-    description: "Luyện đọc Atlat, nhận dạng biểu đồ và xử lý số liệu nhanh cho các kỳ thi quan trọng.",
-    teacher: "Thầy Võ Quốc Bảo",
-    avatar: "QB",
-    cover: "/classes/banner-illustration.jpg",
-    lessons: "32 bài học",
-    level: "Dễ - Trung bình",
-    students: "8.7K",
-  },
-  {
-    subject: "Tin học",
-    icon: <MonitorPlay className="h-4 w-4" />,
-    badgeClass: "bg-indigo-100 text-indigo-700",
-    title: "Tin học 10 - Tư duy thuật toán từ nền tảng",
-    description: "Học lập trình qua ví dụ trực quan, bài tập nhỏ và thử thách tăng dần mỗi tuần.",
-    teacher: "Thầy Đỗ Minh Khang",
-    avatar: "MK",
-    cover: "/classes/class-physics.jpg",
-    lessons: "35 bài học",
-    level: "Cơ bản",
-    students: "5.4K",
-  },
-  {
-    subject: "GDCD",
-    icon: <GraduationCap className="h-4 w-4" />,
-    badgeClass: "bg-lime-100 text-lime-700",
-    title: "GDCD 11 - Hiểu luật, nhớ nhanh tình huống",
-    description: "Tóm tắt kiến thức bằng tình huống đời sống, câu hỏi nhận biết và vận dụng sát đề.",
-    teacher: "Cô Bùi Thanh Vân",
-    avatar: "TV",
-    cover: "/about-classroom.jpg",
-    lessons: "28 bài học",
-    level: "Cơ bản",
-    students: "4.9K",
-  },
-  {
-    subject: "IELTS",
-    icon: <Globe2 className="h-4 w-4" />,
-    badgeClass: "bg-violet-100 text-violet-700",
-    title: "IELTS Foundation - Xây nền 4 kỹ năng vững chắc",
-    description: "Tăng vốn từ, luyện phát âm, đọc hiểu và viết câu chuẩn trước khi bước vào band cao.",
-    teacher: "Ms. Linh Nguyễn",
-    avatar: "LN",
-    cover: "/classes/class-english.jpg",
-    lessons: "52 bài học",
-    level: "Cơ bản",
-    students: "13.3K",
-  },
-  {
-    subject: "Toán tư duy",
-    icon: <Sigma className="h-4 w-4" />,
-    badgeClass: "bg-teal-100 text-teal-700",
-    title: "Toán tư duy 8 - Rèn logic và phản xạ giải đề",
-    description: "Kết hợp bài toán thực tế, hình học trực quan và mẹo phân tích đề nhanh, chắc.",
-    teacher: "Thầy Lâm Nhật Anh",
-    avatar: "NA",
-    cover: "/classes/class-math.jpg",
-    lessons: "46 bài học",
-    level: "Nâng cao",
-    students: "9.2K",
-  },];
+type ClassCardData = {
+  id: string;
+  subject: string;
+  icon: ReactNode;
+  badgeClass: string;
+  title: string;
+  description: string;
+  teacher: string;
+  avatar: string;
+  cover: string;
+  lessons: string;
+  level: string;
+  students: string;
+};
+
+type ApprovedTeachingClass = {
+  id: string;
+  teacher_id: string;
+  title: string;
+  description: string | null;
+  subject: string;
+  grade_level: string;
+  total_lessons: number | null;
+  difficulty: string | null;
+  cover_image: string | null;
+  student_count: number | null;
+  rating_avg: number | null;
+  rating_count: number | null;
+  reviewed_at: string | null;
+  created_at: string;
+};
+
+type ClassTeacher = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+};
+
+function getSubjectIcon(subject: string) {
+  const normalized = subject.toLowerCase();
+
+  if (normalized.includes("toán")) return <Sigma className="h-4 w-4" />;
+  if (normalized.includes("lý") || normalized.includes("vật")) return <Sparkles className="h-4 w-4" />;
+  if (normalized.includes("hóa")) return <FlaskConical className="h-4 w-4" />;
+  if (normalized.includes("sinh")) return <Leaf className="h-4 w-4" />;
+  if (normalized.includes("anh") || normalized.includes("ielts")) return <Globe2 className="h-4 w-4" />;
+  if (normalized.includes("tin")) return <MonitorPlay className="h-4 w-4" />;
+  if (normalized.includes("địa")) return <Globe2 className="h-4 w-4" />;
+
+  return <BookOpen className="h-4 w-4" />;
+}
+
+function getSubjectBadgeClass(subject: string) {
+  const normalized = subject.toLowerCase();
+
+  if (normalized.includes("toán")) return "bg-sky-100 text-sky-700";
+  if (normalized.includes("lý") || normalized.includes("vật")) return "bg-orange-100 text-orange-600";
+  if (normalized.includes("hóa")) return "bg-fuchsia-100 text-fuchsia-600";
+  if (normalized.includes("sinh")) return "bg-emerald-100 text-emerald-700";
+  if (normalized.includes("văn")) return "bg-rose-100 text-rose-600";
+  if (normalized.includes("anh") || normalized.includes("ielts")) return "bg-blue-100 text-blue-700";
+  if (normalized.includes("địa")) return "bg-cyan-100 text-cyan-700";
+  if (normalized.includes("tin")) return "bg-indigo-100 text-indigo-700";
+
+  return "bg-amber-100 text-amber-700";
+}
+
+function getClassCover(subject: string, coverImage: string | null) {
+  if (coverImage) return coverImage;
+
+  const normalized = subject.toLowerCase();
+  if (normalized.includes("anh") || normalized.includes("ielts")) return "/classes/class-english.jpg";
+  if (normalized.includes("lý") || normalized.includes("vật") || normalized.includes("hóa")) return "/classes/class-physics.jpg";
+  if (normalized.includes("văn")) return "/classes/class-literature.jpg";
+  if (normalized.includes("sinh")) return "/about-classroom.jpg";
+
+  return "/classes/class-math.jpg";
+}
+
+function getInitials(name?: string | null, email?: string | null) {
+  const source = name?.trim() || email?.split("@")[0] || "GV";
+  const words = source.split(/\s+/).filter(Boolean);
+
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+
+  return `${words[0][0] ?? ""}${words[words.length - 1][0] ?? ""}`.toUpperCase();
+}
+
+function formatStudents(count: number | null) {
+  const value = count ?? 0;
+  if (value >= 1000) return `${(value / 1000).toFixed(1).replace(".0", "")}K`;
+
+  return `${value}`;
+}
+
+async function getApprovedClassCards(subjectFilter?: string): Promise<ClassCardData[]> {
+  try {
+    const supabase = createServiceClient();
+    let query = supabase
+      .from("teaching_classes")
+      .select("id, teacher_id, title, description, subject, grade_level, total_lessons, difficulty, cover_image, student_count, rating_avg, rating_count, reviewed_at, created_at")
+      .eq("status", "approved");
+
+    if (subjectFilter) query = query.eq("subject", subjectFilter);
+
+    const { data, error } = await query
+      .order("reviewed_at", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to load approved classes", error);
+      return [];
+    }
+
+    const approvedClasses = (data ?? []) as ApprovedTeachingClass[];
+    if (approvedClasses.length === 0) return [];
+
+    const teacherIds = Array.from(new Set(approvedClasses.map((item) => item.teacher_id).filter(Boolean)));
+    const { data: teachers } = teacherIds.length
+      ? await supabase.from("users").select("id, full_name, email").in("id", teacherIds)
+      : { data: [] as ClassTeacher[] };
+
+    const teacherById = new Map(((teachers as ClassTeacher[] | null) ?? []).map((teacher) => [teacher.id, teacher]));
+
+    return approvedClasses.map((item) => {
+      const teacher = teacherById.get(item.teacher_id);
+      const teacherName = teacher?.full_name?.trim() || "Giáo viên EduMi";
+
+      return {
+        id: item.id,
+        subject: item.subject,
+        icon: getSubjectIcon(item.subject),
+        badgeClass: getSubjectBadgeClass(item.subject),
+        title: item.title,
+        description:
+          item.description?.trim() ||
+          `Lớp ${item.grade_level} được thiết kế theo lộ trình rõ ràng, giúp học sinh học chắc và tiến bộ đều.`,
+        teacher: teacherName,
+        avatar: getInitials(teacherName, teacher?.email),
+        cover: getClassCover(item.subject, item.cover_image),
+        lessons: `${item.total_lessons ?? 0} bài học`,
+        level: item.difficulty || "Trung bình",
+        students: formatStudents(item.student_count),
+      };
+    });
+  } catch (error) {
+    console.error("Failed to load classes page data", error);
+    return [];
+  }
+}
 
 const filters = [
   { label: "Khối lớp", icon: <GraduationCap className="h-5 w-5" /> },
@@ -250,7 +245,7 @@ function FilterBar() {
   );
 }
 
-function ClassCard({ card }: { card: (typeof classCards)[number] }) {
+function ClassCard({ card }: { card: ClassCardData }) {
   return (
     <article className="group flex h-[242px] flex-col overflow-hidden rounded-[18px] bg-white p-3 shadow-[0_8px_24px_rgba(25,60,35,0.08)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(25,60,35,0.13)]">
       <div className="grid min-h-0 flex-1 grid-cols-[40%_60%] gap-4">
@@ -282,7 +277,7 @@ function ClassCard({ card }: { card: (typeof classCards)[number] }) {
           <span className="flex items-center gap-1 whitespace-nowrap"><BarChart3 className="h-4 w-4" />{card.level}</span>
           <span className="flex items-center gap-1 whitespace-nowrap"><UsersRound className="h-4 w-4" />{card.students}</span>
         </div>
-        <Link href="#" className="flex h-[38px] shrink-0 items-center gap-2 rounded-full bg-[#00a66f] px-4 text-[13px] font-black text-white transition hover:bg-[#008b5f]">
+        <Link href={`/classes/${card.id}`} className="flex h-[38px] shrink-0 items-center gap-2 rounded-full bg-[#00a66f] px-4 text-[13px] font-black text-white transition hover:bg-[#008b5f]">
           Xem l&#7899;p h&#7885;c <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
@@ -294,7 +289,13 @@ export const metadata = {
   description: "Khám phá lớp học phù hợp cho bạn cùng EduMi.",
 };
 
-export default function ClassesPage() {
+type ClassesPageProps = {
+  searchParams: Promise<{ subject?: string }>;
+};
+
+export default async function ClassesPage({ searchParams }: ClassesPageProps) {
+  const { subject } = await searchParams;
+  const approvedClassCards = await getApprovedClassCards(subject?.trim() || undefined);
   return (
     <main className={`${beVietnam.className} min-h-screen overflow-hidden bg-[#7f9b5d] text-[#10213a]`}>
       <LandingNavbar />
@@ -349,11 +350,17 @@ export default function ClassesPage() {
         <FilterBar />
 
         <section className="relative z-10 mx-auto mt-4 grid max-w-[1390px] grid-cols-3 gap-4 px-3">
-          {classCards.map((card, index) => (
-            <ClassCardReveal key={card.title} index={index}>
-              <ClassCard card={card} />
-            </ClassCardReveal>
-          ))}
+          {approvedClassCards.length > 0 ? (
+            approvedClassCards.map((card, index) => (
+              <ClassCardReveal key={card.id} index={index}>
+                <ClassCard card={card} />
+              </ClassCardReveal>
+            ))
+          ) : (
+            <div className="col-span-3 rounded-[24px] bg-white/95 p-8 text-center text-[16px] font-bold text-[#50627c] shadow-[0_10px_28px_rgba(25,60,35,0.1)]">
+              Chưa có lớp học nào được duyệt để hiển thị công khai.
+            </div>
+          )}
         </section>
       </div>
     </main>
