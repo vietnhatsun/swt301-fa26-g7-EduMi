@@ -78,12 +78,15 @@ export default function ExamStartModal({
             <X className="h-4 w-4" />
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase tracking-wider backdrop-blur-sm">
               {isExamMode ? "🎯 Chế độ Thi Thử Bấm Giờ" : "📖 Chế độ Luyện Đề Tự Do"}
             </span>
             <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-[11px] font-black text-slate-900">
               {exam.difficulty}
+            </span>
+            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold text-white backdrop-blur-sm">
+              Mã đề: {exam.examCode}
             </span>
           </div>
 

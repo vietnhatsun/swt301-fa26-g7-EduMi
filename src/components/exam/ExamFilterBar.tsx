@@ -125,6 +125,7 @@ export default function ExamFilterBar({
         <div className="flex h-[50px] min-w-[280px] flex-1 items-center gap-2.5 rounded-full border border-[#e2e9e2] bg-white px-4 text-[#7a8795] focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-200 transition-all">
           <Search className="h-5 w-5 shrink-0 text-[#00a66f]" />
           <input
+            suppressHydrationWarning
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -142,6 +143,7 @@ export default function ExamFilterBar({
             </button>
           ) : (
             <button
+              suppressHydrationWarning
               type="button"
               onClick={async () => {
                 try {
@@ -163,6 +165,7 @@ export default function ExamFilterBar({
         {/* 1. Category Filter */}
         <div className="relative">
           <button
+            suppressHydrationWarning
             type="button"
             onClick={() => toggleDropdown("category")}
             className={`flex h-[50px] items-center gap-2 rounded-full border px-4 sm:px-5 text-[14px] font-extrabold transition cursor-pointer select-none ${
@@ -204,6 +207,7 @@ export default function ExamFilterBar({
         {/* 2. Subject Filter */}
         <div className="relative">
           <button
+            suppressHydrationWarning
             type="button"
             onClick={() => toggleDropdown("subject")}
             className={`flex h-[50px] items-center gap-2 rounded-full border px-4 sm:px-5 text-[14px] font-extrabold transition cursor-pointer select-none ${
@@ -245,6 +249,7 @@ export default function ExamFilterBar({
         {/* 3. Duration Filter */}
         <div className="relative">
           <button
+            suppressHydrationWarning
             type="button"
             onClick={() => toggleDropdown("duration")}
             className={`flex h-[50px] items-center gap-2 rounded-full border px-4 sm:px-5 text-[14px] font-extrabold transition cursor-pointer select-none ${
@@ -286,6 +291,7 @@ export default function ExamFilterBar({
         {/* 4. Difficulty Filter */}
         <div className="relative">
           <button
+            suppressHydrationWarning
             type="button"
             onClick={() => toggleDropdown("difficulty")}
             className={`flex h-[50px] items-center gap-2 rounded-full border px-4 sm:px-5 text-[14px] font-extrabold transition cursor-pointer select-none ${
@@ -330,6 +336,7 @@ export default function ExamFilterBar({
         {/* 5. Sort Dropdown */}
         <div className="relative">
           <button
+            suppressHydrationWarning
             type="button"
             onClick={() => toggleDropdown("sort")}
             className="flex h-[50px] items-center gap-2 rounded-full border border-[#e2e9e2] bg-white px-4 sm:px-5 text-[14px] font-extrabold text-[#10213a] transition hover:border-emerald-400 hover:bg-emerald-50/60 cursor-pointer select-none"
@@ -367,6 +374,7 @@ export default function ExamFilterBar({
         {/* Reset button if active */}
         {hasActiveFilters && (
           <button
+            suppressHydrationWarning
             type="button"
             onClick={onResetFilters}
             className="flex h-[50px] items-center gap-1.5 rounded-full bg-slate-100 hover:bg-rose-50 hover:text-rose-600 px-4 text-xs font-bold text-slate-600 transition cursor-pointer"
