@@ -10,7 +10,6 @@ import {
   Image as ImageIcon,
   Mic,
   MicOff,
-  Bot,
   User,
   PanelLeftClose,
   PanelLeft,
@@ -22,9 +21,9 @@ import {
   RotateCcw,
   Volume2,
   ArrowRight,
-  BookOpen,
   Calculator,
   Compass,
+  Home,
   FileText,
   Flame,
   ChevronDown,
@@ -44,6 +43,7 @@ import {
   CheckCircle2,
   Paperclip,
   Crown,
+  MoreHorizontal,
 } from "lucide-react";
 import { Be_Vietnam_Pro } from "next/font/google";
 
@@ -80,6 +80,13 @@ interface ChatSession {
 
 // Dữ liệu mẫu các phiên trò chuyện gần đây chuẩn EduMi
 const INITIAL_SESSIONS: ChatSession[] = [
+  {
+    id: "session-new",
+    title: "Cuộc trò chuyện mới",
+    dateGroup: "Hôm nay",
+    isPinned: false,
+    messages: [],
+  },
   {
     id: "session-1",
     title: "Giải câu 45 Đề Toán THPTQG: Tích phân hàm ẩn",
@@ -153,45 +160,6 @@ const INITIAL_SESSIONS: ChatSession[] = [
   },
 ];
 
-// Danh sách các chuyên gia AI chuyên biệt
-const AI_SPECIALISTS = [
-  {
-    id: "scanner",
-    name: "AI Exam Scanner",
-    desc: "Bóc tách câu hỏi bẫy & lỗi sai trong 1.5s",
-    icon: Sparkles,
-    badge: "1.5s ⚡",
-    prompt:
-      "Hãy giúp mình bóc tách câu hỏi bẫy này và chỉ ra lý do vì sao học sinh hay bị lừa ở các phương án nhiễu:",
-  },
-  {
-    id: "casio",
-    name: "Thủ thuật Casio 580VNX",
-    desc: "Mẹo bấm máy tính Table, Vector & Oxyz",
-    icon: Calculator,
-    badge: "Toán 12 🧮",
-    prompt:
-      "Hướng dẫn mình mẹo bấm máy tính Casio 580VNX để giải nhanh dạng toán này mà không bị bẫy tham số:",
-  },
-  {
-    id: "dgnl",
-    name: "Luyện thi ĐGNL (HSA / VNU)",
-    desc: "Tư duy định lượng & suy luận logic",
-    icon: Compass,
-    badge: "HSA 850+ 🎯",
-    prompt:
-      "Cho mình lời khuyên và chiến lược phân bổ thời gian để xử lý bài toán tư duy định lượng kỳ thi ĐGNL:",
-  },
-  {
-    id: "literature",
-    name: "Cố vấn Ngữ văn 12",
-    desc: "Công thức mở bài - kết bài gián tiếp 8.5+",
-    icon: BookOpen,
-    badge: "Văn 8.5+ ✍️",
-    prompt:
-      "Viết giúp mình 2 đoạn mở bài gián tiếp bằng nhận định lý luận văn học và dẫn chứng thời sự cho đề bài sau:",
-  },
-];
 
 // Các thẻ gợi ý câu hỏi nhanh (Quick Action Options phong cách ChatGPT)
 const QUICK_PROMPT_PILLS = [
@@ -227,13 +195,12 @@ const QUICK_PROMPT_PILLS = [
 
 export default function AssistantPage() {
   const [sessions, setSessions] = useState<ChatSession[]>(INITIAL_SESSIONS);
-  const [activeSessionId, setActiveSessionId] = useState<string>("session-1");
+  const [activeSessionId, setActiveSessionId] = useState<string>("session-new");
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [inputMessage, setInputMessage] = useState<string>("");
   const [isDeepThink, setIsDeepThink] = useState<boolean>(false);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"chat" | "work">("chat");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>("Capy Mentor 2026");
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState<boolean>(false);
@@ -266,6 +233,14 @@ export default function AssistantPage() {
     setActiveSessionId(newSessionId);
   };
 
+  // Ghim hoặc bỏ ghim đoạn chat
+  const handleTogglePin = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSessions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, isPinned: !s.isPinned } : s))
+    );
+  };
+
   // Gửi tin nhắn
   const handleSendMessage = (textToSend?: string) => {
     const msgText = (textToSend || inputMessage).trim();
@@ -295,40 +270,64 @@ export default function AssistantPage() {
     setInputMessage("");
     setIsGenerating(true);
 
-    // Giả lập câu trả lời thông minh từ Capy AI theo phong cách EduMi
+    // Giả lập câu trả lời thông minh từ Capy AI theo phong cách EduMi & ChatGPT
     setTimeout(() => {
-      const assistantMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        sender: "assistant",
-        text: `Chào bạn! Capy AI đã nhận được câu hỏi: "${msgText}". Dưới đây là phân tích chi tiết chuẩn kiến thức ma trận thi 2026 từ EduMi:`,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        sections: [
-          {
-            type: "step",
-            title: "1. Nhận diện bẫy tư duy & Bản chất câu hỏi",
-            content:
-              "Đề bài thường phân hóa học sinh ở bước xác định điều kiện ẩn hoặc biến đổi công thức. Đừng vội tính toán ngay, hãy gạch chân từ khóa chính và loại bỏ các phương án nhiễu có dấu hiệu mâu thuẫn.",
-          },
-          {
-            type: "step",
-            title: "2. Quy trình lập luận từng bước (Step-by-step)",
-            content:
-              "• Bước 1: Chuẩn hóa giả thiết về dạng đơn giản nhất.\n• Bước 2: Áp dụng phương pháp đặc trưng (Đổi biến, tọa độ hóa Oxyz, hoặc liên kết ngữ cảnh).\n• Bước 3: So chiếu với 4 đáp án A, B, C, D để kết luận chính xác.",
-          },
-          {
-            type: "tip",
-            title: "💡 Lời khuyên phòng thi từ EduMi",
-            content:
-              "Dành tối đa 90 giây cho câu hỏi mức độ Vận dụng. Nếu gặp bế tắc, hãy dùng máy tính kiểm tra giá trị đặc biệt hoặc tạm thời chuyển câu tiếp theo để bảo toàn nhịp sinh học.",
-          },
-          {
-            type: "practice",
-            title: "🎯 Câu hỏi tương tự để bạn tự rèn luyện",
-            content:
-              "Bạn có muốn mình tạo thêm 1 câu hỏi tương tự cùng mức độ 8.5+ để bạn thử sức ngay không? Hãy gõ 'Tiếp tục' nhé!",
-          },
-        ],
-      };
+      const trimmed = msgText.trim().toLowerCase();
+      const isGreeting =
+        /^(hi|hello|alo|chào|helo|hey|xin chào|chao|hế lô|yo|hi bạn|hello bạn)([\s\.,!?:~]+.*)?$/i.test(
+          trimmed
+        ) && trimmed.length <= 35;
+
+      let assistantMsg: ChatMessage;
+
+      if (isGreeting) {
+        let greetingText = "Chào bạn! 👋 Hôm nay mình có thể giúp gì cho bạn nè? Cứ gửi bài tập, file đề thi, câu hỏi hay bất cứ vấn đề gì bạn đang gặp nhé! 😊✨";
+        if (trimmed.startsWith("hello") || trimmed.includes("how are you")) {
+          greetingText = "Hello! 👋😁 How are you today?\n\nBạn muốn trao đổi bằng tiếng Anh hay tiếng Việt nè? Cứ gửi câu hỏi hoặc đề tài bạn cần hỗ trợ nhé! 😊";
+        } else if (trimmed.includes("hi bạn") || trimmed === "hi") {
+          greetingText = "Hi bạn 👋😁 Hôm nay bạn cần mình giúp gì nào? Cứ gửi bài tập, đề thi THPT, câu hỏi lý thuyết hay bất cứ vấn đề gì bạn đang gặp nhé! 💻✨";
+        }
+
+        assistantMsg = {
+          id: `ai-${Date.now()}`,
+          sender: "assistant",
+          text: greetingText,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+      } else {
+        assistantMsg = {
+          id: `ai-${Date.now()}`,
+          sender: "assistant",
+          text: `Chào bạn! Capy AI đã nhận được câu hỏi: "${msgText}". Dưới đây là phân tích chi tiết chuẩn kiến thức ma trận thi 2026 từ EduMi:`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          sections: [
+            {
+              type: "step",
+              title: "1. Nhận diện bẫy tư duy & Bản chất câu hỏi",
+              content:
+                "Đề bài thường phân hóa học sinh ở bước xác định điều kiện ẩn hoặc biến đổi công thức. Đừng vội tính toán ngay, hãy gạch chân từ khóa chính và loại bỏ các phương án nhiễu có dấu hiệu mâu thuẫn.",
+            },
+            {
+              type: "step",
+              title: "2. Quy trình lập luận từng bước (Step-by-step)",
+              content:
+                "• Bước 1: Chuẩn hóa giả thiết về dạng đơn giản nhất.\n• Bước 2: Áp dụng phương pháp đặc trưng (Đổi biến, tọa độ hóa Oxyz, hoặc liên kết ngữ cảnh).\n• Bước 3: So chiếu với 4 đáp án A, B, C, D để kết luận chính xác.",
+            },
+            {
+              type: "tip",
+              title: "💡 Lời khuyên phòng thi từ EduMi",
+              content:
+                "Dành tối đa 90 giây cho câu hỏi mức độ Vận dụng. Nếu gặp bế tắc, hãy dùng máy tính kiểm tra giá trị đặc biệt hoặc tạm thời chuyển câu tiếp theo để bảo toàn nhịp sinh học.",
+            },
+            {
+              type: "practice",
+              title: "🎯 Câu hỏi tương tự để bạn tự rèn luyện",
+              content:
+                "Bạn có muốn mình tạo thêm 1 câu hỏi tương tự cùng mức độ 8.5+ để bạn thử sức ngay không? Hãy gõ 'Tiếp tục' nhé!",
+            },
+          ],
+        };
+      }
 
       setSessions((prev) =>
         prev.map((s) =>
@@ -336,7 +335,7 @@ export default function AssistantPage() {
         )
       );
       setIsGenerating(false);
-    }, 1200);
+    }, 900);
   };
 
   // Sao chép nội dung tin nhắn
@@ -368,8 +367,10 @@ export default function AssistantPage() {
   };
 
   // Lọc lịch sử theo tìm kiếm
-  const filteredSessions = sessions.filter((s) =>
-    s.title.toLowerCase().includes(searchHistoryQuery.toLowerCase())
+  const filteredSessions = sessions.filter(
+    (s) =>
+      s.title.toLowerCase().includes(searchHistoryQuery.toLowerCase()) &&
+      (s.id !== "session-new" || s.messages.length > 0)
   );
 
   const isChatEmpty = currentSession.messages.length === 0;
@@ -390,8 +391,14 @@ export default function AssistantPage() {
         {/* Sidebar Header Bar */}
         <div className="h-14 px-3.5 border-b border-[#eef2ee] flex items-center justify-between bg-white shrink-0">
           <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
-            <div className="w-8 h-8 rounded-xl bg-[#00a66f] flex items-center justify-center shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform">
-              <Bot className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-xl overflow-hidden border border-emerald-200/90 shadow-2xs flex-shrink-0 relative bg-white group-hover:scale-105 transition-transform duration-200">
+              <Image
+                src="/favicon.jpg"
+                alt="EduMi Logo"
+                width={32}
+                height={32}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5 leading-none">
@@ -449,77 +456,63 @@ export default function AssistantPage() {
           </div>
         </div>
 
-        {/* Danh sách cuộn: Chuyên gia học tập & Lịch sử trò chuyện */}
+        {/* Danh sách cuộn: Lịch sử trò chuyện */}
         <div className="flex-1 overflow-y-auto px-3 py-1 space-y-4 bg-white scrollbar-thin scrollbar-thumb-emerald-200">
           
-          {/* Nhóm: Chuyên gia học tập (Specialists) */}
-          <div>
-            <div className="text-[10.5px] font-black uppercase tracking-wider text-[#00a66f] px-2 mb-1 flex items-center justify-between">
-              <span>Chuyên gia học tập</span>
-              <Sparkles className="w-3 h-3 text-[#00a66f]" />
-            </div>
-            <div className="space-y-0.5">
-              {AI_SPECIALISTS.map((spec) => {
-                const Icon = spec.icon;
-                return (
-                  <button
-                    key={spec.id}
-                    type="button"
-                    onClick={() => handleSendMessage(spec.prompt)}
-                    className="w-full h-11 text-left px-2.5 rounded-xl hover:bg-[#f2f7f2] border border-transparent hover:border-emerald-200 transition-all flex items-center justify-between group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 pr-1">
-                      <div className="w-6 h-6 rounded-lg bg-emerald-100 text-[#00a66f] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="truncate">
-                        <p className="text-xs font-bold text-[#10213a] group-hover:text-[#00a66f] truncate leading-tight">
-                          {spec.name}
-                        </p>
-                        <p className="text-[10px] text-[#64728a] truncate font-medium">
-                          {spec.desc}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-[#00a66f] shrink-0 border border-emerald-200">
-                      {spec.badge}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Nhóm: Đã ghim (Pinned Chats) */}
-          <div>
-            <div className="text-[10.5px] font-black uppercase tracking-wider text-[#64728a] px-2 mb-1 flex items-center justify-between">
-              <span>Đã ghim</span>
-              <Pin className="w-3 h-3 text-amber-500 fill-amber-500" />
-            </div>
-            <div className="space-y-0.5">
-              {sessions
-                .filter((s) => s.isPinned)
-                .map((s) => {
-                  const isActive = s.id === activeSessionId;
-                  return (
-                    <div
-                      key={s.id}
-                      onClick={() => setActiveSessionId(s.id)}
-                      className={`group/item w-full h-8 flex items-center justify-between px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-emerald-50 text-[#00a66f] border border-emerald-200 shadow-2xs"
-                          : "hover:bg-slate-100 text-[#23324a] hover:text-[#092235] border border-transparent"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0 pr-1">
-                        <Pin className="w-3 h-3 text-amber-500 shrink-0 fill-amber-500" />
-                        <span className="truncate">{s.title}</span>
+          {sessions.some((s) => s.isPinned) && (
+            <div>
+              <div className="text-[10.5px] font-black uppercase tracking-wider text-[#64728a] px-2 mb-1 flex items-center justify-between">
+                <span>Đã ghim</span>
+                <Pin className="w-3 h-3 text-amber-500 fill-amber-500" />
+              </div>
+              <div className="space-y-0.5">
+                {sessions
+                  .filter((s) => s.isPinned)
+                  .map((s) => {
+                    const isActive = s.id === activeSessionId;
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => setActiveSessionId(s.id)}
+                        className={`group/item w-full h-8 flex items-center justify-between px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-emerald-50 text-[#00a66f] border border-emerald-200 shadow-2xs"
+                            : "hover:bg-slate-100 text-[#23324a] hover:text-[#092235] border border-transparent"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-1">
+                          <Pin className="w-3 h-3 text-amber-500 shrink-0 fill-amber-500" />
+                          <span className="truncate">{s.title}</span>
+                        </div>
+
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => handleTogglePin(s.id, e)}
+                            className="p-1 text-amber-500 hover:text-slate-400 rounded-md hover:bg-slate-200/60 transition-colors cursor-pointer"
+                            title="Bỏ ghim đoạn chat"
+                          >
+                            <Pin className="w-3 h-3 fill-amber-500" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSessions(sessions.filter((item) => item.id !== s.id));
+                            }}
+                            className="p-1 text-slate-400 hover:text-rose-500 rounded-md hover:bg-slate-200/60 transition-colors cursor-pointer"
+                            title="Xóa đoạn chat"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Nhóm: Cuộc trò chuyện gần đây (Recent Chats) */}
           <div>
@@ -546,17 +539,29 @@ export default function AssistantPage() {
                       <span className="truncate">{s.title}</span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSessions(sessions.filter((item) => item.id !== s.id));
-                      }}
-                      className="opacity-0 group-hover/item:opacity-100 p-1 hover:text-rose-500 transition-opacity"
-                      title="Xóa đoạn chat"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => handleTogglePin(s.id, e)}
+                        className={`p-1 rounded-md hover:bg-slate-200/60 transition-colors cursor-pointer ${
+                          s.isPinned ? "text-amber-500" : "text-slate-400 hover:text-amber-500"
+                        }`}
+                        title={s.isPinned ? "Bỏ ghim đoạn chat" : "Ghim đoạn chat lên đầu"}
+                      >
+                        <Pin className={`w-3 h-3 ${s.isPinned ? "fill-amber-500" : ""}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSessions(sessions.filter((item) => item.id !== s.id));
+                        }}
+                        className="p-1 text-slate-400 hover:text-rose-500 rounded-md hover:bg-slate-200/60 transition-colors cursor-pointer"
+                        title="Xóa đoạn chat"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -686,47 +691,23 @@ export default function AssistantPage() {
             </div>
           </div>
 
-          {/* Ở giữa: Toggle Segmented Control (Trò chuyện / Công việc kiểu ChatGPT) */}
-          <div className="hidden md:flex items-center p-1 rounded-full bg-black/15 backdrop-blur-xs border border-white/20">
-            <button
-              type="button"
-              onClick={() => setActiveTab("chat")}
-              className={`h-7 px-3.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "chat"
-                  ? "bg-white text-[#10213a] shadow-xs"
-                  : "text-white/80 hover:text-white"
-              }`}
-            >
-              Trò chuyện
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("work")}
-              className={`h-7 px-3.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "work"
-                  ? "bg-white text-[#10213a] shadow-xs"
-                  : "text-white/80 hover:text-white"
-              }`}
-            >
-              Luyện đề 9+
-            </button>
-          </div>
 
           {/* Bên phải: Nút Về Trang Chủ & Phòng thi */}
           <div className="flex items-center gap-2">
             <Link
               href="/exam"
-              className="h-9 px-3.5 rounded-full bg-white hover:bg-emerald-50 text-[#10213a] text-xs font-bold border border-[#e2e9e2] shadow-sm flex items-center gap-1.5 transition-all"
+              className="h-9 px-3.5 rounded-full bg-white hover:bg-emerald-50 text-[#10213a] text-xs font-bold border border-[#e2e9e2] shadow-xs flex items-center gap-1.5 transition-all hover:border-emerald-300 cursor-pointer"
             >
               <Compass className="w-3.5 h-3.5 text-[#00a66f]" />
-              <span className="hidden sm:inline">Phòng thi</span>
+              <span>Phòng thi</span>
             </Link>
 
             <Link
               href="/"
-              className="h-9 px-3.5 rounded-full bg-white hover:bg-slate-50 text-[#10213a] text-xs font-bold border border-[#e2e9e2] shadow-sm transition-all"
+              className="h-9 px-3.5 rounded-full bg-white hover:bg-emerald-50 text-[#10213a] text-xs font-bold border border-[#e2e9e2] shadow-xs flex items-center gap-1.5 transition-all hover:border-emerald-300 cursor-pointer"
             >
-              Trang chủ
+              <Home className="w-3.5 h-3.5 text-[#00a66f]" />
+              <span>Trang chủ</span>
             </Link>
           </div>
 
@@ -739,7 +720,7 @@ export default function AssistantPage() {
         >
           {isChatEmpty ? (
             /* ══ BỐ CỤC CHÀO MỪNG CHUẨN CHATGPT (Căn Giữa Toàn Màn Hình) ══ */
-            <div className="min-h-full max-w-2xl mx-auto flex flex-col items-center justify-center text-center py-6 sm:py-8 animate-in fade-in duration-300">
+            <div className="min-h-full max-w-3xl lg:max-w-4xl mx-auto flex flex-col items-center justify-center text-center py-6 sm:py-8 animate-in fade-in duration-300">
               
               {/* Mascot Capy 3D Pop-up Nhỏ Gọn Cân Xứng */}
               <div className="relative mb-3 group">
@@ -862,53 +843,49 @@ export default function AssistantPage() {
 
             </div>
           ) : (
-            /* ══ LUỒNG TIN NHẮN KHI ĐANG HỘI THOẠI ══ */
-            <div className="max-w-2xl mx-auto space-y-5 pb-4">
+            /* ══ LUỒNG TIN NHẮN KHI ĐANG HỘI THOẠI (RỘNG RÃI CHUẨN CHATGPT) ══ */
+            <div className="max-w-3xl lg:max-w-4xl mx-auto space-y-6 pb-6">
               {currentSession.messages.map((msg) => {
                 const isUser = msg.sender === "user";
+
+                if (isUser) {
+                  return (
+                    <div key={msg.id} className="w-full flex justify-end animate-in fade-in duration-200">
+                      <div className="max-w-[85%] sm:max-w-[75%] bg-[#14301d] text-white rounded-[22px] px-4.5 py-3 sm:px-5 sm:py-3.5 shadow-sm text-sm sm:text-[15px] font-medium leading-relaxed whitespace-pre-line">
+                        {msg.text}
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
-                  <div
-                    key={msg.id}
-                    className={`flex items-start gap-3 ${
-                      isUser ? "flex-row-reverse" : "flex-row"
-                    }`}
-                  >
-                    {/* Avatar */}
-                    {isUser ? (
-                      <div className="w-8 h-8 rounded-full bg-white border border-[#e2e9e2] shadow-sm flex items-center justify-center text-[#10213a] shrink-0 font-extrabold text-xs">
-                        <User className="w-4 h-4 text-[#00a66f]" />
-                      </div>
-                    ) : (
-                      <div className="relative w-8 h-8 rounded-full bg-white border border-[#e2e9e2] shadow-sm flex items-center justify-center shrink-0">
-                        <Image
-                          src="/stickers/mastery-capybara.png"
-                          alt="Capy AI"
-                          width={28}
-                          height={28}
-                          className="object-contain"
-                        />
-                      </div>
-                    )}
+                  <div key={msg.id} className="w-full flex items-start gap-3 sm:gap-4 animate-in fade-in duration-200 group">
+                    {/* Avatar Capy */}
+                    <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-[#e2e9e2] shadow-2xs flex items-center justify-center shrink-0 mt-0.5">
+                      <Image
+                        src="/stickers/mastery-capybara.png"
+                        alt="Capy AI"
+                        width={26}
+                        height={26}
+                        className="object-contain"
+                      />
+                    </div>
 
-                    {/* Bong bóng tin nhắn */}
-                    <div
-                      className={`relative max-w-[85%] sm:max-w-[80%] rounded-[24px] p-4 sm:p-5 shadow-[0_8px_24px_rgba(25,60,35,0.1)] text-xs sm:text-sm leading-relaxed space-y-3 ${
-                        isUser
-                          ? "bg-[#14301d] text-white rounded-tr-xs font-medium"
-                          : "bg-white text-[#10213a] rounded-tl-xs border border-white"
-                      }`}
-                    >
-                      <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
+                    {/* Nội dung câu trả lời của AI (Trải rộng toàn màn hình chuẩn ChatGPT) */}
+                    <div className="flex-1 min-w-0 bg-white rounded-[24px] p-5 sm:p-6 shadow-[0_8px_24px_rgba(25,60,35,0.08)] border border-white space-y-4">
+                      <div className="text-sm sm:text-[15px] leading-relaxed text-[#10213a] font-normal whitespace-pre-line">
+                        {msg.text}
+                      </div>
 
-                      {/* Các bước giải chi tiết */}
-                      {msg.sections && (
-                        <div className="space-y-2.5 pt-1">
+                      {/* Các bước giải chi tiết nếu có */}
+                      {msg.sections && msg.sections.length > 0 && (
+                        <div className="space-y-3 pt-1">
                           {msg.sections.map((sec, sIdx) => {
                             if (sec.type === "tip") {
                               return (
                                 <div
                                   key={sIdx}
-                                  className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-xs space-y-1 font-semibold"
+                                  className="p-3.5 sm:p-4 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-950 text-xs sm:text-sm space-y-1 font-semibold"
                                 >
                                   {sec.title && (
                                     <p className="font-black text-amber-800">{sec.title}</p>
@@ -924,7 +901,7 @@ export default function AssistantPage() {
                               return (
                                 <div
                                   key={sIdx}
-                                  className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs space-y-1 font-semibold"
+                                  className="p-3.5 sm:p-4 rounded-xl bg-emerald-50/90 border border-emerald-200/80 text-emerald-950 text-xs sm:text-sm space-y-1 font-semibold"
                                 >
                                   {sec.title && (
                                     <p className="font-black text-[#00a66f]">{sec.title}</p>
@@ -939,10 +916,10 @@ export default function AssistantPage() {
                             return (
                               <div
                                 key={sIdx}
-                                className="p-3.5 rounded-xl bg-[#f8faf8] border border-[#e2e9e2] text-[#10213a] text-xs space-y-1"
+                                className="p-4 rounded-xl bg-[#f8faf8] border border-[#e2e9e2] text-[#10213a] text-xs sm:text-sm space-y-1.5"
                               >
                                 {sec.title && (
-                                  <h5 className="font-black text-[#00a66f] text-xs flex items-center gap-1.5">
+                                  <h5 className="font-black text-[#00a66f] text-xs sm:text-sm flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-[#00a66f]" />
                                     {sec.title}
                                   </h5>
@@ -956,58 +933,76 @@ export default function AssistantPage() {
                         </div>
                       )}
 
-                      {/* Nút hành động của AI */}
-                      {!isUser && (
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-[#64728a]">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(msg.id, msg.text)}
-                              className="hover:text-[#00a66f] flex items-center gap-1 px-2 py-0.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer font-bold"
-                              title="Sao chép"
-                            >
-                              {copiedId === msg.id ? (
-                                <>
-                                  <Check className="w-3 h-3 text-[#00a66f]" />
-                                  <span className="text-[#00a66f]">Đã chép</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3" />
-                                  <span>Sao chép</span>
-                                </>
-                              )}
-                            </button>
+                      {/* Thanh công cụ hành động ChatGPT chuẩn xịn */}
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-slate-500">
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(msg.id, msg.text)}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
+                            title="Sao chép"
+                          >
+                            {copiedId === msg.id ? (
+                              <Check className="w-4 h-4 text-[#00a66f]" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
 
-                            <button
-                              type="button"
-                              onClick={() => alert("Đã lưu vào Sổ tay AI Note!")}
-                              className="hover:text-amber-600 flex items-center gap-1 px-2 py-0.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer font-bold"
-                              title="Lưu note"
-                            >
-                              <Bookmark className="w-3 h-3" />
-                              <span>Lưu Note</span>
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#00a66f] transition-colors cursor-pointer"
+                            title="Tốt / Hữu ích"
+                          >
+                            <ThumbsUp className="w-4 h-4" />
+                          </button>
 
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              className="p-1 hover:text-[#00a66f] rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-                              title="Hữu ích"
-                            >
-                              <ThumbsUp className="w-3 h-3" />
-                            </button>
-                            <button
-                              type="button"
-                              className="p-1 hover:text-rose-500 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-                              title="Chưa đúng"
-                            >
-                              <ThumbsDown className="w-3 h-3" />
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                            title="Chưa hài lòng"
+                          >
+                            <ThumbsDown className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => alert("Đang đọc to câu trả lời...")}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
+                            title="Đọc to"
+                          >
+                            <Volume2 className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSendMessage(msg.text)}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
+                            title="Tạo lại phản hồi"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
+                            title="Tùy chọn khác"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
                         </div>
-                      )}
+
+                        <button
+                          type="button"
+                          onClick={() => alert("Đã lưu vào Sổ tay AI Note!")}
+                          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-[#00a66f] text-xs font-bold transition-colors cursor-pointer"
+                          title="Lưu vào sổ tay kiến thức"
+                        >
+                          <Bookmark className="w-3.5 h-3.5" />
+                          <span>Lưu Note</span>
+                        </button>
+                      </div>
+
                     </div>
                   </div>
                 );
@@ -1015,13 +1010,13 @@ export default function AssistantPage() {
 
               {/* Đang suy luận */}
               {isGenerating && (
-                <div className="flex items-start gap-3 animate-in fade-in duration-200">
-                  <div className="w-8 h-8 rounded-full bg-white border border-[#e2e9e2] shadow-sm flex items-center justify-center shrink-0">
-                    <Sparkles className="w-3.5 h-3.5 text-[#00a66f] animate-spin" />
+                <div className="w-full flex items-start gap-3 sm:gap-4 animate-in fade-in duration-200">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-[#e2e9e2] shadow-sm flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-[#00a66f] animate-spin" />
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-white border border-white shadow-sm flex items-center gap-2 text-xs text-[#00a66f] font-bold">
+                  <div className="p-4 rounded-2xl bg-white border border-white shadow-sm flex items-center gap-2.5 text-xs sm:text-sm text-[#00a66f] font-bold">
                     <span className="w-2 h-2 rounded-full bg-[#00a66f] animate-pulse" />
-                    <span>Capy AI đang suy luận ma trận đề thi...</span>
+                    <span>Capy AI đang suy nghĩ câu trả lời...</span>
                   </div>
                 </div>
               )}
@@ -1032,7 +1027,7 @@ export default function AssistantPage() {
         {/* ── Khung Nhập Tin Nhắn Ở Dưới Cùng (Chỉ Hiện Khi Đang Hội Thoại) ── */}
         {!isChatEmpty && (
           <div className="p-3 sm:p-4 shrink-0 z-20">
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-3xl lg:max-w-4xl mx-auto">
               <div className="relative rounded-full sm:rounded-[32px] bg-white border-2 border-white shadow-[0_12px_36px_rgba(25,60,35,0.2)] p-2 pl-4 sm:pl-5 pr-2 flex items-center gap-2">
                 
                 <button
