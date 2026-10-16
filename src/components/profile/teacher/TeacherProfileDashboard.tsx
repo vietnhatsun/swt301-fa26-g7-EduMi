@@ -50,9 +50,31 @@ import {
   Upload,
   UserRound,
   Video,
-  X,
   WalletCards,
+  X,
 } from "lucide-react";
+import NotificationDropdown, { NotificationItem } from "../NotificationDropdown";
+
+const INITIAL_TEACHER_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: "notif-1",
+    title: "Kỹ thuật tư duy cho IELTS Writing Task 2",
+    timeAgo: "18 NGÀY TRƯỚC",
+    isRead: false,
+  },
+  {
+    id: "notif-2",
+    title: "Mở khóa band 7.0+ IELTS Speaking",
+    timeAgo: "23 NGÀY TRƯỚC",
+    isRead: false,
+  },
+  {
+    id: "notif-3",
+    title: 'Nói về "Lễ hội" trong IELTS Speaking Part 2',
+    timeAgo: "25 NGÀY TRƯỚC",
+    isRead: true,
+  },
+];
 
 type TeacherTabId =
   | "overview"
@@ -121,29 +143,34 @@ const navGroups: { title: string; items: { id: TeacherTabId; label: string; icon
 
 function Sidebar({ activeTab, onTabChange, collapsed, onToggle, teacherCode }: { activeTab: TeacherTabId; onTabChange: (tab: TeacherTabId) => void; collapsed: boolean; onToggle: () => void; teacherCode: string }) {
   return (
-    <aside className={`relative z-20 flex h-full flex-col justify-between bg-gradient-to-b from-[#064e3b] via-[#047857] to-[#065f46] text-white shadow-[4px_0_24px_rgba(6,78,59,0.18)] transition-all duration-300 ${collapsed ? "w-20" : "w-72"}`}>
+    <aside className={`relative z-20 flex h-full flex-col justify-between bg-gradient-to-b from-[#064e3b] via-[#047857] to-[#065f46] text-white shadow-[4px_0_24px_rgba(6,78,59,0.18)] transition-all duration-300 select-none ${collapsed ? "w-20" : "w-64 sm:w-72"}`}>
       <div>
         <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
-          <Link href="/" className="flex min-w-0 items-center gap-3">
-            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-white/20 bg-white">
+          <Link href="/" className="flex min-w-0 items-center gap-3 overflow-hidden group cursor-pointer">
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-white/20 bg-white shadow-md group-hover:scale-105 transition-transform duration-200">
               <Image src="/favicon.jpg" alt="EduMi" fill sizes="40px" className="object-cover" />
             </div>
             {!collapsed && (
-              <div className="min-w-0">
-                <p className="truncate text-base font-black leading-tight">EduMi Platform</p>
-                <p className="truncate text-[11px] font-semibold text-emerald-200/85">Dạy hay - Học tốt hơn</p>
+              <div className="min-w-0 flex flex-col">
+                <p className="truncate text-sm sm:text-base font-extrabold tracking-tight leading-tight text-white group-hover:text-emerald-200 transition-colors">EduMi Platform</p>
+                <p className="truncate text-[10px] font-medium text-emerald-200/80 tracking-wide">Dạy hay - Học tốt hơn</p>
               </div>
             )}
           </Link>
-          <button type="button" onClick={onToggle} className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-black/20 text-emerald-100 hover:bg-black/30">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-black/20 text-emerald-100 hover:bg-black/30 hover:text-white transition-all cursor-pointer active:scale-95"
+            title={collapsed ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
+          >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
         </div>
 
-        <div className="space-y-5 px-3 py-5">
+        <div className="space-y-4 px-3 py-4">
           {navGroups.map((group) => (
             <div key={group.title}>
-              {!collapsed && <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-wider text-emerald-300/85">{group.title}</p>}
+              {!collapsed && <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-emerald-300/80">{group.title}</p>}
               <nav className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
@@ -153,11 +180,32 @@ function Sidebar({ activeTab, onTabChange, collapsed, onToggle, teacherCode }: {
                       key={item.id}
                       type="button"
                       onClick={() => onTabChange(item.id)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition ${collapsed ? "justify-center" : ""} ${isActive ? "bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/20" : "text-emerald-100/90 hover:bg-white/10 hover:text-white"}`}
+                      title={collapsed ? item.label : undefined}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                        collapsed ? "justify-center" : ""
+                      } ${
+                        isActive
+                          ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20 font-bold"
+                          : "text-emerald-100/90 hover:bg-white/10 hover:text-white"
+                      }`}
                     >
-                      <Icon className="h-5 w-5 shrink-0" />
-                      {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
-                      {!collapsed && item.badge && <span className="rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-black text-white">{item.badge}</span>}
+                      <Icon
+                        className={`h-4 w-4 sm:h-5 sm:w-5 shrink-0 transition-transform duration-200 ${
+                          isActive ? "scale-110 text-slate-950" : "text-emerald-200"
+                        }`}
+                      />
+                      {!collapsed && <span className="truncate flex-1 text-left">{item.label}</span>}
+                      {!collapsed && item.badge && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                            isActive
+                              ? "bg-slate-950/15 text-slate-900"
+                              : "bg-emerald-400/20 text-emerald-200 border border-emerald-400/30"
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -167,15 +215,20 @@ function Sidebar({ activeTab, onTabChange, collapsed, onToggle, teacherCode }: {
         </div>
       </div>
 
-      <div className="border-t border-white/10 bg-black/10 p-4">
+      <div className="p-3 border-t border-white/10 bg-black/10">
         {!collapsed ? (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-            <p className="text-[11px] font-semibold text-emerald-200">Giáo viên</p>
-            <p className="mt-1 text-sm font-black text-white">{teacherCode}</p>
+          <div className="p-2.5 rounded-xl bg-black/20 border border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-2 truncate">
+              <GraduationCap className="w-4 h-4 text-amber-300 flex-shrink-0" />
+              <div className="truncate">
+                <p className="text-[10px] text-emerald-200 font-medium">Mã giáo viên</p>
+                <p className="text-xs font-bold text-white tracking-wide truncate">{teacherCode}</p>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="flex justify-center rounded-2xl border border-white/10 bg-black/20 p-3">
-            <GraduationCap className="h-5 w-5 text-amber-300" />
+          <div className="flex items-center justify-center p-2 rounded-xl bg-black/20 border border-white/10" title={`Mã giáo viên: ${teacherCode}`}>
+            <GraduationCap className="w-4 h-4 text-amber-300" />
           </div>
         )}
       </div>
@@ -183,45 +236,192 @@ function Sidebar({ activeTab, onTabChange, collapsed, onToggle, teacherCode }: {
   );
 }
 
-function Header({ teacher, onToggleMobileSidebar, onLogout }: { teacher: TeacherSession; onToggleMobileSidebar: () => void; onLogout: () => void }) {
+function Header({
+  teacher,
+  onToggleMobileSidebar,
+  onLogout,
+  onTabChange,
+}: {
+  teacher: TeacherSession;
+  onToggleMobileSidebar: () => void;
+  onLogout: () => void;
+  onTabChange?: (tab: TeacherTabId) => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_TEACHER_NOTIFICATIONS);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const handleSelectNotification = (item: NotificationItem) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
+    );
+    setIsNotificationOpen(false);
+    window.location.href = `/blog?id=${item.id}`;
+  };
+
+  const handleViewAllPosts = () => {
+    setIsNotificationOpen(false);
+    window.location.href = "/blog";
+  };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-md sm:px-6">
-      <div className="flex max-w-xl flex-1 items-center gap-3">
-        <button type="button" onClick={onToggleMobileSidebar} className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 lg:hidden">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-md sm:px-6 select-none">
+      <div className="flex max-w-md flex-1 items-center gap-2 sm:gap-3">
+        <button
+          type="button"
+          onClick={onToggleMobileSidebar}
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer active:scale-95 lg:hidden"
+        >
           <Menu className="h-5 w-5" />
         </button>
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-14 text-sm font-semibold outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100" placeholder="Tìm lớp học, học viên, tài liệu, bài tập..." />
-          <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold text-slate-400 sm:block">⌘K</kbd>
+          <input
+            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-12 text-xs sm:text-sm text-slate-900 placeholder-slate-400 outline-none transition-all hover:bg-slate-100/80 focus:bg-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            placeholder="Tìm lớp học, học viên, tài liệu, bài tập..."
+          />
+          <kbd className="absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 sm:block">
+            ⌘K
+          </kbd>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="hidden items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-black text-amber-800 sm:flex">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="hidden items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-3 py-1.5 text-xs sm:text-sm font-black text-amber-900 shadow-xs sm:flex">
           <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
           {teacher.totalReviews && teacher.totalReviews > 0 ? (teacher.ratingAvg?.toFixed(1) || "5.0") : "Mới"}
         </div>
-        <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-amber-500"><Sun className="h-4 w-4" /></button>
-        <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600"><Bell className="h-4 w-4" /><span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1.5 text-[10px] font-black text-white">3</span></button>
+        <button
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/80 bg-slate-50 text-amber-500 hover:bg-slate-100 transition-all cursor-pointer active:scale-95 shadow-xs"
+          title="Chế độ giao diện"
+        >
+          <Sun className="h-4 w-4" />
+        </button>
+
+        {/* Notifications button & dropdown popover */}
         <div className="relative">
-          <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-2 rounded-full px-1 py-1 transition hover:bg-slate-100 sm:pr-3">
-            <div className="relative h-9 w-9 overflow-hidden rounded-full bg-emerald-900 text-white">
-              {teacher.avatarUrl ? <Image src={teacher.avatarUrl} alt={teacher.fullName} fill sizes="36px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-sm font-black">{teacher.fullName.charAt(0)}</span>}
+          <button
+            type="button"
+            onClick={() => {
+              setIsNotificationOpen(!isNotificationOpen);
+              if (open) setOpen(false);
+            }}
+            className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer active:scale-95 shadow-xs ${
+              isNotificationOpen
+                ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                : "bg-slate-50 hover:bg-slate-100 border-slate-200/80 text-slate-600 hover:text-slate-900"
+            }`}
+            title="Thông báo giảng dạy"
+          >
+            <Bell className="h-4 w-4" />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+            )}
+          </button>
+
+          {/* Notification Popover Dropdown */}
+          <NotificationDropdown
+            isOpen={isNotificationOpen}
+            onClose={() => setIsNotificationOpen(false)}
+            fullName={teacher.fullName}
+            notifications={notifications}
+            onSelectNotification={handleSelectNotification}
+            onViewAllPosts={handleViewAllPosts}
+          />
+        </div>
+
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(!open);
+              if (isNotificationOpen) setIsNotificationOpen(false);
+            }}
+            className={`flex items-center gap-2 rounded-full p-1 transition-all cursor-pointer active:scale-95 sm:pr-3 ${
+              open
+                ? "bg-slate-100 border border-slate-200 shadow-xs"
+                : "hover:bg-slate-100 border border-transparent hover:border-slate-200"
+            }`}
+          >
+            <div className="relative h-8 w-8 sm:h-9 sm:w-9 overflow-hidden rounded-full bg-[#064e3b] text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs">
+              {teacher.avatarUrl ? (
+                <Image src={teacher.avatarUrl} alt={teacher.fullName} fill sizes="36px" className="object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center font-black">
+                  {teacher.fullName.charAt(0)}
+                </span>
+              )}
             </div>
             <div className="hidden text-left sm:block">
-              <p className="max-w-[150px] truncate text-sm font-black text-slate-800">{teacher.fullName}</p>
-              <p className="text-[11px] font-bold text-slate-500">Giáo viên</p>
+              <p className="max-w-[140px] truncate text-xs sm:text-sm font-bold text-slate-800">{teacher.fullName}</p>
+              <p className="text-[11px] font-medium text-slate-500">Giáo viên</p>
             </div>
-            <ChevronDown className="hidden h-4 w-4 text-slate-400 sm:block" />
+            <ChevronDown className={`hidden h-3.5 w-3.5 text-slate-400 transition-transform duration-200 sm:block ${open ? "rotate-180" : ""}`} />
           </button>
           {open && (
-            <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-              <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"><Settings className="h-4 w-4" />Cài đặt</button>
-              <button onClick={onLogout} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50"><LogOut className="h-4 w-4" />Đăng xuất</button>
-            </div>
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setOpen(false)} />
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/80 p-2 z-50 animate-fade-in-up">
+                <div className="px-3 py-2.5 border-b border-slate-100">
+                  <p className="text-xs font-bold text-slate-900 truncate">{teacher.fullName}</p>
+                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Giáo viên EduMi</span>
+                  </p>
+                </div>
+                <div className="py-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onTabChange?.("teacherProfile");
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors cursor-pointer text-left"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Hồ sơ giáo viên</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onTabChange?.("personal");
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors cursor-pointer text-left"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                    <span>Cài đặt tài khoản</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onTabChange?.("income");
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors cursor-pointer text-left"
+                  >
+                    <WalletCards className="w-3.5 h-3.5" />
+                    <span>Thu nhập & Ví</span>
+                  </button>
+                </div>
+                <div className="pt-1 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onLogout();
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -1262,18 +1462,204 @@ function ClassTextInput({ label, value, onChange, placeholder, type = "text" }: 
   );
 }
 
+function ModernFormSelect({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Chọn...",
+  icon: Icon,
+  required,
+  helperText,
+}: {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[] | { id: string; label: string }[];
+  placeholder?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  required?: boolean;
+  helperText?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const normalizedOptions: { id: string; label: string }[] = options.map((opt) =>
+    typeof opt === "string" ? { id: opt, label: opt } : opt
+  );
+
+  const selectedOption = normalizedOptions.find((opt) => opt.id === value);
+  const displayLabel = selectedOption ? selectedOption.label : "";
+
+  return (
+    <div ref={containerRef} className="relative block">
+      {label && (
+        <label className="mb-1 block text-xs font-extrabold text-slate-700">
+          {label} {required && <span className="text-rose-500">*</span>}
+        </label>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`relative flex h-11 w-full items-center justify-between rounded-xl border bg-slate-50 px-3 text-sm font-bold shadow-inner outline-none transition-all duration-200 cursor-pointer ${
+          isOpen
+            ? "border-emerald-500 bg-white ring-2 ring-emerald-100"
+            : "border-slate-200 hover:border-slate-300 hover:bg-slate-100/60"
+        } ${Icon ? "pl-9" : ""}`}
+      >
+        {Icon && (
+          <Icon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-700" />
+        )}
+        <span className={`truncate text-left ${displayLabel ? "text-slate-800" : "text-slate-400 font-normal"}`}>
+          {displayLabel || placeholder}
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-emerald-600" : ""
+          }`}
+        />
+      </button>
+
+      {helperText && (
+        <p className="mt-1.5 text-xs font-semibold text-slate-500">{helperText}</p>
+      )}
+
+      {isOpen && (
+        <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-full overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="max-h-56 overflow-y-auto space-y-0.5">
+            {normalizedOptions.map((opt) => {
+              const isSelected = opt.id === value;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.id);
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold transition-all duration-150 cursor-pointer text-left ${
+                    isSelected
+                      ? "bg-emerald-50 text-emerald-800 font-bold"
+                      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <span className="truncate">{opt.label}</span>
+                  {isSelected && <Check className="h-4 w-4 shrink-0 text-emerald-600 ml-2" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ModernFilterSelect({
+  icon,
+  value,
+  options,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  value: string;
+  options: { id: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const currentLabel = options.find((opt) => opt.id === value)?.label || options[0]?.label || "";
+  const isFiltered = value !== "all";
+
+  return (
+    <div ref={containerRef} className="relative flex-1 sm:flex-initial">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex h-[42px] w-full min-w-[160px] items-center justify-between gap-2 rounded-xl border px-3.5 text-sm font-semibold transition-all duration-200 cursor-pointer sm:w-auto select-none ${
+          isFiltered
+            ? "border-emerald-400 bg-emerald-50 text-emerald-900 shadow-sm"
+            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/80"
+        }`}
+      >
+        <span className="flex items-center gap-2 truncate">
+          <span className="shrink-0">{icon}</span>
+          <span className="truncate">{currentLabel}</span>
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-emerald-600" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-full min-w-[200px] overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="max-h-60 overflow-y-auto space-y-0.5">
+            {options.map((option) => {
+              const isSelected = option.id === value;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.id);
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold transition-all duration-150 cursor-pointer text-left ${
+                    isSelected
+                      ? "bg-emerald-50 text-emerald-800 font-bold"
+                      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <span className="truncate">{option.label}</span>
+                  {isSelected && <Check className="h-4 w-4 shrink-0 text-emerald-600 ml-2" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ClassSelectInput({ label, value, onChange, options, placeholder }: { label: string; value: string; onChange: (value: string) => void; options: string[]; placeholder: string }) {
   return (
-    <label className="block">
-      <span className="text-xs font-extrabold text-slate-500">{label}</span>
-      <span className="relative mt-1 block">
-        <select value={value} onChange={(event) => onChange(event.target.value)} className="flex h-11 w-full appearance-none items-center rounded-xl border border-slate-200 bg-slate-50 px-3 pr-9 text-sm font-bold text-slate-800 shadow-inner outline-none transition-all invalid:text-slate-400 focus:border-emerald-400 focus:bg-white" required>
-          <option value="" disabled>{placeholder}</option>
-          {options.map((option) => <option key={option} value={option}>{option}</option>)}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-      </span>
-    </label>
+    <ModernFormSelect
+      label={label}
+      value={value}
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+      required
+    />
   );
 }
 
@@ -1288,19 +1674,15 @@ function FormControl({ label, value, select }: { label: string; value: string; s
     </label>
   );
 }
+
 function FilterSelect({ icon, value, options, onChange }: { icon: React.ReactNode; value: string; options: { id: string; label: string }[]; onChange: (value: string) => void }) {
   return (
-    <div className="relative flex-1 sm:flex-initial">
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={`h-[42px] w-full min-w-[150px] appearance-none rounded-xl border py-2.5 pl-10 pr-9 text-sm font-semibold outline-none transition-all sm:w-auto ${value !== "all" ? "border-emerald-300 bg-emerald-50 text-emerald-900 shadow-2xs" : "border-slate-200/90 bg-slate-50/70 text-slate-700 hover:bg-white"}`}
-      >
-        {options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-      </select>
-      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2">{icon}</span>
-      <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-    </div>
+    <ModernFilterSelect
+      icon={icon}
+      value={value}
+      options={options}
+      onChange={onChange}
+    />
   );
 }
 
@@ -1653,32 +2035,30 @@ function TeacherUploadMaterialForm({ onUploaded, onError }: { onUploaded: (mater
 
       <div className="grid gap-4 p-5 lg:grid-cols-[1.2fr_0.7fr_0.65fr_0.65fr_0.65fr]">
         <TextInput label="Tên tài liệu" value={title} onChange={setTitle} placeholder="VD: Bộ đề luyện thi Toán 12 có lời giải" />
-        <SelectInput label="Môn học" value={subject} onChange={setSubject} placeholder="Chọn môn học" options={subjectOptions} />
-        <label>
-          <span className="text-xs font-extrabold text-slate-500">Chủ đề</span>
-          <div className="relative mt-1">
-            <select value={topic} onChange={(event) => setTopic(event.target.value as "Đọc hiểu" | "Bài tập")} className="h-[42px] w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 pr-9 text-sm font-black text-slate-700 shadow-inner outline-none transition-all focus:border-emerald-400 focus:bg-white">
-              <option value="Đọc hiểu">Đọc hiểu</option>
-              <option value="Bài tập">Bài tập</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          </div>
-        </label>
-        <SelectInput label="Lớp học" value={gradeLevel} onChange={setGradeLevel} placeholder="Chọn lớp học" options={gradeOptions} />
-        <label>
-          <span className="text-xs font-extrabold text-slate-500">Loại file</span>
-          <div className="relative mt-1">
-            <select value={selectedFileType} onChange={(event) => { setSelectedFileType(event.target.value as "PDF" | "DOCX"); setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="h-[42px] w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 pr-9 text-sm font-black text-slate-700 shadow-inner outline-none transition-all focus:border-emerald-400 focus:bg-white">
-              <option value="PDF">PDF</option>
-              <option value="DOCX">DOCX</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          </div>
-        </label>
+        <ModernFormSelect label="Môn học" value={subject} onChange={setSubject} placeholder="Chọn môn học" options={subjectOptions} />
+        <ModernFormSelect
+          label="Chủ đề"
+          value={topic}
+          onChange={(val) => setTopic(val as "Đọc hiểu" | "Bài tập")}
+          placeholder="Chọn chủ đề"
+          options={["Đọc hiểu", "Bài tập"]}
+        />
+        <ModernFormSelect label="Lớp học" value={gradeLevel} onChange={setGradeLevel} placeholder="Chọn lớp học" options={gradeOptions} />
+        <ModernFormSelect
+          label="Loại file"
+          value={selectedFileType}
+          onChange={(val) => {
+            setSelectedFileType(val as "PDF" | "DOCX");
+            setSelectedFile(null);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+          }}
+          placeholder="Chọn loại file"
+          options={["PDF", "DOCX"]}
+        />
       </div>
 
       <div className="grid gap-4 border-t border-slate-100 px-5 pb-5 pt-4 lg:grid-cols-[1fr_1fr]">
-        <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-[92px] items-center justify-center gap-3 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/60 px-4 text-sm font-black text-emerald-800 transition-all hover:bg-emerald-50"><Upload className="h-5 w-5" />{selectedFile ? selectedFile.name : `Chọn file ${selectedFileType} để gửi duyệt`}</button>
+        <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-[92px] items-center justify-center gap-3 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/60 px-4 text-sm font-black text-emerald-800 transition-all hover:bg-emerald-50 cursor-pointer active:scale-[0.99]"><Upload className="h-5 w-5" />{selectedFile ? selectedFile.name : `Chọn file ${selectedFileType} để gửi duyệt`}</button>
         <input ref={fileInputRef} type="file" accept={acceptedFileTypes} className="hidden" onChange={(event) => setSelectedFile(event.target.files?.[0] || null)} />
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 shadow-inner">
           <span className="text-xs font-extrabold text-slate-500">Mô tả ngắn</span>
@@ -1695,16 +2075,13 @@ function TeacherUploadMaterialForm({ onUploaded, onError }: { onUploaded: (mater
 
 function SelectInput({ label, value, onChange, placeholder, options }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; options: string[] }) {
   return (
-    <label>
-      <span className="text-xs font-extrabold text-slate-500">{label}</span>
-      <div className="relative mt-1">
-        <select value={value} onChange={(event) => onChange(event.target.value)} className="h-[42px] w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 pr-9 text-sm font-black text-slate-700 shadow-inner outline-none transition-all invalid:text-slate-400 focus:border-emerald-400 focus:bg-white">
-          <option value="" disabled>{placeholder}</option>
-          {options.map((option) => <option key={option} value={option}>{option}</option>)}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-      </div>
-    </label>
+    <ModernFormSelect
+      label={label}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      options={options}
+    />
   );
 }
 function TextInput({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string }) {
@@ -2480,14 +2857,14 @@ function TeacherProfileForm({ teacher }: { teacher: TeacherSession }) {
               <button
                 type="button"
                 onClick={() => setTeacherRole("Gia sư")}
-                className={`relative flex items-center gap-4 rounded-2xl p-3 text-left transition-all cursor-pointer ${
+                className={`relative flex items-center gap-4 rounded-2xl p-3 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] ${
                   teacherRole === "Gia sư"
                     ? "border-2 border-emerald-500 bg-emerald-50/70 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.08)]"
-                    : "border border-slate-200 bg-slate-50/60 hover:border-slate-300"
+                    : "border border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-50"
                 }`}
               >
                 <span
-                  className={`absolute left-3 top-3 flex h-5 w-5 items-center justify-center rounded-full ${
+                  className={`absolute left-3 top-3 flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
                     teacherRole === "Gia sư"
                       ? "bg-emerald-700 text-white"
                       : "border-2 border-slate-300 bg-white"
@@ -2508,14 +2885,14 @@ function TeacherProfileForm({ teacher }: { teacher: TeacherSession }) {
               <button
                 type="button"
                 onClick={() => setTeacherRole("Giáo viên sư phạm")}
-                className={`relative flex items-center gap-4 rounded-2xl p-3 text-left transition-all cursor-pointer ${
+                className={`relative flex items-center gap-4 rounded-2xl p-3 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] ${
                   teacherRole === "Giáo viên sư phạm"
                     ? "border-2 border-emerald-500 bg-emerald-50/70 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.08)]"
-                    : "border border-slate-200 bg-slate-50/60 hover:border-slate-300"
+                    : "border border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-50"
                 }`}
               >
                 <span
-                  className={`absolute left-3 top-3 flex h-5 w-5 items-center justify-center rounded-full ${
+                  className={`absolute left-3 top-3 flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
                     teacherRole === "Giáo viên sư phạm"
                       ? "bg-emerald-700 text-white"
                       : "border-2 border-slate-300 bg-white"
@@ -2870,28 +3247,16 @@ function TeacherProfileForm({ teacher }: { teacher: TeacherSession }) {
 
               {/* 4. Số năm kinh nghiệm */}
               <div>
-                <label className="text-xs font-extrabold text-slate-700">
-                  Số năm kinh nghiệm <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative mt-1">
-                  <select
-                    value={experienceYears}
-                    onChange={(e) => setExperienceYears(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-8 py-2.5 text-sm font-bold text-slate-800 shadow-inner outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 cursor-pointer"
-                  >
-                    <option value="" disabled>-- Chọn số năm kinh nghiệm --</option>
-                    {EXPERIENCE_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                  <Award className="absolute left-3 top-3 h-4 w-4 text-emerald-700 pointer-events-none" />
-                  <ChevronDown className="absolute right-3 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-                </div>
-                <p className="mt-1.5 text-xs font-semibold text-slate-500">
-                  Tổng thời gian giảng dạy hoặc gia sư thực tế
-                </p>
+                <ModernFormSelect
+                  label="Số năm kinh nghiệm"
+                  required
+                  value={experienceYears}
+                  onChange={setExperienceYears}
+                  options={EXPERIENCE_OPTIONS}
+                  placeholder="-- Chọn số năm kinh nghiệm --"
+                  icon={Award}
+                  helperText="Tổng thời gian giảng dạy hoặc gia sư thực tế"
+                />
               </div>
 
               {/* 5. Hình ảnh chứng minh */}
@@ -3121,7 +3486,7 @@ export default function TeacherProfileDashboard({ teacher, onLogout }: TeacherPr
       )}
 
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-        <Header teacher={teacher} onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)} onLogout={onLogout} />
+        <Header teacher={teacher} onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)} onLogout={onLogout} onTabChange={setActiveTab} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-[1500px]">{content}</div>
         </main>

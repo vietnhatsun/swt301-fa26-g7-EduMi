@@ -172,7 +172,11 @@ export default function ProfileHeader({
               setIsDropdownOpen(!isDropdownOpen);
               if (isNotificationOpen) setIsNotificationOpen(false);
             }}
-            className="flex items-center gap-2 p-1 sm:pr-3 rounded-full hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer"
+            className={`flex items-center gap-2 p-1 sm:pr-3 rounded-full transition-all cursor-pointer ${
+              isDropdownOpen
+                ? "bg-slate-100 border border-slate-200 shadow-xs"
+                : "hover:bg-slate-100 border border-transparent hover:border-slate-200"
+            }`}
           >
             {/* User Avatar */}
             <div className="w-8 h-8 rounded-full bg-[#064e3b] text-white font-bold text-xs flex items-center justify-center shadow-sm flex-shrink-0">
@@ -181,7 +185,11 @@ export default function ProfileHeader({
             <span className="hidden sm:inline-block text-xs sm:text-sm font-bold text-slate-800 truncate max-w-[140px]">
               {fullName}
             </span>
-            <ChevronDown className="hidden sm:inline-block w-3.5 h-3.5 text-slate-400" />
+            <ChevronDown
+              className={`hidden sm:inline-block w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                isDropdownOpen ? "rotate-180" : ""
+              }`}
+            />
           </button>
 
           {/* User Dropdown Menu */}
