@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, FileText, GraduationCap, MessageSquare, UploadCloud } from "lucide-react";
+import { BarChart3, BookOpen, CalendarClock, ClipboardCheck, FileText, GraduationCap, MessageSquare, UploadCloud } from "lucide-react";
 
 export const classWorkspaceMock = {
   studentName: "Thạch Nguyễn",
@@ -12,6 +12,10 @@ export const classWorkspaceMock = {
     { title: "Bài 2. Biến và kiểu dữ liệu trong Python", meta: "Slide • 3.1 MB • Cập nhật 14/09/2024", type: "PPT", color: "orange" },
     { title: "Bài 3. Cấu trúc điều kiện (If...Else)", meta: "Tài liệu • 1.8 MB • Cập nhật 16/09/2024", type: "DOC", color: "blue" },
     { title: "Bài 4. Vòng lặp trong Python (For, While)", meta: "Video • 12 phút • Cập nhật 18/09/2024", type: "Video", color: "purple" },
+    { title: "Bài 5. Hàm và cách tổ chức chương trình", meta: "PDF • 2.7 MB • Cập nhật 20/09/2024", type: "PDF", color: "red" },
+    { title: "Bài 6. Danh sách và thao tác cơ bản", meta: "Slide • 2.9 MB • Cập nhật 22/09/2024", type: "PPT", color: "orange" },
+    { title: "Bài 7. Xử lý chuỗi ký tự", meta: "Tài liệu • 1.6 MB • Cập nhật 24/09/2024", type: "DOC", color: "blue" },
+    { title: "Bài 8. Dự án mini: Quản lý điểm số", meta: "Video • 18 phút • Cập nhật 26/09/2024", type: "Video", color: "purple" },
   ],
   assignments: [
     { title: "Bài tập 1. Làm quen với Python", chapter: "Chương 1: Tổng quan", questions: "3 câu hỏi", deadline: "15/09/2024 23:59", status: "Đã nộp" },
@@ -24,11 +28,11 @@ export const classWorkspaceMock = {
     chaptersDone: 5,
     streakDays: 12,
     chapters: [
-      { label: "Chương 1. Tổng quan", value: 100 },
-      { label: "Chương 2. Dữ liệu", value: 80 },
-      { label: "Chương 3. Điều kiện", value: 60 },
-      { label: "Chương 4. Vòng lặp", value: 30 },
-      { label: "Chương 5. Hàm", value: 0 },
+      { label: "Chương 1. Tổng quan", desc: "Giới thiệu Python và môi trường lập trình", value: 100 },
+      { label: "Chương 2. Dữ liệu", desc: "Biến, kiểu dữ liệu và các phép toán", value: 80 },
+      { label: "Chương 3. Điều kiện", desc: "Cấu trúc điều kiện (if...else)", value: 60 },
+      { label: "Chương 4. Vòng lặp", desc: "For, while và các bài toán lặp", value: 30 },
+      { label: "Chương 5. Hàm", desc: "Định nghĩa hàm và ứng dụng", value: 0 },
     ],
   },
   activities: [
@@ -43,11 +47,11 @@ export const classWorkspaceMock = {
     { label: "Nộp 2 bài tập đúng hạn", done: false },
   ],
   navItems: [
-    { label: "Tổng quan", icon: BookOpen, active: true },
-    { label: "Tài liệu", icon: FileText, active: false },
-    { label: "Tiến độ", icon: ClipboardList, active: false },
-    { label: "Bài tập", icon: ClipboardList, active: false },
-    { label: "Phòng thi", icon: GraduationCap, active: false },
-    { label: "Thảo luận", icon: MessageSquare, active: false },
+    { id: "overview", label: "Tổng quan", icon: BookOpen },
+    { id: "progress", label: "Tiến độ", icon: BarChart3 },
+    { id: "materials", label: "Tài liệu", icon: FileText },
+    { id: "assignments", label: "Bài tập", icon: ClipboardCheck },
+    { id: "exams", label: "Phòng thi", icon: GraduationCap },
+    { id: "schedule", label: "Lịch học", icon: CalendarClock },
   ],
 };

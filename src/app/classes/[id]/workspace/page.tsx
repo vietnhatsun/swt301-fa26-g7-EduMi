@@ -4,251 +4,340 @@ import Link from "next/link";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import { classWorkspaceMock } from "@/components/classes/classWorkspaceMock";
 import {
-  ArrowRight,
-  BarChart3,
-  BookOpen,
-  CalendarClock,
-  Check,
-  CircleDot,
-  ClipboardList,
-  CloudUpload,
-  FileText,
-  GraduationCap,
-  MoreVertical,
-  PencilLine,
-  Play,
-  Target,
+  ArrowRight, BarChart3, BookOpen, CalendarClock, Check, CheckCircle2,
+  ChevronDown, ChevronRight, CircleDot, ClipboardList, Clock3, CloudUpload, FileText,
+  Eye, Filter, Flame, Folder, GraduationCap, Lightbulb, MoreVertical, PencilLine, Play,
+  Target, Trophy,
 } from "lucide-react";
 import { Be_Vietnam_Pro } from "next/font/google";
 
-const beVietnam = Be_Vietnam_Pro({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  display: "swap",
-});
+const beVietnam = Be_Vietnam_Pro({ subsets: ["latin", "vietnamese"], weight: ["400", "500", "600", "700", "800", "900"], display: "swap" });
 
-type PageProps = {
-  params: Promise<{ id: string }>;
+type WorkspaceTab = "overview" | "progress" | "materials" | "assignments" | "exams" | "schedule";
+type PageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; collection?: string }> };
+const validTabs: WorkspaceTab[] = ["overview", "progress", "materials", "assignments", "exams", "schedule"];
+const fileTone = { red: "bg-red-100 text-red-600", orange: "bg-orange-100 text-orange-600", blue: "bg-blue-100 text-blue-600", purple: "bg-violet-100 text-violet-600" };
+const materialsList = [
+  { title: "Bài 1. Giới thiệu tổng quan về Python", meta: "PDF • 2.4 MB • Cập nhật 12/09/2024", type: "PDF", color: "red", badge: "Cơ bản", action: "Xem" },
+  { title: "Bài 2. Biến và kiểu dữ liệu trong Python", meta: "PPT • 3.1 MB • Cập nhật 14/09/2024", type: "PPT", color: "orange", badge: "Cơ bản", action: "Xem" },
+  { title: "Bài 3. Cấu trúc điều kiện (If...Else)", meta: "Video • 12 phút • Cập nhật 16/09/2024", type: "Video", color: "purple", badge: "Cơ bản", action: "Xem" },
+  { title: "Bài tập thực hành Python cơ bản", meta: "DOC • 1.8 MB • Cập nhật 18/09/2024", type: "DOC", color: "blue", badge: "Bài tập", action: "Mở" },
+  { title: "Tài liệu tham khảo: Python for Beginners", meta: "PDF • 4.5 MB • Cập nhật 20/09/2024", type: "PDF", color: "red", badge: "Tham khảo", action: "Xem" },
+  { title: "Dự án mini: Quản lý danh sách sinh viên", meta: "PPT • 2.9 MB • Cập nhật 22/09/2024", type: "PPT", color: "orange", badge: "Dự án", action: "Xem" },
+];
+const materialCollections = [
+  { id: "python-co-ban", title: "Python cơ bản", meta: "3 tài liệu • Nhập môn", tone: "bg-emerald-100 text-emerald-700", items: materialsList.slice(0, 3) },
+  { id: "bai-tap-thuc-hanh", title: "Bài tập thực hành", meta: "2 tài liệu • Luyện tập", tone: "bg-blue-100 text-blue-700", items: materialsList.slice(3, 5) },
+  { id: "du-an-mau", title: "Dự án mẫu", meta: "1 tài liệu • Vận dụng", tone: "bg-violet-100 text-violet-700", items: materialsList.slice(5, 6) },
+];
+const assignmentRows = [
+  { title: "B\u00e0i t\u1eadp 1. L\u00e0m quen v\u1edbi Python", chapter: "Ch\u01b0\u01a1ng 1", deadline: "15/09/2024", status: "\u0110\u00e3 n\u1ed9p", action: "Xem \u0111i\u1ec3m" },
+  { title: "B\u00e0i t\u1eadp 2. Bi\u1ebfn v\u00e0 ki\u1ec3u d\u1eef li\u1ec7u", chapter: "Ch\u01b0\u01a1ng 2", deadline: "20/09/2024", status: "Ch\u01b0a n\u1ed9p", action: "N\u1ed9p b\u00e0i" },
+  { title: "B\u00e0i t\u1eadp 3. C\u1ea5u tr\u00fac \u0111i\u1ec1u ki\u1ec7n", chapter: "Ch\u01b0\u01a1ng 3", deadline: "28/09/2024", status: "Ch\u01b0a n\u1ed9p", action: "N\u1ed9p b\u00e0i" },
+  { title: "Mini quiz ch\u01b0\u01a1ng 2", chapter: "Ch\u01b0\u01a1ng 2", deadline: "25/09/2024", status: "\u0110\u00e3 ch\u1ea5m", action: "Xem \u0111i\u1ec3m" },
+  { title: "B\u00e0i t\u1eadp d\u1ef1 \u00e1n nh\u1ecf", chapter: "Ch\u01b0\u01a1ng 3", deadline: "30/09/2024", status: "Ch\u01b0a n\u1ed9p", action: "N\u1ed9p b\u00e0i" },
+];
+function parseWorkspaceTab(tab?: string): WorkspaceTab { return validTabs.includes(tab as WorkspaceTab) ? (tab as WorkspaceTab) : "overview"; }
+type WorkspaceCardTone = "neutral" | "mint" | "sky" | "amber" | "lilac" | "rose";
+const workspaceCardTones: Record<WorkspaceCardTone, string> = {
+  neutral: "border-white/80 bg-[radial-gradient(circle_at_96%_4%,rgba(204,244,222,.72),transparent_25%),linear-gradient(145deg,rgba(255,255,255,.98)_0%,rgba(247,253,249,.98)_56%,rgba(255,250,235,.96)_100%)] before:bg-gradient-to-r before:from-[#12A876] before:via-[#81D5B0] before:to-[#F8C95C]",
+  mint: "border-[#C7EEDB] bg-[radial-gradient(circle_at_94%_8%,rgba(160,235,199,.62),transparent_28%),linear-gradient(145deg,#FFFFFF_0%,#ECFBF4_56%,#F8FFF9_100%)] before:bg-gradient-to-r before:from-[#00A878] before:to-[#8DDBB8]",
+  sky: "border-[#CEE3F8] bg-[radial-gradient(circle_at_94%_8%,rgba(184,220,255,.58),transparent_28%),linear-gradient(145deg,#FFFFFF_0%,#EEF7FF_58%,#F4FFF9_100%)] before:bg-gradient-to-r before:from-[#3985ED] before:to-[#7AC8F4]",
+  amber: "border-[#F5DFAD] bg-[radial-gradient(circle_at_94%_8%,rgba(255,218,121,.48),transparent_30%),linear-gradient(145deg,#FFFFFF_0%,#FFF9E8_56%,#FFF3DA_100%)] before:bg-gradient-to-r before:from-[#F59E0B] before:to-[#F9D466]",
+  lilac: "border-[#DED4F7] bg-[radial-gradient(circle_at_94%_8%,rgba(213,194,255,.52),transparent_28%),linear-gradient(145deg,#FFFFFF_0%,#F7F2FF_58%,#F0FAFF_100%)] before:bg-gradient-to-r before:from-[#8B5CF6] before:to-[#C4A7FF]",
+  rose: "border-[#F3D2DD] bg-[radial-gradient(circle_at_94%_8%,rgba(255,194,211,.48),transparent_28%),linear-gradient(145deg,#FFFFFF_0%,#FFF3F7_58%,#FFF9E9_100%)] before:bg-gradient-to-r before:from-[#F05F88] before:to-[#F6B06A]",
 };
-
-const fileIconTone = {
-  red: "bg-red-100 text-red-600",
-  orange: "bg-orange-100 text-orange-600",
-  blue: "bg-blue-100 text-blue-600",
-  purple: "bg-violet-100 text-violet-600",
-};
-
-const actionTone = {
-  green: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
-  blue: "bg-blue-100 text-blue-800 hover:bg-blue-200",
-  yellow: "bg-amber-100 text-amber-800 hover:bg-amber-200",
-};
-
-function CardHeader({ icon, title, action }: { icon: ReactNode; title: string; action?: string }) {
-  return (
-    <div className="mb-3 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</span>
-        <h2 className="text-[20px] font-black tracking-[-0.03em] text-[#11263F]">{title}</h2>
-      </div>
-      {action && <button className="inline-flex items-center gap-1 text-xs font-black text-emerald-700">{action}<ArrowRight className="h-3.5 w-3.5" /></button>}
-    </div>
-  );
+function WorkspaceCard({ children, className = "", tone = "neutral" }: { children: ReactNode; className?: string; tone?: WorkspaceCardTone }) { const hasCustomBackground = className.includes("bg-"); return <section className={`relative overflow-hidden rounded-[24px] border shadow-[0_14px_34px_rgba(20,75,50,.11)] ring-1 ring-white/55 transition-[transform,box-shadow] duration-300 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-[3px] hover:-translate-y-0.5 hover:shadow-[0_20px_42px_rgba(20,75,50,.15)] ${hasCustomBackground ? "border-white/75 before:bg-gradient-to-r before:from-[#12A876] before:via-[#F8C95C] before:to-[#5AA9F6]" : workspaceCardTones[tone]} ${className}`}>{children}</section>; }
+function CardTitle({ icon, title }: { icon: ReactNode; title: string }) { return <div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</span><h2 className="text-[20px] font-black tracking-[-0.03em] text-[#11263F]">{title}</h2></div>; }
+function CardHeader({ icon, title, action }: { icon: ReactNode; title: string; action?: string }) { return <div className="mb-3 flex items-center justify-between gap-3"><CardTitle icon={icon} title={title} />{action && <button className="inline-flex items-center gap-1 text-xs font-black text-emerald-700">{action}<ArrowRight className="h-3.5 w-3.5" /></button>}</div>; }
+function ClassSidebar({ classId, activeTab }: { classId: string; activeTab: WorkspaceTab }) {
+  return <aside className="sticky top-[92px] hidden h-[calc(100vh-112px)] w-[198px] shrink-0 overflow-hidden rounded-[30px] border border-white/80 bg-[linear-gradient(165deg,#FFFFFF_0%,#FAFFFC_38%,#EAFBF2_100%)] p-4 shadow-[0_18px_42px_rgba(20,75,50,.16)] xl:block"><div className="pointer-events-none absolute -left-14 top-40 h-36 w-28 rounded-[55%_45%_50%_50%] bg-[#DDF8EA]/75 blur-[1px]" /><div className="pointer-events-none absolute -right-16 top-28 h-44 w-28 rounded-[48%_52%_42%_58%] bg-[#D4F7E5]/65 blur-[1px]" /><div className="pointer-events-none absolute -right-10 bottom-36 h-36 w-40 rounded-[50%_40%_55%_45%] bg-[#DDF8EA]/80 blur-[1px]" /><div className="pointer-events-none absolute left-4 top-5 h-3 w-3 rounded-full bg-[#B8EFD1]/70" /><div className="pointer-events-none absolute right-8 top-7 h-5 w-3 rotate-12 rounded-full bg-[#B8EFD1]/75" /><div className="pointer-events-none absolute right-6 top-16 h-8 w-4 rotate-45 rounded-full bg-[#B8EFD1]/70" /><div className="pointer-events-none absolute right-4 top-64 h-14 w-7 -rotate-35 rounded-full bg-[#B8EFD1]/55" /><div className="pointer-events-none absolute right-9 top-[318px] h-3 w-3 rounded-full bg-[#B8EFD1]/65" /><div className="pointer-events-none absolute right-6 top-[342px] h-2 w-2 rounded-full bg-[#B8EFD1]/55" /><div className="pointer-events-none absolute left-5 bottom-32 h-3 w-2 rotate-45 rounded-full bg-[#B8EFD1]/70" /><div className="pointer-events-none absolute inset-0 opacity-35" style={{ backgroundImage: "radial-gradient(circle at 22px 22px, rgba(0,159,114,.10) 1.2px, transparent 1.2px)", backgroundSize: "30px 30px" }} /><nav className="relative z-10 space-y-2 rounded-[22px] bg-white/28 p-2 backdrop-blur-[1px]">{classWorkspaceMock.navItems.map((item) => { const Icon = item.icon; const active = item.id === activeTab; return <Link key={item.id} href={`/classes/${classId}/workspace${item.id === "overview" ? "" : `?tab=${item.id}`}`} className={`group relative flex h-12 items-center gap-3 overflow-hidden rounded-2xl px-4 text-sm font-black transition ${active ? "bg-[#C9F8E0] text-[#0C6047] shadow-[0_10px_22px_rgba(0,159,114,.14)]" : "text-[#263A59] hover:bg-white/80 hover:text-[#0C6047]"}`}><Icon className={`h-5 w-5 transition ${active ? "text-[#007F5F]" : "text-[#263A59] group-hover:text-[#007F5F]"}`} />{item.label}</Link>; })}</nav><div className="absolute bottom-5 left-6 right-6 z-10 flex justify-center overflow-hidden rounded-[22px] border border-white/80 bg-[linear-gradient(180deg,#F4FFF8_0%,#E8F8EF_100%)] px-2 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_10px_22px_rgba(20,75,50,.09)]"><div className="pointer-events-none absolute -left-8 bottom-0 h-20 w-20 rounded-full bg-[#CDF5DD]/70" /><div className="pointer-events-none absolute -right-7 top-3 h-16 w-16 rounded-full bg-[#DDF8EA]/80" /><Image src="/Cáybara_học_tập_mỗi_ngày-removebg-preview.png" alt="Capybara học tập mỗi ngày" width={160} height={132} className="relative h-auto w-[126px] drop-shadow-[0_9px_14px_rgba(20,75,50,.14)]" /></div></aside>;
 }
-
-function ClassSidebar({ classId }: { classId: string }) {
-  return (
-    <aside className="sticky top-[92px] hidden h-[calc(100vh-112px)] w-[198px] shrink-0 rounded-[24px] border border-[#E7EEE9] bg-white p-4 shadow-[0_8px_28px_rgba(20,75,50,.07)] xl:block">
-      <nav className="space-y-2">
-        {classWorkspaceMock.navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.label}
-              href={`/classes/${classId}/workspace`}
-              className={`flex h-12 items-center gap-3 rounded-2xl px-4 text-sm font-black transition ${item.active ? "bg-emerald-100 text-[#0C6047]" : "text-[#263A59] hover:bg-emerald-50"}`}
-            >
-              <Icon className="h-5 w-5" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="absolute bottom-4 left-4 right-4 overflow-hidden rounded-[22px] bg-[#F2FBF6] px-3 pb-3 pt-5">
-        <p className="relative z-10 ml-auto w-[96px] rotate-[-8deg] text-center text-[13px] font-bold leading-tight text-[#16875A]">
-          Cùng học<br />cùng tiến bộ nha! <span className="text-rose-400">♥</span>
-        </p>
-        <Image src="/stickers/laptop-capybara.png" alt="Capybara học cùng EduMi" width={180} height={150} className="mt-1 h-auto w-[150px] -translate-x-1" />
-      </div>
-    </aside>
-  );
-}
-
 function WelcomeCard() {
-  return (
-    <section className="relative overflow-hidden rounded-[22px] border border-[#DDEDE4] bg-gradient-to-r from-[#FFF9ED] via-[#F1FAF4] to-[#EAF8F1] px-6 py-5 shadow-[0_8px_28px_rgba(20,75,50,.07)]">
-      <div className="relative z-10 max-w-[560px]">
-        <p className="mb-1 flex items-center gap-2 text-sm font-extrabold text-[#16875A]"><span className="text-xl">☀</span> Chào {classWorkspaceMock.studentName}!</p>
-        <h1 className="text-[26px] font-black tracking-[-0.04em] text-[#11263F]">Tiếp tục học hôm nay nhé!</h1>
-        <p className="mt-1 text-sm font-semibold text-[#62718A]">Mỗi ngày một chút, bạn đang tiến gần hơn đến mục tiêu của mình đó!</p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          {classWorkspaceMock.welcomeActions.map((action) => (
-            <button key={action.label} className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-black transition ${actionTone[action.tone as keyof typeof actionTone]}`}>
-              {action.tone === "green" ? <BookOpen className="h-4 w-4" /> : action.tone === "blue" ? <PencilLine className="h-4 w-4" /> : <GraduationCap className="h-4 w-4" />}
-              {action.label}<ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          ))}
+  return <section className="relative min-h-[248px] overflow-hidden rounded-[28px] border border-[#BEEAD5] bg-[#F7FBF7] shadow-[0_16px_38px_rgba(20,75,50,.14)] sm:min-h-[260px]"><Image src="/classroom-welcome-banner.png" alt="" fill priority sizes="(max-width: 1280px) 100vw, 1120px" className="object-cover object-[72%_center]" /><div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,.98)_0%,rgba(255,255,255,.94)_32%,rgba(255,255,255,.72)_49%,rgba(255,255,255,.08)_70%,transparent_100%)]" /><div className="absolute inset-y-0 left-0 w-2/3 bg-[radial-gradient(circle_at_18%_18%,rgba(255,248,218,.72),transparent_34%)]" /><div className="relative z-10 flex min-h-[248px] max-w-[760px] flex-col justify-center px-6 py-7 sm:min-h-[260px] sm:px-9"><p className="mb-2 flex items-center gap-2 text-base font-black text-[#16875A]"><span className="text-xl">☀</span> Chào {classWorkspaceMock.studentName}!</p><h1 className="text-[30px] font-black tracking-[-0.04em] text-[#11263F] sm:text-[36px]">Tiếp tục học hôm nay nhé!</h1><p className="mt-1.5 max-w-[640px] text-sm font-bold text-[#62718A] sm:text-base">Mỗi ngày một chút, bạn đang tiến gần hơn đến mục tiêu của mình đó!</p><div className="mt-6"><button className="inline-flex h-12 items-center gap-2.5 rounded-full bg-[#079A68] px-6 text-sm font-black text-white shadow-[0_10px_22px_rgba(0,159,114,.28)] ring-1 ring-white/70 transition duration-300 hover:-translate-y-0.5 hover:bg-[#00885D] hover:shadow-[0_14px_28px_rgba(0,159,114,.34)] sm:text-base"><CalendarClock className="h-5 w-5" />Lớp học hôm nay<ArrowRight className="h-4 w-4" /></button></div></div></section>;
+}
+function DocumentRow({ item, compact = false }: { item: typeof materialsList[number]; compact?: boolean }) {
+  return <div className={`grid items-center gap-3 py-2 ${compact ? "min-h-[58px] grid-cols-[40px_minmax(0,1fr)_70px_78px_28px]" : "min-h-[62px] grid-cols-[42px_minmax(0,1fr)_92px_86px_28px]"}`}><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${fileTone[item.color as keyof typeof fileTone]}`}><FileText className="h-5 w-5" /></span><div className="min-w-0"><h3 className="truncate text-sm font-black text-[#11263F]">{item.title}</h3><p className="truncate text-xs font-semibold text-[#7A889C]">{item.meta}</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-center text-[11px] font-black text-emerald-700">{item.badge}</span><button className="h-8 rounded-xl bg-emerald-50 text-xs font-black text-emerald-700">{item.action}</button><MoreVertical className="h-4 w-4 text-slate-400" /></div>;
+}
+function MaterialsCard() { const themes = [{ surface: "bg-[#E8751D]", wave: "bg-[#F1A56A]", button: "text-[#D85D0B]" }, { surface: "bg-[#B74775]", wave: "bg-[#D884A6]", button: "text-[#B74775]" }, { surface: "bg-[#BB4E42]", wave: "bg-[#DE8277]", button: "text-[#BB4E42]" }, { surface: "bg-[#7357B9]", wave: "bg-[#A78CE2]", button: "text-[#7357B9]" }]; return <WorkspaceCard tone="mint" className="p-5"><CardHeader icon={<FileText className="h-4 w-4" />} title="Tài liệu nổi bật" action="Xem tất cả" /><p className="-mt-2 mb-4 text-xs font-semibold text-[#718199]">Tài liệu, bài giảng và học liệu được giáo viên chia sẻ cho lớp.</p><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{classWorkspaceMock.materials.slice(0, 4).map((item, index) => { const theme = themes[index % themes.length]; return <article key={item.title} className={`relative flex min-h-[192px] flex-col overflow-hidden rounded-[20px] p-4 text-white shadow-[0_10px_20px_rgba(30,62,45,.16)] ${theme.surface}`}><span className={`pointer-events-none absolute -left-10 top-[42%] h-24 w-[130%] rotate-[-9deg] rounded-[50%] opacity-65 ${theme.wave}`} /><span className="pointer-events-none absolute -right-6 -top-7 h-24 w-24 rounded-full bg-white/10" /><div className="relative z-10 flex items-center justify-between gap-2 text-[10px] font-black"><span className="truncate">EDUMI | HỌC LIỆU</span><span className="rounded-md bg-white/25 px-2 py-1">{item.type}</span></div><div className="relative z-10 mt-auto"><h3 className="min-h-[44px] text-[18px] font-black leading-[1.15] tracking-[-0.03em]">{item.title}</h3><p className="mt-2 truncate text-[11px] font-bold text-white/80">{item.meta.split(" • ").slice(0, 2).join(" • ")}</p><div className="mt-4 flex items-center justify-between gap-2"><span className="flex items-center gap-1 text-[11px] font-black text-white/90"><Eye className="h-3.5 w-3.5" />{12 + index * 8} lượt xem</span><button className={`inline-flex h-8 items-center gap-1 rounded-xl bg-white px-3 text-xs font-black shadow-sm ${theme.button}`}>Xem <ArrowRight className="h-3.5 w-3.5" /></button></div></div></article>; })}</div></WorkspaceCard>; }
+function AssignmentsCard() {
+  return <WorkspaceCard tone="amber" className="p-5"><CardHeader icon={<ClipboardList className="h-4 w-4" />} title={"B\u00e0i t\u1eadp c\u1ea7n theo d\u00f5i"} action={"Xem t\u1ea5t c\u1ea3"} /><p className="-mt-2 mb-2 text-xs font-semibold text-[#718199]">{"Theo d\u00f5i h\u1ea1n n\u1ed9p v\u00e0 ti\u1ebfn \u0111\u1ed9 b\u00e0i l\u00e0m c\u1ee7a b\u1ea1n."}</p><div className="divide-y divide-slate-100">{classWorkspaceMock.assignments.map((item) => <div key={item.title} className="grid min-h-[62px] grid-cols-[40px_minmax(0,1fr)_168px_96px_92px] items-center gap-3 py-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-orange-600"><ClipboardList className="h-4 w-4" /></span><div className="min-w-0"><h3 className="truncate text-sm font-black text-[#11263F]">{item.title}</h3><p className="truncate text-xs font-semibold text-[#7A889C]">{item.chapter} • {item.questions}</p></div><span className="flex items-center gap-1 text-xs font-bold text-[#64728A]"><CalendarClock className="h-4 w-4" />{"H\u1ea1n n\u1ed9p: "}{item.deadline}</span><StatusPill status={item.status} /><button className={`h-9 rounded-xl text-xs font-black ${item.status === "\u0110\u00e3 n\u1ed9p" ? "bg-emerald-50 text-emerald-700" : "bg-[#16875A] text-white"}`}>{item.status === "\u0110\u00e3 n\u1ed9p" ? "Xem chi ti\u1ebft" : "N\u1ed9p b\u00e0i"}</button></div>)}</div></WorkspaceCard>;
+}function StatusPill({ status }: { status: string }) { const tone: Record<string, string> = { "\u0110\u00e3 n\u1ed9p": "bg-emerald-100 text-emerald-700", "Ch\u01b0a n\u1ed9p": "bg-rose-100 text-rose-700", "\u0110\u00e3 ch\u1ea5m": "bg-blue-100 text-blue-700" }; return <span className={`inline-flex h-9 w-full items-center justify-center rounded-xl px-3 text-center text-xs font-black ${tone[status] ?? "bg-slate-100 text-slate-700"}`}>{status}</span>; }
+function WeeklyGoalsCard() { return <section className="relative overflow-hidden rounded-[24px] border border-[#F3D2DD] bg-[radial-gradient(circle_at_92%_10%,rgba(255,194,211,.5),transparent_28%),linear-gradient(145deg,#FFFFFF_0%,#FFF4F7_58%,#FFF8E8_100%)] p-5 shadow-[0_14px_34px_rgba(92,55,64,.11)] ring-1 ring-white/60 before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-gradient-to-r before:from-[#F05F88] before:to-[#F6B06A]"><div className="mb-4 flex items-center gap-2"><Target className="h-6 w-6 text-rose-500" /><h2 className="text-[20px] font-black text-[#11263F]">Mục tiêu tuần này</h2><span className="ml-auto text-sm font-black text-emerald-700">67%</span></div><div className="mb-4 h-2.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-[67%] rounded-full bg-[#16875A]" /></div><div className="grid gap-3 sm:grid-cols-3">{classWorkspaceMock.weeklyGoals.map((goal) => <div key={goal.label} className="flex items-start gap-2 text-xs font-bold text-[#52657C]"><span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${goal.done ? "bg-emerald-500 text-white" : "border border-slate-300 bg-white text-transparent"}`}>{goal.done && <Check className="h-3.5 w-3.5" />}</span>{goal.label}</div>)}</div><Image src="/stickers/pencil-capybara.png" alt="Capybara cổ vũ" width={150} height={140} className="absolute bottom-[-18px] right-4 hidden w-[94px] md:block" /></section>; }
+function DonutProgress({ value, size = "md", label = "Hoàn thành", center }: { value: number; size?: "sm" | "md" | "lg"; label?: string; center?: string }) { const sizes = { sm: "h-[104px] w-[104px]", md: "h-[126px] w-[126px]", lg: "h-[138px] w-[138px]" }; const inner = { sm: "h-[72px] w-[72px]", md: "h-[88px] w-[88px]", lg: "h-[96px] w-[96px]" }; return <div className="flex flex-col items-center justify-center"><div className={`relative flex ${sizes[size]} items-center justify-center rounded-full bg-[conic-gradient(#16875A_0_68%,#E7EEE9_68%_100%)]`}><div className={`flex ${inner[size]} flex-col items-center justify-center rounded-full bg-white`}><b className="text-[26px] font-black text-[#11263F]">{center ?? `${value}%`}</b>{label && <span className="text-[11px] font-bold text-[#7A889C]">{label}</span>}</div></div>{size === "lg" && <span className="mt-2 text-xs font-semibold text-[#64728A]">Hoàn thành khóa học</span>}</div>; }
+function ChapterMiniList() { return <div className="mt-3 space-y-2">{classWorkspaceMock.progress.chapters.map((chapter) => <div key={chapter.label} className="grid grid-cols-[1fr_116px_34px] items-center gap-2 text-[11px] font-bold text-[#52657C]"><span className="truncate">{chapter.label}</span><div className="h-2 rounded-full bg-slate-100"><div className={`h-full rounded-full ${chapter.value >= 60 ? "bg-emerald-500" : chapter.value > 0 ? "bg-amber-400" : "bg-slate-200"}`} style={{ width: `${chapter.value}%` }} /></div><b>{chapter.value}%</b></div>)}</div>; }
+function ProgressCard() { const progress = classWorkspaceMock.progress; return <WorkspaceCard tone="sky" className="p-5"><CardHeader icon={<BarChart3 className="h-4 w-4" />} title="Tiến độ học tập" action="Chi tiết" /><div className="relative mt-3 overflow-hidden rounded-[20px] border border-white/80 bg-white/55 px-4 pb-4 pt-4 shadow-inner"><div className="relative z-10 flex flex-col items-center"><span className="text-xs font-bold text-[#718199]">Tiến độ khóa học</span><DonutProgress value={68} size="lg" label="Hoàn thành" /><p className="mt-3 max-w-[220px] text-center text-xs font-semibold leading-relaxed text-[#64728A]">Bạn đã đi được hơn nửa hành trình. Cứ giữ nhịp học đều nhé!</p></div></div></WorkspaceCard>; }
+function LeaderboardCard() { const rankings = [{ rank: 1, name: "Ngọc Anh", initials: "NA", score: "2,450 XP", tone: "bg-amber-400 text-amber-950" }, { rank: 2, name: "Minh Khang", initials: "MK", score: "2,280 XP", tone: "bg-sky-400 text-sky-950" }, { rank: 3, name: "Thu Trang", initials: "TT", score: "2,140 XP", tone: "bg-orange-400 text-orange-950" }]; return <WorkspaceCard className="bg-[linear-gradient(145deg,#075A47_0%,#079A68_58%,#16B982_100%)] p-5 text-white"><div className="relative z-10 mb-4 flex items-center justify-between"><div className="flex items-center gap-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-amber-500 shadow-sm"><Trophy className="h-5 w-5" /></span><div><h2 className="text-[20px] font-black tracking-[-0.03em]">Bảng xếp hạng</h2><p className="text-[11px] font-bold text-emerald-100">Top học viên tuần này</p></div></div><button className="text-xs font-black text-white/90">Xem tất cả <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></button></div><div className="relative z-10 space-y-2.5">{rankings.map((student) => <div key={student.rank} className="flex items-center gap-3 rounded-2xl border border-white/25 bg-white/15 px-3 py-2.5 backdrop-blur-sm"><span className={`flex h-8 w-8 items-center justify-center rounded-xl text-sm font-black ${student.tone}`}>{student.rank}</span><span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/35 bg-white/20 text-[11px] font-black">{student.initials}</span><b className="min-w-0 flex-1 truncate text-sm font-black">{student.name}</b><span className="rounded-lg bg-white/90 px-2 py-1 text-[10px] font-black text-[#075A47]">{student.score}</span></div>)}</div><div className="relative z-10 mt-4 flex items-center justify-between border-t border-white/20 pt-3 text-xs font-bold text-emerald-50"><span>Bạn đang ở hạng</span><b className="rounded-full bg-white/15 px-3 py-1 text-white">#12</b></div><Trophy className="pointer-events-none absolute -bottom-7 -right-5 h-32 w-32 rotate-[-12deg] text-white/10" /></WorkspaceCard>; }
+function ExamRoomCard() { return <WorkspaceCard tone="amber" className="p-5"><CardHeader icon={<GraduationCap className="h-4 w-4" />} title="Phòng thi" action="Xem tất cả" /><div className="rounded-[18px] border border-white/80 bg-[#F6FBF7] p-3.5"><div className="grid grid-cols-[76px_minmax(0,1fr)] items-center gap-3"><div className="flex h-[86px] items-center justify-center rounded-2xl bg-[#EBF7EF]"><Image src="/stickers/classes-corner-3d.png" alt="" width={110} height={110} className="w-[76px] drop-shadow-[0_8px_12px_rgba(20,75,50,.16)]" /></div><div className="min-w-0"><h3 className="mb-1.5 text-[15px] font-black leading-5 text-[#11263F]">Kiểm tra giữa chương 2</h3><p className="text-xs font-bold text-[#64728A]">60 phút · 30 câu hỏi</p><p className="mt-1 text-xs font-black text-[#0C6047]">Hôm nay, 20:00 - 21:00</p></div></div><button className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#0C6047] text-sm font-black text-white">Vào phòng thi <ArrowRight className="h-4 w-4" /></button></div></WorkspaceCard>; }
+function MaterialsHero() {
+  return <WorkspaceCard className="relative min-h-[214px] overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#FFFFFF_0%,#F7FCF8_52%,#E8F9EF_100%)] p-6 sm:h-[224px] sm:min-h-0">
+    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_88%_18%,rgba(148,241,195,.36),transparent_31%),radial-gradient(ellipse_at_72%_100%,rgba(197,240,255,.42),transparent_27%)]" />
+    <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-[#C9F8DE]/60 blur-2xl" />
+    <div className="pointer-events-none absolute bottom-0 right-0 h-36 w-64 bg-[radial-gradient(ellipse_at_bottom_right,rgba(152,232,183,.34),transparent_68%)]" />
+    <svg aria-hidden="true" className="pointer-events-none absolute bottom-2 left-[43%] hidden h-16 w-[330px] text-emerald-300/45 lg:block" viewBox="0 0 330 64" fill="none"><path d="M2 48C56 8 100 61 146 37C194 12 239 53 327 7" stroke="currentColor" strokeWidth="2" strokeDasharray="6 8" strokeLinecap="round" /></svg>
+    <div className="pointer-events-none absolute left-[48%] top-[96px] hidden h-[76px] w-[58px] -rotate-12 rounded-xl border border-white/60 bg-white/40 p-3 shadow-[0_10px_24px_rgba(37,126,83,.06)] backdrop-blur-[1px] lg:block"><span className="block h-2.5 w-7 rounded-full bg-emerald-200/70" /><span className="mt-2 block h-1.5 w-8 rounded-full bg-emerald-100/90" /><span className="mt-1.5 block h-1.5 w-5 rounded-full bg-emerald-100/75" /></div>
+    <div className="pointer-events-none absolute left-[59%] top-[122px] hidden h-[70px] w-[54px] rotate-[11deg] rounded-xl border border-white/60 bg-white/35 p-3 shadow-[0_10px_24px_rgba(37,126,83,.05)] backdrop-blur-[1px] lg:block"><span className="block h-2.5 w-6 rounded-full bg-sky-200/70" /><span className="mt-2 block h-1.5 w-7 rounded-full bg-sky-100/85" /><span className="mt-1.5 block h-1.5 w-4 rounded-full bg-sky-100/75" /></div>
+    <div className="pointer-events-none absolute bottom-7 left-[55%] hidden h-4 w-7 -rotate-35 rounded-[100%_0_100%_0] bg-emerald-300/45 lg:block" />
+    <div className="pointer-events-none absolute bottom-16 left-[70%] hidden h-3 w-5 rotate-20 rounded-[100%_0_100%_0] bg-emerald-300/50 lg:block" />
+    <div className="pointer-events-none absolute -bottom-20 right-0 hidden h-[290px] w-[290px] opacity-75 drop-shadow-[0_18px_24px_rgba(37,126,83,.15)] sm:block"><Image src="/stickers/materials-documents-3d.png" alt="" aria-hidden="true" fill sizes="290px" className="object-contain object-bottom-right" /></div>
+    <div className="pointer-events-none absolute bottom-5 right-[215px] hidden h-3 w-3 rotate-45 bg-amber-300/75 sm:block" />
+    <div className="pointer-events-none absolute right-[258px] top-12 hidden h-2.5 w-2.5 rounded-full bg-emerald-300/75 sm:block" />
+    <div className="relative z-10 max-w-[620px]">
+      <div className="flex items-center gap-4"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><FileText className="h-7 w-7" /></span><div><h1 className="text-[30px] font-black tracking-[-0.04em]">T&#224;i li&#7879;u h&#7885;c t&#7853;p</h1><p className="text-sm font-semibold text-[#64728A]">Kh&#225;m ph&#225; b&#224;i gi&#7843;ng, h&#7885;c li&#7879;u v&#224; t&#224;i nguy&#234;n &#273;&#432;&#7907;c gi&#225;o vi&#234;n chia s&#7867; cho l&#7899;p.</p></div></div>
+    </div>
+    <button type="button" className="absolute bottom-6 left-6 z-10 inline-flex h-12 items-center gap-2.5 rounded-full bg-[#079A68] px-5 text-[15px] font-black text-white shadow-[0_14px_28px_rgba(7,154,104,.26)] transition hover:-translate-y-0.5 hover:bg-[#067A54] hover:shadow-[0_18px_32px_rgba(7,154,104,.32)]"><Play className="h-4 w-4 fill-current" />{"Video Record B\u00e0i Gi\u1ea3ng"}<ArrowRight className="ml-0.5 h-4 w-4" /></button>
+  </WorkspaceCard>;
+}
+function MaterialsListPanel({ classId, selectedCollection }: { classId: string; selectedCollection?: (typeof materialCollections)[number] }) {
+  const displayedMaterials = selectedCollection?.items ?? materialsList;
+  return <WorkspaceCard tone="mint" className="p-5"><div className="mb-3 flex items-center justify-between gap-4"><div><CardTitle icon={<FileText className="h-4 w-4" />} title={selectedCollection ? `Tài liệu: ${selectedCollection.title}` : "Danh sách tài liệu"} />{selectedCollection && <p className="mt-1 text-xs font-semibold text-[#718199]">Đang xem {displayedMaterials.length} tài liệu thuộc bộ sưu tập này.</p>}</div>{selectedCollection ? <Link scroll={false} href={`/classes/${classId}/workspace?tab=materials`} className="inline-flex shrink-0 items-center gap-2 text-sm font-black text-emerald-700">Tất cả tài liệu <ArrowRight className="h-4 w-4" /></Link> : <button className="inline-flex items-center gap-2 text-sm font-black text-[#294461]">Mới nhất <ChevronDown className="h-4 w-4" /></button>}</div><div className="divide-y divide-slate-100">{displayedMaterials.map((item) => <DocumentRow key={item.title} item={item} />)}</div></WorkspaceCard>;
+}
+function CollectionsPanel({ classId, selectedCollectionId }: { classId: string; selectedCollectionId?: string }) {
+  return <WorkspaceCard className="p-5"><div className="mb-4"><CardTitle icon={<Folder className="h-4 w-4" />} title={"T\u00e0i li\u1ec7u l\u1edbp h\u1ecdc"} /><p className="mt-1 text-xs font-semibold text-[#718199]">Chọn một bộ sưu tập để xem ngay các tài liệu liên quan bên dưới.</p></div><div className="grid gap-3 md:grid-cols-3">{materialCollections.map((item) => { const active = item.id === selectedCollectionId; return <Link key={item.id} scroll={false} href={`/classes/${classId}/workspace?tab=materials&collection=${item.id}`} className={`flex items-center gap-3 rounded-2xl border p-3 shadow-sm transition hover:-translate-y-0.5 ${active ? "border-emerald-400 bg-emerald-50 ring-2 ring-emerald-100" : "border-slate-100 bg-white hover:border-emerald-200"}`}><span className={`flex h-12 w-12 items-center justify-center rounded-xl ${item.tone}`}><Folder className="h-6 w-6" /></span><div className="min-w-0 flex-1"><h3 className="truncate text-sm font-black">{item.title}</h3><p className="text-xs font-semibold text-[#718199]">{item.meta}</p></div><span className={`flex h-8 w-8 items-center justify-center rounded-full ${active ? "bg-emerald-600 text-white" : "bg-slate-100 text-[#294461]"}`}><ChevronRight className="h-4 w-4" /></span></Link>; })}</div></WorkspaceCard>;
+}
+function AiDocumentAssistantCard() {
+  return <WorkspaceCard className="relative overflow-hidden bg-[radial-gradient(circle_at_100%_0%,rgba(186,230,253,.34),transparent_35%),linear-gradient(145deg,#FFFFFF_0%,#F4FBF8_58%,#EEF7FF_100%)] p-5"><div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-sky-200/30 blur-2xl" /><div className="relative z-10"><CardTitle icon={<FileText className="h-4 w-4" />} title={"H\u1ed7 tr\u1ee3 t\u00e0i li\u1ec7u l\u1edbp h\u1ecdc"} /><p className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-[#64728A]">{"K\u00e9o th\u1ea3 t\u00e0i li\u1ec7u trong l\u1edbp h\u1ecdc, AI s\u1ebd chuy\u1ec3n n\u1ed9i dung th\u00e0nh b\u1ea3n d\u1ec5 \u0111\u1ecdc gi\u00fap b\u1ea1n n\u1eafm \u00fd nhanh v\u00e0 ch\u00ednh x\u00e1c h\u01a1n."}</p><div className="mt-4 rounded-2xl border border-dashed border-emerald-300 bg-white/70 p-4 text-center"><span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"><CloudUpload className="h-5 w-5" /></span><p className="mt-2 text-xs font-black text-[#294461]">{"Th\u1ea3 PDF, DOCX ho\u1eb7c PPT v\u00e0o \u0111\u00e2y"}</p><button type="button" className="mt-2 text-xs font-black text-emerald-700 underline decoration-emerald-300 underline-offset-4">{"Ch\u1ecdn t\u00e0i li\u1ec7u"}</button></div><button type="button" className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#079A68] text-sm font-black text-white shadow-[0_8px_18px_rgba(7,154,104,.20)] transition hover:bg-[#067A54]"><FileText className="h-4 w-4" />{"Ph\u00e2n t\u00edch t\u00e0i li\u1ec7u"}<ArrowRight className="h-4 w-4" /></button><div className="mt-4 rounded-2xl border border-sky-100 bg-white/85 p-3.5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700"><FileText className="h-5 w-5" /></span><div className="min-w-0 flex-1"><p className="text-xs font-black text-[#294461]">{"K\u1ebft qu\u1ea3 sau ph\u00e2n t\u00edch"}</p><h3 className="mt-1 truncate text-sm font-black text-[#11263F]">{"Ban-tom-tat-tai-lieu.docx"}</h3></div></div></div><div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3"><p className="text-[11px] font-semibold leading-4 text-[#5F7A6F]">{"Sau khi ph\u00e2n t\u00edch, b\u1ea1n c\u00f3 th\u1ec3 l\u01b0u b\u1ea3n t\u00f3m t\u1eaft v\u00e0o t\u00e0i li\u1ec7u c\u00e1 nh\u00e2n."}</p></div></div></WorkspaceCard>;
+}function MaterialsAside() {
+  const totalMaterials = materialCollections.reduce((total, collection) => total + collection.items.length, 0);
+  const chartTones = [
+    { color: "#10B981", bar: "bg-emerald-500", dot: "bg-emerald-500" },
+    { color: "#3B82F6", bar: "bg-blue-500", dot: "bg-blue-500" },
+    { color: "#F59E0B", bar: "bg-amber-500", dot: "bg-amber-500" },
+  ];
+  const folderBreakdown = materialCollections.map((collection, index) => ({
+    ...collection,
+    value: collection.items.length,
+    share: (collection.items.length / totalMaterials) * 100,
+    ...chartTones[index],
+  }));
+  const donutSegments = folderBreakdown.reduce(
+    ({ segments, shareStart }, item) => ({
+      segments: [...segments, `${item.color} ${shareStart}% ${shareStart + item.share}%`],
+      shareStart: shareStart + item.share,
+    }),
+    { segments: [] as string[], shareStart: 0 },
+  );
+  const donutBackground = `conic-gradient(${donutSegments.segments.join(", ")})`;
+  return <><WorkspaceCard className="relative overflow-hidden bg-[radial-gradient(circle_at_92%_8%,rgba(110,231,183,.24),transparent_34%),linear-gradient(145deg,#FFFFFF_0%,#F6F8FF_58%,#FFF4FB_100%)] p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(16,120,83,.12)]"><CardTitle icon={<BarChart3 className="h-4 w-4" />} title={"T\u1ed5ng quan t\u00e0i li\u1ec7u"} /><div className="mt-5 rounded-[22px] border border-white/90 bg-white/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.8),0_10px_24px_rgba(86,110,170,.08)]"><div className="flex items-center gap-4"><div className="relative flex h-[118px] w-[118px] shrink-0 items-center justify-center rounded-full ring-8 ring-emerald-100/50 shadow-[0_12px_28px_rgba(16,185,129,.20)]" style={{ background: donutBackground }}><div className="flex h-[82px] w-[82px] flex-col items-center justify-center rounded-full bg-white shadow-[inset_0_2px_8px_rgba(16,185,129,.08)]"><b className="text-[30px] font-black leading-none text-[#11263F]">{totalMaterials}</b><span className="mt-1 text-[10px] font-bold text-[#718199]">{"t\u00e0i li\u1ec7u"}</span></div></div><div className="min-w-0 flex-1"><p className="text-xs font-black uppercase tracking-[0.12em] text-[#718199]">{"Theo th\u01b0 m\u1ee5c"}</p><div className="mt-3 space-y-2.5">{folderBreakdown.map((item) => <div key={item.id}><div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-bold text-[#52657C]"><span className="flex min-w-0 items-center gap-1.5 truncate"><i className={`h-2 w-2 shrink-0 rounded-full ${item.dot}`} /><span className="truncate">{item.title}</span></span><b className="text-[#11263F]">{item.value}</b></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${item.bar}`} style={{ width: `${item.share}%` }} /></div></div>)}</div></div></div><div className="mt-4 grid grid-cols-2 gap-2 border-t border-[#E5EFE9] pt-4"><div className="rounded-xl bg-emerald-50 px-3 py-2.5"><b className="block text-lg font-black text-emerald-700">{materialCollections.length}</b><span className="text-[11px] font-bold text-[#5F7A6F]">{"th\u01b0 m\u1ee5c"}</span></div><div className="rounded-xl bg-blue-50 px-3 py-2.5"><b className="block text-lg font-black text-blue-700">{totalMaterials}</b><span className="text-[11px] font-bold text-[#5C7189]">{"t\u00e0i li\u1ec7u"}</span></div></div></div></WorkspaceCard><AiDocumentAssistantCard /></>;
+}function ProgressHero() { return <WorkspaceCard className="relative min-h-[248px] overflow-hidden rounded-[28px] bg-gradient-to-r from-white via-[#F7FCF8] to-[#FFF4D5] p-6 sm:h-[260px] sm:min-h-0"><Image src="/hero-capybara-study.png" alt="" width={130} height={90} className="pointer-events-none absolute right-6 top-5 hidden w-[118px] opacity-80 lg:block" /><div className="relative z-10 mb-3 flex items-center gap-4 pr-28"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><BarChart3 className="h-6 w-6" /></span><div><h1 className="text-[26px] font-black tracking-[-0.04em]">Hành trình học tập của bạn</h1><p className="text-sm font-semibold text-[#64728A]">Duy trì nhịp học đều đặn để chinh phục mục tiêu nhé!</p></div></div><div className="relative z-10 grid items-center gap-3 md:grid-cols-[112px_1fr_1fr_1fr]"><DonutProgress value={68} size="sm" label="" /><ProgressStat compact icon={<FileText />} value="26 / 42" label="bài học đã hoàn thành" tone="blue" /><ProgressStat compact icon={<BookOpen />} value="5" label="chương hoàn thành" tone="green" /><ProgressStat compact icon={<CalendarClock />} value="12" label="ngày học liên tiếp" tone="amber" /></div></WorkspaceCard>; }
+function ProgressStat({ icon, value, label, tone, compact = false }: { icon: ReactNode; value: string; label: string; tone: "blue" | "green" | "amber"; compact?: boolean }) { const tones = { blue: "bg-blue-50 text-blue-600", green: "bg-emerald-50 text-emerald-600", amber: "bg-amber-50 text-amber-600" }; return <div className={`flex items-center rounded-2xl bg-white/70 shadow-sm ${compact ? "gap-3 p-3" : "gap-4 p-4"}`}><span className={`flex items-center justify-center rounded-2xl ${compact ? "h-10 w-10" : "h-12 w-12"} ${tones[tone]}`}>{icon}</span><div><b className={`block font-black ${compact ? "text-xl" : "text-2xl"}`}>{value}</b><p className="text-xs font-semibold text-[#64728A]">{label}</p></div></div>; }
+function ChapterProgressPanel() { return <WorkspaceCard tone="sky" className="p-5"><CardHeader icon={<BookOpen className="h-4 w-4" />} title="Tiến độ theo chương" action="Xem chi tiết" /><div>{classWorkspaceMock.progress.chapters.map((chapter) => <div key={chapter.label} className="grid min-h-[62px] grid-cols-[48px_minmax(0,1fr)_360px_48px_32px] items-center gap-3 border-b border-slate-100 last:border-b-0"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><FileText className="h-5 w-5" /></span><div className="min-w-0"><h3 className="truncate text-sm font-black">{chapter.label}</h3><p className="truncate text-xs font-semibold text-[#718199]">{chapter.desc}</p></div><div className="h-3 rounded-full bg-slate-100"><div className={`h-full rounded-full ${chapter.value >= 80 ? "bg-emerald-500" : chapter.value >= 50 ? "bg-blue-400" : chapter.value > 0 ? "bg-amber-400" : "bg-slate-200"}`} style={{ width: `${chapter.value}%` }} /></div><b className="text-sm font-black text-[#0C6047]">{chapter.value}%</b><ChevronRight className="h-4 w-4 text-slate-400" /></div>)}</div></WorkspaceCard>; }
+function ProgressAside() { return <><WeeklyGoalAside /><MilestoneAside /><StudyReminder /></>; }
+function WeeklyGoalAside() { return <WorkspaceCard className="p-5"><CardHeader icon={<Target className="h-4 w-4" />} title="Mục tiêu tuần này" action="Chỉnh sửa" /><div className="flex gap-4"><DonutProgress value={67} size="sm" label="" center="2/3" /><div className="pt-4"><b className="text-sm font-black">Hoàn thành 2/3 mục tiêu</b><p className="text-xs font-semibold text-[#718199]">Cố gắng thêm một chút nữa nhé!</p></div></div><div className="mt-4 divide-y divide-slate-100">{classWorkspaceMock.weeklyGoals.map((goal) => <div key={goal.label} className="flex items-center gap-3 py-3 text-sm font-bold"><CheckCircle2 className={`h-5 w-5 ${goal.done ? "text-emerald-600" : "text-slate-300"}`} />{goal.label}<MoreVertical className="ml-auto h-4 w-4 text-slate-400" /></div>)}</div></WorkspaceCard>; }
+function MilestoneAside() { const items = [["Học đều 7 ngày", "Duy trì thói quen học tập tuyệt vời!", Flame], ["Hoàn thành chương 1", "Nắm vững kiến thức nền tảng!", BookOpen], ["Nộp bài đúng hạn", "Hoàn thành bài tập số 1 đúng hạn!", Trophy]]; return <WorkspaceCard className="p-5"><CardHeader icon={<Trophy className="h-4 w-4" />} title="Cột mốc đạt được" action="Xem tất cả" /><div className="space-y-3">{items.map(([title, desc, Icon], idx) => <div key={title as string} className="flex gap-3 rounded-2xl border border-slate-100 p-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600"><Icon className="h-5 w-5" /></span><div className="min-w-0"><h3 className="text-sm font-black">{title as string}</h3><p className="text-xs font-semibold text-[#718199]">{desc as string}</p></div><span className="ml-auto text-[11px] font-bold text-[#94A0B3]">{idx === 0 ? "16/09/2024" : idx === 1 ? "12/09/2024" : "10/09/2024"}</span></div>)}</div></WorkspaceCard>; }
+function StudyReminder() { return <WorkspaceCard className="relative overflow-hidden bg-[#FFFBEF] p-5"><CardTitle icon={<Lightbulb className="h-5 w-5" />} title="Nhắc nhở nhẹ" /><p className="mt-4 pr-24 text-sm font-semibold leading-relaxed text-[#52657C]">“Mỗi ngày học một chút, bạn đang tiến gần hơn đến phiên bản tốt hơn của chính mình!”</p><Image src="/hero-capybara-study.png" alt="" width={120} height={100} className="absolute bottom-0 right-2 w-[105px]" /></WorkspaceCard>; }
+function AssignmentsHero() {
+  return <WorkspaceCard className="relative min-h-[214px] overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#FFFFFF_0%,#FDFCF7_52%,#EAF8F1_100%)] p-6 sm:h-[224px] sm:min-h-0">
+    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_88%_18%,rgba(148,241,195,.31),transparent_31%),radial-gradient(ellipse_at_72%_100%,rgba(197,240,255,.38),transparent_27%)]" />
+    <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-[#D4F4DE]/70 blur-2xl" />
+    <div className="pointer-events-none absolute bottom-0 right-0 h-36 w-64 bg-[radial-gradient(ellipse_at_bottom_right,rgba(253,207,105,.24),transparent_68%)]" />
+    <svg aria-hidden="true" className="pointer-events-none absolute bottom-2 left-[43%] hidden h-16 w-[330px] text-emerald-300/45 lg:block" viewBox="0 0 330 64" fill="none"><path d="M2 48C56 8 100 61 146 37C194 12 239 53 327 7" stroke="currentColor" strokeWidth="2" strokeDasharray="6 8" strokeLinecap="round" /></svg>
+    <div className="pointer-events-none absolute left-[48%] top-[96px] hidden h-[76px] w-[58px] -rotate-12 rounded-xl border border-white/60 bg-white/40 p-3 shadow-[0_10px_24px_rgba(37,126,83,.06)] backdrop-blur-[1px] lg:block"><span className="block h-2.5 w-7 rounded-full bg-amber-200/75" /><span className="mt-2 block h-1.5 w-8 rounded-full bg-amber-100/90" /><span className="mt-1.5 block h-1.5 w-5 rounded-full bg-amber-100/75" /></div>
+    <div className="pointer-events-none absolute left-[59%] top-[122px] hidden h-[70px] w-[54px] rotate-[11deg] rounded-xl border border-white/60 bg-white/35 p-3 shadow-[0_10px_24px_rgba(37,126,83,.05)] backdrop-blur-[1px] lg:block"><span className="block h-2.5 w-6 rounded-full bg-sky-200/70" /><span className="mt-2 block h-1.5 w-7 rounded-full bg-sky-100/85" /><span className="mt-1.5 block h-1.5 w-4 rounded-full bg-sky-100/75" /></div>
+    <div className="pointer-events-none absolute bottom-7 left-[55%] hidden h-4 w-7 -rotate-35 rounded-[100%_0_100%_0] bg-emerald-300/45 lg:block" />
+    <div className="pointer-events-none absolute bottom-16 left-[70%] hidden h-3 w-5 rotate-20 rounded-[100%_0_100%_0] bg-amber-300/55 lg:block" />
+    <div className="pointer-events-none absolute -bottom-16 right-0 hidden h-[276px] w-[276px] drop-shadow-[0_18px_24px_rgba(37,126,83,.15)] sm:block"><Image src="/stickers/assignments-clipboard-capybara.png" alt="" aria-hidden="true" fill sizes="276px" className="object-contain object-bottom-right" /></div>
+    <div className="pointer-events-none absolute bottom-5 right-[210px] hidden h-3 w-3 rotate-45 bg-amber-300/75 sm:block" />
+    <div className="pointer-events-none absolute right-[258px] top-12 hidden h-2.5 w-2.5 rounded-full bg-emerald-300/75 sm:block" />
+    <div className="relative z-10 max-w-[620px]">
+      <div className="flex items-center gap-4"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><ClipboardList className="h-7 w-7" /></span><div><h1 className="text-[30px] font-black tracking-[-0.04em]">{"B\u00e0i t\u1eadp c\u1ee7a b\u1ea1n"}</h1><p className="text-sm font-semibold text-[#64728A]">{"Theo d\u00f5i h\u1ea1n n\u1ed9p v\u00e0 t\u00ecnh tr\u1ea1ng b\u00e0i l\u00e0m \u0111\u1ec3 kh\u00f4ng b\u1ecf l\u1ee1 b\u1ea5t k\u1ef3 b\u00e0i t\u1eadp n\u00e0o."}</p></div></div>
+    </div>
+    <button type="button" className="absolute bottom-6 left-6 z-10 inline-flex h-12 items-center gap-2.5 rounded-full bg-[#079A68] px-5 text-[15px] font-black text-white shadow-[0_10px_20px_rgba(7,154,104,.24)] transition hover:-translate-y-0.5 hover:bg-[#067A54] hover:shadow-[0_14px_24px_rgba(7,154,104,.30)]"><BarChart3 className="h-4 w-4" />{"Th\u1ed1ng k\u00ea \u0111i\u1ec3m s\u1ed1"}<ArrowRight className="ml-0.5 h-4 w-4" /></button>
+  </WorkspaceCard>;
+}function AssignmentFoldersPanel() {
+  const folders = [
+    { title: "Ch\u01b0\u01a1ng 1", meta: "1 b\u00e0i t\u1eadp \u2022 Kh\u1edfi \u0111\u1ed9ng", tone: "bg-emerald-100 text-emerald-700" },
+    { title: "Ch\u01b0\u01a1ng 2", meta: "2 b\u00e0i t\u1eadp \u2022 Luy\u1ec7n t\u1eadp", tone: "bg-blue-100 text-blue-700" },
+    { title: "Ch\u01b0\u01a1ng 3", meta: "1 b\u00e0i t\u1eadp \u2022 V\u1eadn d\u1ee5ng", tone: "bg-violet-100 text-violet-700" },
+  ];
+  return <WorkspaceCard className="p-5"><div className="mb-4"><CardTitle icon={<Folder className="h-4 w-4" />} title={"B\u00e0i t\u1eadp theo ch\u01b0\u01a1ng"} /><p className="mt-1 text-xs font-semibold text-[#718199]">{"Ch\u1ecdn ch\u01b0\u01a1ng \u0111\u1ec3 theo d\u00f5i c\u00e1c b\u00e0i t\u1eadp v\u00e0 h\u1ea1n n\u1ed9p."}</p></div><div className="grid gap-3 md:grid-cols-3">{folders.map((folder) => <article key={folder.title} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200"><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${folder.tone}`}><Folder className="h-6 w-6" /></span><div className="min-w-0 flex-1"><h3 className="truncate text-sm font-black">{folder.title}</h3><p className="truncate text-xs font-semibold text-[#718199]">{folder.meta}</p></div><span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-[#294461]"><ChevronRight className="h-4 w-4" /></span></article>)}</div></WorkspaceCard>;
+}function AssignmentTablePanel() {
+  return <WorkspaceCard tone="amber" className="p-5"><div className="mb-4 flex items-center justify-between"><CardTitle icon={<ClipboardList className="h-4 w-4" />} title={"Danh s\u00e1ch b\u00e0i t\u1eadp"} /><button className="inline-flex items-center gap-2 text-sm font-black text-[#294461]"><Filter className="h-4 w-4" />{"T\u1ea5t c\u1ea3"}<ChevronDown className="h-4 w-4" /></button></div><div className="overflow-hidden rounded-2xl border border-slate-100"><div className="grid grid-cols-[minmax(0,1.8fr)_minmax(130px,1fr)_120px_132px_132px] gap-x-3 bg-slate-50 px-4 py-3 text-xs font-bold text-[#718199]"><span>{"B\u00e0i t\u1eadp"}</span><span>{"Ch\u01b0\u01a1ng"}</span><span>{"H\u1ea1n n\u1ed9p"}</span><span>{"Tr\u1ea1ng th\u00e1i"}</span><span>{"Thao t\u00e1c"}</span></div>{assignmentRows.map((item, idx) => <div key={item.title} className="grid min-h-[58px] grid-cols-[minmax(0,1.8fr)_minmax(130px,1fr)_120px_132px_132px] gap-x-3 items-center border-t border-slate-100 px-4 text-sm"><div className="flex min-w-0 items-center gap-3"><span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${idx % 3 === 0 ? "bg-blue-100 text-blue-600" : idx % 3 === 1 ? "bg-orange-100 text-orange-600" : "bg-rose-100 text-rose-600"}`}><FileText className="h-4 w-4" /></span><h3 className="truncate font-black">{item.title}</h3></div><span className="truncate text-xs font-bold text-[#64728A]">{item.chapter}</span><span className="font-bold text-[#52657C]">{item.deadline}</span><StatusPill status={item.status} /><button className={`h-9 w-full rounded-xl text-xs font-black ${item.action === "N\u1ed9p b\u00e0i" ? "bg-[#079A68] text-white" : item.status === "\u0110\u00e3 ch\u1ea5m" ? "bg-blue-100 text-blue-700" : "bg-emerald-50 text-emerald-700"}`}>{item.action}</button></div>)}</div></WorkspaceCard>;
+}function ExamFoldersPanel() {
+  const folders = [
+    { title: "Ch\u01b0\u01a1ng 1", meta: "1 b\u00e0i thi \u2022 \u00d4n t\u1eadp", tone: "bg-emerald-100 text-emerald-700" },
+    { title: "Ch\u01b0\u01a1ng 2", meta: "2 b\u00e0i thi \u2022 S\u1eafp di\u1ec5n ra", tone: "bg-blue-100 text-blue-700" },
+    { title: "Ch\u01b0\u01a1ng 3", meta: "1 b\u00e0i thi \u2022 Luy\u1ec7n t\u1eadp", tone: "bg-violet-100 text-violet-700" },
+  ];
+  return <WorkspaceCard className="p-5"><div className="mb-4"><CardTitle icon={<Folder className="h-4 w-4" />} title={"B\u00e0i thi theo ch\u01b0\u01a1ng"} /><p className="mt-1 text-xs font-semibold text-[#718199]">{"Ch\u1ecdn ch\u01b0\u01a1ng \u0111\u1ec3 xem l\u1ecbch thi v\u00e0 c\u00e1c b\u00e0i luy\u1ec7n t\u1eadp li\u00ean quan."}</p></div><div className="grid gap-3 md:grid-cols-3">{folders.map((folder) => <article key={folder.title} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200"><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${folder.tone}`}><Folder className="h-6 w-6" /></span><div className="min-w-0 flex-1"><h3 className="truncate text-sm font-black">{folder.title}</h3><p className="truncate text-xs font-semibold text-[#718199]">{folder.meta}</p></div><span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-[#294461]"><ChevronRight className="h-4 w-4" /></span></article>)}</div></WorkspaceCard>;
+}function AssignmentsAside() { return <><WorkspaceCard className="relative overflow-hidden bg-[radial-gradient(circle_at_94%_8%,rgba(255,217,113,.42),transparent_35%),linear-gradient(145deg,#FFFFFF_0%,#FFF9E7_100%)] p-5"><div className="pointer-events-none absolute -right-8 -bottom-10 h-32 w-32 rounded-full bg-amber-200/45 blur-2xl" /><div className="relative z-10"><CardTitle icon={<ClipboardList className="h-4 w-4" />} title={"B\u00e0i t\u1eadp c\u1ea7n n\u1ed9p"} /><div className="mt-4 flex items-center gap-4"><span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-[30px] font-black text-amber-700">3</span><div className="min-w-0"><p className="text-base font-black text-[#11263F]">{"b\u00e0i t\u1eadp ch\u01b0a n\u1ed9p"}</p><p className="mt-1 text-xs font-semibold leading-5 text-[#718199]">{"B\u1ea1n c\u00f3 1 b\u00e0i s\u1eafp \u0111\u1ebfn h\u1ea1n trong tu\u1ea7n n\u00e0y."}</p></div></div><button type="button" className="mt-4 inline-flex items-center gap-1.5 text-xs font-black text-amber-700"><CalendarClock className="h-3.5 w-3.5" />{"T\u1ea1o l\u1eddi nh\u1eafc"}<ArrowRight className="h-3.5 w-3.5" /></button></div></WorkspaceCard><WorkspaceCard className="p-5"><CardTitle icon={<BarChart3 className="h-4 w-4" />} title={"Ti\u1ebfn \u0111\u1ed9 n\u1ed9p b\u00e0i"} /><div className="mt-5 rounded-[22px] border border-white/90 bg-white/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.8),0_10px_24px_rgba(86,110,170,.08)]"><div className="flex items-center gap-4"><div className="relative flex h-[118px] w-[118px] shrink-0 items-center justify-center rounded-full bg-[conic-gradient(#0EA5E9_0_67%,#F97316_67%_92%,#EC4899_92%_100%)] ring-8 ring-sky-100/60 shadow-[0_12px_28px_rgba(14,165,233,.20)]"><div className="flex h-[82px] w-[82px] flex-col items-center justify-center rounded-full bg-white shadow-[inset_0_2px_8px_rgba(14,165,233,.08)]"><b className="text-[27px] font-black leading-none text-[#11263F]">8/12</b><span className="mt-1 text-[10px] font-bold text-[#718199]">{"\u0111\u00e3 n\u1ed9p"}</span></div></div><div className="min-w-0 flex-1"><p className="text-xs font-black uppercase tracking-[0.12em] text-[#718199]">{"T\u00ecnh tr\u1ea1ng n\u1ed9p"}</p><div className="mt-3 space-y-2.5"><div><div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-bold text-[#52657C]"><span className="flex min-w-0 items-center gap-1.5 truncate"><i className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />{"\u0110\u00e3 n\u1ed9p"}</span><b className="text-[#11263F]">8</b></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-[67%] rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,.45)]" /></div></div><div><div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-bold text-[#52657C]"><span className="flex min-w-0 items-center gap-1.5 truncate"><i className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />{"Ch\u01b0a n\u1ed9p"}</span><b className="text-[#11263F]">3</b></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-[25%] rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,.45)]" /></div></div><div><div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-bold text-[#52657C]"><span className="flex min-w-0 items-center gap-1.5 truncate"><i className="h-2 w-2 shrink-0 rounded-full bg-rose-400" />{"Tr\u1ec5 h\u1ea1n"}</span><b className="text-[#11263F]">1</b></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-[8%] rounded-full bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,.45)]" /></div></div></div></div></div></div></WorkspaceCard><WorkspaceCard className="relative overflow-hidden bg-[radial-gradient(circle_at_94%_4%,rgba(255,222,126,.58),transparent_33%),linear-gradient(145deg,#FFFFFF_0%,#FFF9E6_100%)] p-5"><Trophy className="pointer-events-none absolute -right-5 -bottom-7 h-32 w-32 rotate-[-12deg] text-amber-300/25" /><div className="relative z-10"><CardTitle icon={<Trophy className="h-4 w-4" />} title={"\u0110i\u1ec3m c\u1ed9ng tu\u1ea7n n\u00e0y"} /><div className="mt-4 rounded-[20px] border border-emerald-100 bg-white/75 p-3 shadow-[0_8px_18px_rgba(20,75,50,.07)]"><div className="flex items-center gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><Flame className="h-5 w-5" /></span><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#718199]">{"B\u1ea1n \u0111\u00e3 nh\u1eadn"}</p><b className="mt-0.5 block text-[24px] font-black leading-none text-emerald-700">40 XP</b></div></div><p className="mt-3 border-t border-emerald-100 pt-3 text-xs font-semibold leading-5 text-[#5F7A6F]">{"\u0110\u1ea1t \u0111i\u1ec3m cao v\u00e0 n\u1ed9p b\u00e0i \u0111\u00fang h\u1ea1n \u0111\u1ec3 nh\u1eadn nhi\u1ec1u XP h\u01a1n nh\u00e9!"}</p></div><div className="mt-4 flex items-center justify-between rounded-2xl border border-amber-100 bg-white/65 px-4 py-3"><div><p className="text-[11px] font-bold text-[#7E7356]">{"H\u1ea1ng hi\u1ec7n t\u1ea1i"}</p><p className="mt-0.5 text-xs font-semibold text-[#64728A]">{"trong l\u1edbp"}</p></div><b className="text-2xl font-black text-amber-700">#12</b></div></div></WorkspaceCard></>; }
+function OverviewContent() { return { main: <><WelcomeCard /><MaterialsCard /><AssignmentsCard /></>, aside: <><ProgressCard /><ExamRoomCard /><LeaderboardCard /></> }; }
+function MaterialsContent({ classId, collectionId }: { classId: string; collectionId?: string }) {
+  const selectedCollection = materialCollections.find((collection) => collection.id === collectionId);
+  return { main: <><MaterialsHero /><CollectionsPanel classId={classId} selectedCollectionId={selectedCollection?.id} /><MaterialsListPanel classId={classId} selectedCollection={selectedCollection} /></>, aside: <MaterialsAside /> };
+}
+function LearningJourneyDashboard() {
+  const progress = classWorkspaceMock.progress;
+  const chapterDetails = [
+    { lessons: "8/8 bài học", participation: "100% tham gia", absence: "0% vắng", status: "Hoàn thành", statusTone: "bg-emerald-100 text-emerald-700" },
+    { lessons: "6/8 bài học", participation: "92% tham gia", absence: "8% vắng", status: "Đang học", statusTone: "bg-blue-100 text-blue-700" },
+    { lessons: "4/7 bài học", participation: "88% tham gia", absence: "12% vắng", status: "Cần duy trì", statusTone: "bg-violet-100 text-violet-700" },
+    { lessons: "2/7 bài học", participation: "75% tham gia", absence: "25% vắng", status: "Mới bắt đầu", statusTone: "bg-amber-100 text-amber-700" },
+    { lessons: "0/6 bài học", participation: "Chưa có buổi học", absence: "Chưa áp dụng", status: "Sắp mở", statusTone: "bg-slate-100 text-slate-600" },
+  ];
+
+  return <WorkspaceCard className="relative overflow-hidden bg-[linear-gradient(145deg,#FFFFFF_0%,#F4FFFA_52%,#EDF5FF_100%)] p-6">
+    <div className="relative z-10">
+      <div className="flex items-center gap-4">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><BarChart3 className="h-7 w-7" /></span>
+        <div>
+          <h1 className="text-[28px] font-black tracking-[-0.04em] text-[#11263F]">Hành trình học tập của bạn</h1>
+          <p className="text-sm font-semibold text-[#64728A]">Theo dõi tiến độ từng chương và mức độ tham gia của bạn trong khóa học.</p>
         </div>
       </div>
-      <div className="absolute bottom-0 right-5 hidden h-full w-[270px] md:block">
-        <div className="absolute right-2 top-5 rounded-[18px] border border-emerald-100 bg-white px-4 py-2 text-center text-xs font-black leading-tight text-[#0C6047] shadow-sm">Cố lên<br />bạn nhé!</div>
-        <Image src="/hero-capybara-study.png" alt="Capybara đọc sách" width={260} height={190} className="absolute bottom-[-18px] right-8 h-auto w-[190px]" />
-      </div>
-    </section>
-  );
-}
 
-function MaterialsCard() {
-  return (
-    <section className="rounded-[22px] border border-[#E7EEE9] bg-white p-5 shadow-[0_8px_28px_rgba(20,75,50,.07)]">
-      <CardHeader icon={<FileText className="h-4 w-4" />} title="Tài liệu học tập" action="Xem tất cả" />
-      <p className="-mt-2 mb-2 text-xs font-semibold text-[#718199]">Tài liệu, bài giảng và học liệu được giáo viên chia sẻ cho lớp.</p>
-      <div className="divide-y divide-slate-100">
-        {classWorkspaceMock.materials.map((item) => (
-          <div key={item.title} className="grid min-h-[58px] grid-cols-[40px_minmax(0,1fr)_70px_78px_28px] items-center gap-3 py-2">
-            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${fileIconTone[item.color as keyof typeof fileIconTone]}`}><FileText className="h-4 w-4" /></span>
-            <div className="min-w-0">
-              <h3 className="truncate text-sm font-black text-[#11263F]">{item.title}</h3>
-              <p className="truncate text-xs font-semibold text-[#7A889C]">{item.meta}</p>
-            </div>
-            <span className="rounded-full bg-slate-50 px-2 py-1 text-center text-[11px] font-black text-[#52657C]">{item.type}</span>
-            <button className="h-8 rounded-xl bg-emerald-50 text-xs font-black text-emerald-700">Xem</button>
-            <MoreVertical className="h-4 w-4 text-slate-400" />
+      <div className="mt-6 grid items-center gap-5 lg:grid-cols-[150px_minmax(0,1fr)]">
+        <div>
+          <DonutProgress value={68} size="lg" label="Hoàn thành" />
+          <p className="mt-2 text-center text-xs font-black text-[#64728A]">Tiến độ toàn khóa</p>
+        </div>
+        <div className="grid grid-cols-2 divide-x divide-y divide-slate-200/80 overflow-hidden rounded-2xl border border-white/80 bg-white/60 md:grid-cols-4 md:divide-y-0">
+          <div className="p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><FileText className="h-5 w-5" /></span>
+            <b className="mt-2 block text-2xl font-black text-[#11263F]">{progress.learned}</b>
+            <p className="text-xs font-semibold text-[#64728A]">bài học hoàn thành</p>
           </div>
-        ))}
+          <div className="p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600"><BookOpen className="h-5 w-5" /></span>
+            <b className="mt-2 block text-2xl font-black text-[#11263F]">{progress.chaptersDone}</b>
+            <p className="text-xs font-semibold text-[#64728A]">chương trong lộ trình</p>
+          </div>
+          <div className="p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-600"><CheckCircle2 className="h-5 w-5" /></span>
+            <b className="mt-2 block text-2xl font-black text-[#0C8B63]">92%</b>
+            <p className="text-xs font-semibold text-[#64728A]">tham gia, 11/12 buổi</p>
+          </div>
+          <div className="p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-500"><CircleDot className="h-5 w-5" /></span>
+            <b className="mt-2 block text-2xl font-black text-rose-500">8%</b>
+            <p className="text-xs font-semibold text-[#64728A]">vắng mặt, 1 buổi</p>
+          </div>
+        </div>
       </div>
-    </section>
-  );
-}
 
-function AssignmentsCard() {
-  const statusTone: Record<string, string> = {
-    "Đã nộp": "bg-emerald-100 text-emerald-700",
-    "Sắp đến hạn": "bg-amber-100 text-amber-700",
-    "Chưa nộp": "bg-rose-100 text-rose-700",
+      <section className="mt-7 border-t border-slate-200/80 pt-5">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <CardTitle icon={<BookOpen className="h-4 w-4" />} title="Tiến độ theo chương" />
+            <p className="mt-1 text-xs font-semibold text-[#718199]">Theo dõi mức độ hoàn thành, chuyên cần và phần cần tiếp tục.</p>
+          </div>
+          <button className="shrink-0 text-xs font-black text-emerald-700">Xem chi tiết <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></button>
+        </div>
+        <div className="overflow-hidden rounded-[20px] border border-white/80 bg-white/50">
+          {progress.chapters.map((chapter, index) => {
+            const detail = chapterDetails[index];
+            const barTone = chapter.value >= 80 ? "bg-emerald-500" : chapter.value >= 50 ? "bg-blue-400" : chapter.value > 0 ? "bg-amber-400" : "bg-slate-200";
+            return <div key={chapter.label} className="grid gap-3 border-b border-slate-200/70 px-4 py-3.5 last:border-b-0 md:grid-cols-[42px_minmax(0,1fr)_minmax(150px,.8fr)_100px] md:items-center">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><b className="text-sm">{index + 1}</b></span>
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-black text-[#11263F]">{chapter.label}</h3>
+                <p className="mt-0.5 truncate text-xs font-semibold text-[#718199]">{chapter.desc}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-black">
+                  <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">{detail.lessons}</span>
+                  <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">{detail.participation}</span>
+                  <span className="rounded-full bg-rose-50 px-2 py-1 text-rose-600">{detail.absence}</span>
+                </div>
+              </div>
+              <div>
+                <div className="mb-1.5 flex items-center justify-between text-[11px] font-black">
+                  <span className="text-[#64728A]">Tiến độ chương</span>
+                  <span className="text-[#0C6047]">{chapter.value}%</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-slate-100"><div className={"h-full rounded-full " + barTone} style={{ width: String(chapter.value) + "%" }} /></div>
+              </div>
+              <div className="flex items-center justify-between gap-2 md:block">
+                <span className={"inline-flex rounded-full px-2.5 py-1 text-[10px] font-black " + detail.statusTone}>{detail.status}</span>
+                <button className="mt-0 text-xs font-black text-[#0C6047] md:mt-2">Xem chương <ChevronRight className="inline h-3.5 w-3.5" /></button>
+              </div>
+            </div>;
+          })}
+        </div>
+      </section>
+    </div>
+  </WorkspaceCard>;
+}
+function ProgressContent() { return { main: <LearningJourneyDashboard />, aside: <ProgressAside /> }; }
+function AssignmentsContent() { return { main: <><AssignmentsHero /><AssignmentFoldersPanel /><AssignmentTablePanel /></>, aside: <AssignmentsAside /> }; }
+function ExamsContent() {
+  const exams = [
+    { day: 'Hôm nay', time: '20:00 - 21:00', title: 'Kiểm tra giữa chương 2', meta: '30 câu hỏi • 60 phút • Trắc nghiệm', status: 'Mở sau 02:18:40', tone: 'emerald', action: 'Vào phòng thi' },
+    { day: 'Thứ 6, 20/09', time: '19:30 - 20:15', title: 'Thi thử chương 3: Điều kiện', meta: '25 câu hỏi • 45 phút • Trắc nghiệm', status: 'Sắp mở', tone: 'amber', action: 'Đặt nhắc nhở' },
+    { day: 'Chủ nhật, 22/09', time: '08:00 - 08:30', title: 'Ôn tập tổng hợp chương 1', meta: '20 câu hỏi • 30 phút • Luyện tập', status: 'Đã mở đăng ký', tone: 'sky', action: 'Xem chi tiết' },
+  ];
+  const toneClass = {
+    emerald: { icon: 'bg-emerald-100 text-emerald-700', badge: 'bg-emerald-100 text-emerald-700', border: 'border-emerald-100', accent: 'bg-emerald-500' },
+    amber: { icon: 'bg-amber-100 text-amber-700', badge: 'bg-amber-100 text-amber-700', border: 'border-amber-100', accent: 'bg-amber-400' },
+    sky: { icon: 'bg-sky-100 text-sky-700', badge: 'bg-sky-100 text-sky-700', border: 'border-sky-100', accent: 'bg-sky-500' },
   };
 
-  return (
-    <section className="rounded-[22px] border border-[#E7EEE9] bg-white p-5 shadow-[0_8px_28px_rgba(20,75,50,.07)]">
-      <CardHeader icon={<ClipboardList className="h-4 w-4" />} title="Nộp bài tập" action="Xem tất cả" />
-      <p className="-mt-2 mb-2 text-xs font-semibold text-[#718199]">Các bài tập, đề bài và hạn nộp từ giáo viên.</p>
-      <div className="divide-y divide-slate-100">
-        {classWorkspaceMock.assignments.map((item) => (
-          <div key={item.title} className="grid min-h-[62px] grid-cols-[40px_minmax(0,1fr)_168px_96px_92px] items-center gap-3 py-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-orange-600"><ClipboardList className="h-4 w-4" /></span>
-            <div className="min-w-0">
-              <h3 className="truncate text-sm font-black text-[#11263F]">{item.title}</h3>
-              <p className="truncate text-xs font-semibold text-[#7A889C]">{item.chapter} • {item.questions}</p>
-            </div>
-            <span className="flex items-center gap-1 text-xs font-bold text-[#64728A]"><CalendarClock className="h-4 w-4" />Hạn nộp: {item.deadline}</span>
-            <span className={`rounded-full px-3 py-1 text-center text-xs font-black ${statusTone[item.status]}`}>{item.status}</span>
-            <button className={`h-9 rounded-xl text-xs font-black ${item.status === "Đã nộp" ? "bg-emerald-50 text-emerald-700" : "bg-[#16875A] text-white"}`}>{item.status === "Đã nộp" ? "Xem chi tiết" : "Nộp bài"}</button>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex min-h-[58px] items-center justify-between rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/40 px-5 text-sm">
-        <div className="flex items-center gap-3 text-[#0C6047]"><CloudUpload className="h-6 w-6" /><div><b className="block">Tải lên bài làm của bạn</b><span className="text-xs font-semibold text-[#718199]">Hỗ trợ PDF, DOC, DOCX, ZIP... | Tối đa 50MB</span></div></div>
-        <button className="hidden rounded-full bg-white px-4 py-2 text-xs font-black text-[#0C6047] shadow-sm sm:block">Chọn tệp</button>
-      </div>
-    </section>
-  );
-}
-
-function WeeklyGoalsCard() {
-  return (
-    <section className="relative overflow-hidden rounded-[22px] border border-[#E7EEE9] bg-white p-5 shadow-[0_8px_28px_rgba(20,75,50,.07)]">
-      <div className="mb-4 flex items-center gap-2"><Target className="h-6 w-6 text-rose-500" /><h2 className="text-[20px] font-black text-[#11263F]">Mục tiêu tuần này</h2><span className="ml-auto text-sm font-black text-emerald-700">67%</span></div>
-      <div className="mb-4 h-2.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-[67%] rounded-full bg-[#16875A]" /></div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        {classWorkspaceMock.weeklyGoals.map((goal) => <div key={goal.label} className="flex items-start gap-2 text-xs font-bold text-[#52657C]"><span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${goal.done ? "bg-emerald-500 text-white" : "border border-slate-300 bg-white text-transparent"}`}>{goal.done && <Check className="h-3.5 w-3.5" />}</span>{goal.label}</div>)}
-      </div>
-      <Image src="/stickers/pencil-capybara.png" alt="Capybara cổ vũ" width={150} height={140} className="absolute bottom-[-18px] right-4 hidden w-[94px] md:block" />
-    </section>
-  );
-}
-
-function ProgressCard() {
-  const progress = classWorkspaceMock.progress;
-  return (
-    <section className="rounded-[22px] border border-[#E7EEE9] bg-white p-5 shadow-[0_8px_28px_rgba(20,75,50,.07)]">
-      <CardHeader icon={<BarChart3 className="h-4 w-4" />} title="Tiến độ học tập" action="Chi tiết" />
-      <div className="grid grid-cols-[126px_1fr] gap-4">
-        <div className="relative flex h-[126px] w-[126px] items-center justify-center rounded-full bg-[conic-gradient(#16875A_0_68%,#E7EEE9_68%_100%)]">
-          <div className="flex h-[88px] w-[88px] flex-col items-center justify-center rounded-full bg-white"><b className="text-[26px] text-[#11263F]">68%</b><span className="text-[11px] font-bold text-[#7A889C]">Hoàn thành</span></div>
+  return {
+    main: <>
+      <WorkspaceCard className="relative min-h-[214px] overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#FFFFFF_0%,#F8FCFA_50%,#EAF7FF_100%)] p-6 sm:h-[224px] sm:min-h-0">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_88%_18%,rgba(147,231,255,.28),transparent_31%),radial-gradient(ellipse_at_72%_100%,rgba(187,242,211,.33),transparent_27%)]" />
+        <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-sky-100/65 blur-2xl" />
+        <div className="pointer-events-none absolute bottom-0 right-0 h-36 w-64 bg-[radial-gradient(ellipse_at_bottom_right,rgba(253,207,105,.24),transparent_68%)]" />
+        <svg aria-hidden="true" className="pointer-events-none absolute bottom-2 left-[43%] hidden h-16 w-[330px] text-sky-300/45 lg:block" viewBox="0 0 330 64" fill="none"><path d="M2 48C56 8 100 61 146 37C194 12 239 53 327 7" stroke="currentColor" strokeWidth="2" strokeDasharray="6 8" strokeLinecap="round" /></svg>
+        <div className="pointer-events-none absolute left-[48%] top-[96px] hidden h-[76px] w-[58px] -rotate-12 rounded-xl border border-white/60 bg-white/45 p-3 shadow-[0_10px_24px_rgba(40,105,140,.06)] backdrop-blur-[1px] lg:block"><span className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-[10px] font-black text-emerald-700">A</span><span className="mt-2 block h-1.5 w-8 rounded-full bg-sky-200/80" /><span className="mt-1.5 block h-1.5 w-5 rounded-full bg-sky-100/85" /></div>
+        <div className="pointer-events-none absolute left-[59%] top-[122px] hidden h-[70px] w-[54px] rotate-[11deg] rounded-xl border border-white/60 bg-white/40 p-3 shadow-[0_10px_24px_rgba(40,105,140,.05)] backdrop-blur-[1px] lg:block"><span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-100 text-[10px] font-black text-amber-700">B</span><span className="mt-2 block h-1.5 w-7 rounded-full bg-emerald-200/85" /><span className="mt-1.5 block h-1.5 w-4 rounded-full bg-emerald-100/80" /></div>
+        <div className="pointer-events-none absolute bottom-7 left-[55%] hidden h-4 w-7 -rotate-35 rounded-[100%_0_100%_0] bg-sky-300/45 lg:block" />
+        <div className="pointer-events-none absolute bottom-16 left-[70%] hidden h-3 w-5 rotate-20 rounded-[100%_0_100%_0] bg-emerald-300/55 lg:block" />
+        <div className="pointer-events-none absolute -bottom-12 right-1 hidden h-[255px] w-[255px] drop-shadow-[0_18px_24px_rgba(37,126,83,.14)] sm:block"><Image src="/stickers/pencil-capybara.png" alt="" aria-hidden="true" fill sizes="255px" className="object-contain object-bottom-right" /></div>
+        <div className="pointer-events-none absolute bottom-5 right-[198px] hidden h-3 w-3 rotate-45 bg-amber-300/75 sm:block" />
+        <div className="pointer-events-none absolute right-[255px] top-12 hidden h-2.5 w-2.5 rounded-full bg-sky-300/75 sm:block" />
+        <div className="relative z-10 max-w-[630px]">
+          <div className="flex items-center gap-4"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><GraduationCap className="h-7 w-7" /></span><div><h1 className="text-[30px] font-black tracking-[-0.04em] text-[#11263F]">{"Ph\u00f2ng thi c\u1ee7a l\u1edbp"}</h1><p className="text-sm font-semibold text-[#64728A]">{"Theo d\u00f5i l\u1ecbch ki\u1ec3m tra, chu\u1ea9n b\u1ecb tr\u01b0\u1edbc gi\u1edd thi v\u00e0 xem l\u1ea1i k\u1ebft qu\u1ea3 c\u1ee7a b\u1ea1n."}</p></div></div>
         </div>
-        <div className="space-y-3 pt-2 text-sm">
-          <p className="font-black text-[#11263F]">{progress.learned}<span className="ml-1 text-xs font-bold text-[#7A889C]">bài học</span></p>
-          <p className="font-black text-[#11263F]">{progress.chaptersDone}<span className="ml-1 text-xs font-bold text-[#7A889C]">chương hoàn thành</span></p>
-          <p className="font-black text-[#11263F]">{progress.streakDays} ngày<span className="ml-1 text-xs font-bold text-[#7A889C]">tham gia học tập</span></p>
+        <button type="button" className="absolute bottom-6 left-6 z-10 inline-flex h-12 items-center gap-2.5 rounded-full bg-[#079A68] px-5 text-[15px] font-black text-white shadow-[0_10px_20px_rgba(7,154,104,.24)] transition hover:-translate-y-0.5 hover:bg-[#067A54] hover:shadow-[0_14px_24px_rgba(7,154,104,.30)]"><BarChart3 className="h-4 w-4" />{"Th\u1ed1ng k\u00ea \u0111i\u1ec3m s\u1ed1"}<ArrowRight className="ml-0.5 h-4 w-4" /></button>
+      </WorkspaceCard>
+      <ExamFoldersPanel />
+
+      <WorkspaceCard className="bg-[linear-gradient(145deg,#FFFFFF_0%,#F1FBF6_100%)] p-5 sm:p-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><CardTitle icon={<CalendarClock className="h-4 w-4" />} title="Lịch thi sắp tới" /><p className="mt-1 text-sm font-semibold text-[#718199]">Các phòng thi đã được giáo viên mở cho lớp.</p></div><button className="inline-flex items-center gap-1.5 text-sm font-black text-emerald-700">Xem lịch đầy đủ <ArrowRight className="h-4 w-4" /></button></div>
+        <div className="relative space-y-3 before:absolute before:bottom-7 before:left-[24px] before:top-7 before:w-px before:bg-[#D7E8E0]">
+          {exams.map((exam, index) => { const color = toneClass[exam.tone as keyof typeof toneClass]; return <article key={exam.title} className="relative grid gap-3 rounded-[20px] border border-[#E2EEE8] bg-white/80 p-4 shadow-[0_6px_16px_rgba(17,38,63,.04)] md:grid-cols-[108px_44px_minmax(0,1fr)_auto] md:items-center"><div className="pl-1"><p className="text-xs font-black text-[#0A8160]">{exam.day}</p><p className="mt-1 text-sm font-bold text-[#52657C]">{exam.time}</p></div><span className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-2xl ${color.icon}`}><span className={`h-2.5 w-2.5 rounded-full ${color.accent}`} /></span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="text-base font-black leading-5 text-[#11263F]">{exam.title}</h3></div><p className="mt-1 text-sm font-semibold text-[#718199]">{exam.meta}</p></div><div className="flex w-[244px] shrink-0 items-center justify-end gap-2"><button type="button" className="h-10 w-[86px] rounded-xl border border-[#D8E7DF] bg-white px-3 text-sm font-black text-[#087452]">{"Chi ti\u1ebft"}</button><button disabled={index !== 0} className={`h-10 w-[150px] rounded-xl border px-3 text-sm font-black ${index === 0 ? 'border-[#079A68] bg-[#079A68] text-white shadow-[0_8px_16px_rgba(7,154,104,.18)]' : 'cursor-not-allowed border-[#D8E7DF] bg-slate-50 text-[#718199]'}`}>{index === 0 ? "V\u00e0o ph\u00f2ng thi" : "Ch\u01b0a \u0111\u1ebfn gi\u1edd thi"}</button></div></article>; })}
         </div>
-      </div>
-      <h3 className="mt-4 text-sm font-black text-[#11263F]">Tiến độ theo chương</h3>
-      <div className="mt-3 space-y-2">
-        {progress.chapters.map((chapter) => <div key={chapter.label} className="grid grid-cols-[1fr_116px_34px] items-center gap-2 text-[11px] font-bold text-[#52657C]"><span className="truncate">{chapter.label}</span><div className="h-2 rounded-full bg-slate-100"><div className={`h-full rounded-full ${chapter.value >= 60 ? "bg-emerald-500" : chapter.value > 0 ? "bg-amber-400" : "bg-slate-200"}`} style={{ width: `${chapter.value}%` }} /></div><b>{chapter.value}%</b></div>)}
-      </div>
-    </section>
-  );
-}
+      </WorkspaceCard>
 
-function ActivityCard() {
-  const tone: Record<string, string> = { green: "bg-emerald-100 text-emerald-700", blue: "bg-blue-100 text-blue-700", purple: "bg-violet-100 text-violet-700", orange: "bg-orange-100 text-orange-700" };
-  return (
-    <section className="rounded-[22px] border border-[#E7EEE9] bg-white p-5 shadow-[0_8px_28px_rgba(20,75,50,.07)]">
-      <CardHeader icon={<CircleDot className="h-4 w-4" />} title="Hoạt động lớp học" action="Xem tất cả" />
-      <div className="space-y-4">
-        {classWorkspaceMock.activities.map((activity) => {
-          const Icon = activity.icon;
-          return <div key={activity.title} className="flex gap-3"><span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tone[activity.tone]}`}><Icon className="h-4 w-4" /></span><div className="min-w-0 flex-1"><h3 className="truncate text-sm font-black text-[#11263F]">{activity.title}</h3><p className="truncate text-xs font-semibold text-[#718199]">{activity.desc}</p></div><span className="whitespace-nowrap text-[11px] font-bold text-[#94A0B3]">{activity.time}</span></div>;
-        })}
-      </div>
-    </section>
-  );
+    </>,
+    aside: <div className="space-y-4">
+      <WorkspaceCard className="relative overflow-hidden bg-[radial-gradient(circle_at_94%_8%,rgba(147,221,255,.35),transparent_35%),linear-gradient(145deg,#FFFFFF_0%,#F2FBF7_100%)] p-5">
+        <div className="pointer-events-none absolute -right-8 -bottom-10 h-32 w-32 rounded-full bg-sky-200/35 blur-2xl" />
+        <div className="relative z-10"><CardTitle icon={<GraduationCap className="h-4 w-4" />} title={"B\u00e0i thi tu\u1ea7n n\u00e0y"} /><div className="mt-4 flex items-center gap-4"><span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-[30px] font-black text-sky-700">2</span><div className="min-w-0"><p className="text-base font-black text-[#11263F]">{"b\u00e0i thi s\u1eafp di\u1ec5n ra"}</p><p className="mt-1 text-xs font-semibold leading-5 text-[#718199]">{"B\u1ea1n c\u00f3 1 b\u00e0i thi c\u1ea7n chu\u1ea9n b\u1ecb trong tu\u1ea7n n\u00e0y."}</p></div></div><button type="button" className="mt-4 inline-flex items-center gap-1.5 text-xs font-black text-sky-700"><CalendarClock className="h-3.5 w-3.5" />{"T\u1ea1o l\u1ecbch nh\u1eafc"}<ArrowRight className="h-3.5 w-3.5" /></button></div>
+      </WorkspaceCard>      <WorkspaceCard className="relative overflow-hidden bg-[radial-gradient(circle_at_92%_8%,rgba(167,139,250,.23),transparent_34%),linear-gradient(145deg,#FFFFFF_0%,#F6F8FF_58%,#FFF4FB_100%)] p-5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(91,76,170,.12)]"><div className="pointer-events-none absolute -left-10 -bottom-12 h-36 w-36 rounded-full bg-sky-200/25 blur-2xl" /><div className="relative z-10"><CardHeader icon={<BarChart3 className="h-4 w-4" />} title={"Ph\u00e2n b\u1ed1 \u0111i\u1ec3m thi"} /><div className="mt-5 rounded-[22px] border border-white/90 bg-white/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.8),0_10px_24px_rgba(86,110,170,.08)]"><div className="flex items-center gap-4"><div className="relative flex h-[118px] w-[118px] shrink-0 items-center justify-center rounded-full bg-[conic-gradient(#6366F1_0_62.5%,#38BDF8_62.5%_87.5%,#F472B6_87.5%_100%)] ring-8 ring-violet-100/40 shadow-[0_12px_28px_rgba(99,102,241,.20)]"><div className="absolute inset-1 rounded-full border border-white/50" /><div className="relative flex h-[82px] w-[82px] flex-col items-center justify-center rounded-full bg-white shadow-[inset_0_2px_8px_rgba(99,102,241,.08)]"><b className="text-[30px] font-black leading-none text-[#11263F]">8</b><span className="mt-1 text-[10px] font-bold text-[#718199]">{"b\u00e0i \u0111\u00e3 ch\u1ea5m"}</span></div></div><div className="min-w-0 flex-1"><p className="text-xs font-black uppercase tracking-[0.12em] text-[#718199]">{"Ph\u1ea1m \u0111i\u1ec3m"}</p><div className="mt-3 space-y-2.5"><div><div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-bold text-[#52657C]"><span className="flex min-w-0 items-center gap-1.5 truncate"><i className="h-2 w-2 shrink-0 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,.65)]" />{"8 - 10 \u0111i\u1ec3m"}</span><b className="text-[#312E81]">5</b></div><div className="h-1.5 overflow-hidden rounded-full bg-violet-50"><div className="h-full w-[62.5%] rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,.45)]" /></div></div><div><div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-bold text-[#52657C]"><span className="flex min-w-0 items-center gap-1.5 truncate"><i className="h-2 w-2 shrink-0 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,.65)]" />{"5 - 8 \u0111i\u1ec3m"}</span><b className="text-[#075985]">2</b></div><div className="h-1.5 overflow-hidden rounded-full bg-sky-50"><div className="h-full w-[25%] rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,.45)]" /></div></div><div><div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-bold text-[#52657C]"><span className="flex min-w-0 items-center gap-1.5 truncate"><i className="h-2 w-2 shrink-0 rounded-full bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,.65)]" />{"1 - 5 \u0111i\u1ec3m"}</span><b className="text-[#9D174D]">1</b></div><div className="h-1.5 overflow-hidden rounded-full bg-pink-50"><div className="h-full w-[12.5%] rounded-full bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,.45)]" /></div></div></div></div></div></div></div></WorkspaceCard>      <WorkspaceCard className="relative overflow-hidden bg-[radial-gradient(circle_at_94%_4%,rgba(255,222,126,.58),transparent_33%),linear-gradient(145deg,#FFFFFF_0%,#FFF9E6_100%)] p-5"><Trophy className="pointer-events-none absolute -right-5 -bottom-7 h-32 w-32 rotate-[-12deg] text-amber-300/25" /><div className="relative z-10"><CardTitle icon={<Trophy className="h-4 w-4" />} title={"\u0110i\u1ec3m th\u01b0\u1edfng ph\u00f2ng thi"} /><div className="mt-4 rounded-[20px] border border-emerald-100 bg-white/75 p-3 shadow-[0_8px_18px_rgba(20,75,50,.07)]"><div className="flex items-center gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><Flame className="h-5 w-5" /></span><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#718199]">{"B\u1ea1n \u0111\u00e3 nh\u1eadn"}</p><b className="mt-0.5 block text-[24px] font-black leading-none text-emerald-700">30 XP</b></div></div><p className="mt-3 border-t border-emerald-100 pt-3 text-xs font-semibold leading-5 text-[#5F7A6F]">{"Thi \u0111\u1ea1t \u0111i\u1ec3m cao \u0111\u1ec3 nh\u1eadn th\u00eam nhi\u1ec1u XP h\u01a1n nh\u00e9!"}</p></div><div className="mt-4 flex items-center justify-between rounded-2xl border border-amber-100 bg-white/65 px-4 py-3"><div><p className="text-[11px] font-bold text-[#7E7356]">{"H\u1ea1ng hi\u1ec7n t\u1ea1i"}</p><p className="mt-0.5 text-xs font-semibold text-[#64728A]">{"trong l\u1edbp"}</p></div><b className="text-2xl font-black text-amber-700">#12</b></div></div></WorkspaceCard>    </div>,
+  };
 }
+function ScheduleContent() {
+  const timeSlots = Array.from({ length: 19 }, (_, hour) => `${String(hour + 5).padStart(2, "0")}:00`);
+  const weekDays = [
+    { label: "T2", date: "16", events: [{ start: 13.4, title: "L\u1edbp Google Meet: \u00d4n t\u1eadp ch\u01b0\u01a1ng 1", time: "18:30 - 19:15", tone: "emerald" }] },
+    { label: "T3", date: "17", events: [{ start: 14.15, title: "L\u1edbp Google Meet: Ch\u01b0\u01a1ng 2 - D\u1eef li\u1ec7u", time: "19:10 - 20:00", tone: "blue" }] },
+    { label: "T4", date: "18", events: [] },
+    { label: "T5", date: "19", events: [{ start: 14.25, title: "L\u1edbp Google Meet: Ch\u01b0\u01a1ng 3 - \u0110i\u1ec1u ki\u1ec7n", time: "19:15 - 20:20", tone: "violet" }] },
+    { label: "T6", date: "20", events: [] },
+    { label: "T7", date: "21", events: [{ start: 13.8, title: "L\u1edbp Google Meet: Ch\u1eefa b\u00e0i t\u1eadp", time: "18:45 - 19:20", tone: "rose" }] },
+    { label: "CN", date: "22", events: [] },
+  ];  const eventTone = {
+    emerald: "border-[#9BE6C1] bg-[#E8FAF0] text-[#087452]",
+    blue: "border-[#A9D4FF] bg-[#EAF4FF] text-[#2563B8]",
+    amber: "border-[#F6D58C] bg-[#FFF6DA] text-[#AD6500]",
+    violet: "border-[#D3C1FF] bg-[#F3EEFF] text-[#6D42C9]",
+    rose: "border-[#F8B9C6] bg-[#FFF0F3] text-[#C83E63]",
+  };
 
-function ExamRoomCard() {
-  return (
-    <section className="rounded-[22px] border border-[#E7EEE9] bg-white p-5 shadow-[0_8px_28px_rgba(20,75,50,.07)]">
-      <CardHeader icon={<GraduationCap className="h-4 w-4" />} title="Phòng thi" action="Xem tất cả" />
-      <div className="relative overflow-hidden rounded-[18px] bg-[#F6FBF7] p-4">
-        <Image src="/stickers/classes-corner-3d.png" alt="" width={110} height={110} className="absolute bottom-2 left-2 w-[82px]" />
-        <div className="ml-[92px] min-h-[92px]"><div className="mb-2 flex items-center justify-between"><h3 className="text-sm font-black text-[#11263F]">Kiểm tra giữa chương 2</h3><span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-700">Sắp diễn ra</span></div><p className="text-xs font-bold text-[#64728A]">60 phút • 30 câu hỏi</p><p className="mt-1 text-xs font-bold text-[#0C6047]">Hôm nay, 20:00 - 21:00</p></div>
-        <button className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#0C6047] text-sm font-black text-white">Vào phòng thi <ArrowRight className="h-4 w-4" /></button>
-      </div>
-    </section>
-  );
+
+  return {
+    main: <><WorkspaceCard className="relative min-h-[214px] overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#FFFFFF_0%,#F7FCF8_52%,#E8F6FF_100%)] p-6 sm:h-[224px] sm:min-h-0"><div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_88%_18%,rgba(147,231,255,.30),transparent_31%),radial-gradient(ellipse_at_72%_100%,rgba(187,242,211,.35),transparent_27%)]" /><div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-sky-100/65 blur-2xl" /><svg aria-hidden="true" className="pointer-events-none absolute bottom-2 left-[43%] hidden h-16 w-[330px] text-sky-300/45 lg:block" viewBox="0 0 330 64" fill="none"><path d="M2 48C56 8 100 61 146 37C194 12 239 53 327 7" stroke="currentColor" strokeWidth="2" strokeDasharray="6 8" strokeLinecap="round" /></svg><div className="pointer-events-none absolute left-[48%] top-[126px] hidden h-11 w-[112px] -rotate-6 items-center gap-2 rounded-2xl border border-white/75 bg-white/60 px-3 shadow-[0_10px_24px_rgba(40,105,140,.08)] backdrop-blur-[1px] lg:flex"><span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-100"><i className="h-2.5 w-2.5 rounded-full bg-sky-400" /></span><span className="flex-1"><i className="block h-1.5 w-12 rounded-full bg-sky-200" /><i className="mt-1.5 block h-1 w-8 rounded-full bg-slate-200" /></span></div><div className="pointer-events-none absolute left-[60%] top-[108px] hidden h-11 w-[104px] rotate-[7deg] items-center gap-2 rounded-2xl border border-white/75 bg-white/60 px-3 shadow-[0_10px_24px_rgba(40,105,140,.07)] backdrop-blur-[1px] lg:flex"><span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100"><i className="h-2.5 w-2.5 rounded-full bg-amber-400" /></span><span className="flex-1"><i className="block h-1.5 w-11 rounded-full bg-amber-200" /><i className="mt-1.5 block h-1 w-7 rounded-full bg-slate-200" /></span></div><div className="pointer-events-none absolute bottom-7 left-[56%] hidden h-4 w-7 -rotate-35 rounded-[100%_0_100%_0] bg-emerald-300/45 lg:block" /><div className="pointer-events-none absolute -bottom-11 right-1 hidden h-[255px] w-[255px] drop-shadow-[0_18px_24px_rgba(37,126,83,.14)] sm:block"><Image src="/stickers/schedule-study-planner-capybara-v2.png" alt="" aria-hidden="true" fill sizes="255px" className="object-contain object-bottom-right" /></div><div className="pointer-events-none absolute bottom-5 right-[198px] hidden h-3 w-3 rotate-45 bg-amber-300/75 sm:block" /><div className="pointer-events-none absolute right-[255px] top-12 hidden h-2.5 w-2.5 rounded-full bg-sky-300/75 sm:block" /><div className="relative z-10 max-w-[630px]"><div className="flex items-center gap-4"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><CalendarClock className="h-7 w-7" /></span><div><h1 className="text-[30px] font-black tracking-[-0.04em] text-[#11263F]">{"L\u1ecbch h\u1ecdc tu\u1ea7n n\u00e0y"}</h1><p className="text-sm font-semibold text-[#64728A]">{"S\u1eafp x\u1ebfp nh\u1ecbp h\u1ecdc, h\u1ea1n n\u1ed9p v\u00e0 bu\u1ed5i g\u1eb7p gi\u00e1o vi\u00ean trong c\u00f9ng m\u1ed9t n\u01a1i."}</p></div></div></div><button type="button" className="absolute bottom-6 left-6 z-10 inline-flex h-12 items-center gap-2.5 rounded-full bg-[#079A68] px-5 text-[15px] font-black text-white shadow-[0_10px_20px_rgba(7,154,104,.24)] transition hover:-translate-y-0.5 hover:bg-[#067A54] hover:shadow-[0_14px_24px_rgba(7,154,104,.30)]"><CalendarClock className="h-4 w-4" />{"T\u1ea1o l\u1eddi nh\u1eafc"}<ArrowRight className="ml-0.5 h-4 w-4" /></button></WorkspaceCard><WorkspaceCard className="mt-4 bg-[linear-gradient(145deg,#FFFFFF_0%,#F6FFFA_52%,#F0F7FF_100%)] p-0"><div className="p-4 sm:p-6"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Bảng lịch học</h2><p className="mt-1 text-sm font-semibold text-[#718199]">Kéo để xem đầy đủ lịch tuần của bạn.</p></div><div className="flex items-center gap-1.5 rounded-2xl border border-[#D8E8E0] bg-white/85 p-1.5 shadow-sm"><button type="button" aria-label={"Tu\u1ea7n tr\u01b0\u1edbc"} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#294461] transition hover:bg-emerald-50"><ChevronRight className="h-4 w-4 rotate-180" /></button><span className="rounded-xl bg-[#E7FAF0] px-3 py-2 text-xs font-black text-[#087452]">{"16 - 22 Th\u00e1ng 9"}</span><button type="button" aria-label={"Tu\u1ea7n sau"} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#294461] transition hover:bg-emerald-50"><ChevronRight className="h-4 w-4" /></button></div></div><div className="overflow-x-auto rounded-[22px] border border-[#D9E9E1] bg-white/75"><div className="min-w-[910px]"><div className="grid grid-cols-[70px_repeat(7,minmax(118px,1fr))] border-b border-[#D9E9E1] bg-[#F6FBF8]"><div className="p-3" />{weekDays.map((day, index) => <div key={day.label} className={`border-l border-[#E5EFE9] px-3 py-3 text-center ${index === 1 ? "bg-[#EAFBF2]" : ""}`}><p className="text-xs font-black text-[#718199]">{day.label}</p><p className={`mt-1 text-xl font-black ${index === 1 ? "text-[#079A68]" : "text-[#11263F]"}`}>{day.date}</p><span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-black ${index === 1 ? "bg-[#079A68] text-white" : "text-[#94A0B3]"}`}>{index === 1 ? "Hôm nay" : ""}</span></div>)}</div><div className="grid h-[360px] grid-cols-[70px_repeat(7,minmax(118px,1fr))] overflow-y-auto overscroll-contain"><div className="relative h-[1368px] border-r border-[#E5EFE9] bg-[#FAFDFC]">{timeSlots.map((time, index) => <span key={time} className="absolute right-3 text-[11px] font-bold text-[#8A98AA]" style={{ top: `${index * 72 + 8}px` }}>{time}</span>)}</div>{weekDays.map((day, dayIndex) => <div key={day.label} className={`relative h-[1368px] border-r border-[#E5EFE9] last:border-r-0 ${dayIndex === 1 ? "bg-[#F7FFFA]" : "bg-white/55"}`}>{timeSlots.map((_, index) => <div key={index} className="h-[72px] border-b border-dashed border-[#E6EFEA] last:border-b-0" />)}{day.events.map((event) => <article key={event.title} style={{ top: `${event.start * 72 + 6}px` }} className={`absolute left-2 right-2 h-[88px] overflow-hidden rounded-2xl border px-3 py-2.5 shadow-[0_8px_16px_rgba(17,38,63,.08)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_20px_rgba(17,38,63,.12)] ${eventTone[event.tone as keyof typeof eventTone]}`}><h3 className="truncate text-xs font-black">{event.title}</h3><p className="mt-2 truncate text-[10px] font-bold opacity-85">{event.time}</p></article>)}</div>)}</div></div></div></div></WorkspaceCard></>,
+    aside: <div className="space-y-4"><WorkspaceCard className="p-5"><CardHeader icon={<Play className="h-4 w-4" />} title="Buổi học hôm nay" action="Chi tiết" /><div className="rounded-2xl border border-emerald-100 bg-[linear-gradient(145deg,#F4FFF8,#E4F8ED)] p-4"><p className="text-sm font-black text-emerald-700">19:30 - 21:00</p><h3 className="mt-2 text-lg font-black">Chương 2: Dữ liệu</h3><p className="mt-1 text-sm font-semibold text-[#64728A]">Cô Thạch Ngọc • Phòng học online</p><button className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#079A68] text-sm font-black text-white">Vào lớp <ArrowRight className="h-4 w-4" /></button></div></WorkspaceCard><WorkspaceCard className="p-5"><CardTitle icon={<Clock3 className="h-4 w-4" />} title="Lịch nhắc của bạn" /><div className="mt-4 space-y-3">{["Nhắc trước buổi học 30 phút", "Thông báo khi có tài liệu mới", "Nhắc hạn nộp bài tập"].map((item) => <div key={item} className="flex items-center gap-3 rounded-2xl bg-[#F7FBF8] px-3 py-3"><CheckCircle2 className="h-5 w-5 text-emerald-600" /><span className="text-sm font-bold text-[#294461]">{item}</span></div>)}</div></WorkspaceCard><WorkspaceCard className="relative overflow-hidden bg-[#FFFBEF] p-5"><CardTitle icon={<PencilLine className="h-4 w-4" />} title="Ghi chú nhanh" /><p className="mt-3 pr-12 text-sm font-semibold leading-6 text-[#52657C]">Sắp xếp câu hỏi trước buổi học để trao đổi cùng giáo viên dễ hơn nhé.</p></WorkspaceCard></div>,
+  };
 }
-
-export default async function ClassWorkspacePage({ params }: PageProps) {
+function PlaceholderContent({ title }: { title: string }) { return { main: <WorkspaceCard className="p-8"><h1 className="text-3xl font-black">{title}</h1><p className="mt-2 text-sm font-semibold text-[#64728A]">Khu vực này sẽ được mở rộng ở bước tiếp theo của classroom workspace.</p></WorkspaceCard>, aside: <ProgressCard /> }; }
+function getContent(activeTab: WorkspaceTab, classId: string, collectionId?: string) { if (activeTab === "materials") return MaterialsContent({ classId, collectionId }); if (activeTab === "progress") return ProgressContent(); if (activeTab === "assignments") return AssignmentsContent(); if (activeTab === "exams") return ExamsContent(); if (activeTab === "schedule") return ScheduleContent(); return OverviewContent(); }
+export default async function ClassWorkspacePage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { tab, collection } = await searchParams;
+  const activeTab = parseWorkspaceTab(tab);
+  const content = getContent(activeTab, id, collection);
+  const hasUnifiedMainPanel = activeTab !== "progress";
 
-  return (
-    <main className={`${beVietnam.className} min-h-screen bg-[#F6F8F5] text-[#11263F]`}>
-      <LandingNavbar />
-      <div className="mx-auto flex max-w-[1500px] gap-4 px-4 pb-8 pt-[92px] sm:px-6">
-        <ClassSidebar classId={id} />
-        <section className="min-w-0 flex-1 space-y-4">
-          <WelcomeCard />
-          <MaterialsCard />
-          <AssignmentsCard />
-          <WeeklyGoalsCard />
-        </section>
-        <aside className="hidden w-[326px] shrink-0 space-y-4 lg:block">
-          <ProgressCard />
-          <ActivityCard />
-          <ExamRoomCard />
-        </aside>
-      </div>
-    </main>
-  );
+  return <main className={`${beVietnam.className} min-h-screen bg-[#7f9b5d] text-[#11263F]`} style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.14) 1px, transparent 1px)", backgroundSize: "64px 64px" }}><LandingNavbar /><div className="mx-auto flex max-w-[1500px] gap-4 px-4 pb-8 pt-[92px] sm:px-6"><ClassSidebar classId={id} activeTab={activeTab} /><section className={`min-w-0 flex-1 ${hasUnifiedMainPanel ? "" : "space-y-4"}`}>{hasUnifiedMainPanel ? <div className="overflow-hidden rounded-[30px] border border-white/80 bg-[linear-gradient(145deg,rgba(255,255,255,.98),rgba(244,255,250,.96))] shadow-[0_18px_42px_rgba(20,75,50,.16)] [&>div]:space-y-0 [&>section]:rounded-none [&>section]:border-0 [&>section]:shadow-none [&>section]:ring-0 [&>section]:transition-none [&>section]:before:hidden [&>section:hover]:translate-y-0 [&>section:hover]:shadow-none [&>section+section]:border-t [&>section+section]:border-[#E1ECE6]">{content.main}</div> : content.main}</section>{activeTab !== "schedule" && <aside className="hidden w-[326px] shrink-0 space-y-4 lg:block">{content.aside}</aside>}</div></main>;
 }
