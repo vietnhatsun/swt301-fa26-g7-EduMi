@@ -32,6 +32,7 @@ import {
   Check,
 } from "lucide-react";
 import TeacherApprovalPanel from "./TeacherApprovalPanel";
+import StaffExamManagementPanel from "./StaffExamManagementPanel";
 
 export interface StaffUserItem {
   id: string;
@@ -1744,6 +1745,8 @@ export default function StaffProfileDashboard({ staff, onLogout }: StaffProfileD
     <MaterialManagementPanel />
   ) : activeTab === "teachers" ? (
     <TeacherApprovalPanel onStatsChange={handleTeacherStatsChange} />
+  ) : activeTab === "examPosts" ? (
+    <StaffExamManagementPanel staffName={staff.fullName} staffId={staff.id} />
   ) : (
     <PlaceholderPanel
       title={{

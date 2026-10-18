@@ -1,17 +1,64 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { MOCK_EXAMS } from "@/components/exam/exam-data";
+import { MOCK_EXAMS, ExamItem } from "@/components/exam/exam-data";
 import ExamRoomClient from "@/components/exam/ExamRoomClient";
+import { createServiceClient } from "@/lib/supabase";
 
 interface PageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ mode?: string }>;
 }
 
+async function getExamById(id: string): Promise<ExamItem | null> {
+  // 1. Kiểm tra MOCK_EXAMS trước
+  const mockExam = MOCK_EXAMS.find(
+    (e) => e.id === id || e.examCode.toLowerCase() === id.toLowerCase()
+  );
+  if (mockExam) return mockExam;
+
+  // 2. Tra cứu cơ sở dữ liệu Supabase
+  try {
+    const supabase = createServiceClient();
+    const { data: dbExam } = await supabase
+      .from("exams")
+      .select("*")
+      .or(`id.eq.${id},exam_code.eq.${id.toUpperCase()}`)
+      .eq("status", "published")
+      .maybeSingle();
+
+    if (dbExam) {
+      return {
+        id: dbExam.id,
+        examCode: dbExam.exam_code,
+        category: dbExam.category,
+        subject: dbExam.subject,
+        cardCode: dbExam.card_code,
+        title: dbExam.title,
+        description: dbExam.description || "",
+        durationMinutes: Number(dbExam.duration_minutes || 60),
+        questionCount: Number(dbExam.question_count || 0),
+        difficulty: dbExam.difficulty,
+        attempts: Number(dbExam.attempts || 0),
+        rating: Number(dbExam.rating || 5.0),
+        bgClass: dbExam.bg_class || "bg-[#0284c7]",
+        accentClass: dbExam.accent_class || "text-[#0284c7]",
+        pattern: dbExam.pattern || "waves",
+        isHot: Boolean(dbExam.is_hot),
+        isNew: Boolean(dbExam.is_new),
+        author: dbExam.author || "Hội đồng Khảo thí EduMi",
+      };
+    }
+  } catch (err) {
+    console.warn("[ExamRoomPage] Error querying Supabase exam:", err);
+  }
+
+  return null;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const exam = MOCK_EXAMS.find((e) => e.id === id);
+  const exam = await getExamById(id);
   return {
     title: exam ? `${exam.cardCode}: ${exam.title} | Phòng Thi EduMi` : "Phòng Thi Trực Tuyến | EduMi",
     description: "Hệ thống phòng thi trực tuyến bấm giờ áp lực thật, tự động ghi nhận vi phạm cùng EduMi.",
@@ -23,7 +70,7 @@ export default async function ExamRoomPage({ params, searchParams }: PageProps) 
   const resolvedSearchParams = await searchParams;
   const mode = resolvedSearchParams.mode === "practice" ? "practice" : "exam";
 
-  const exam = MOCK_EXAMS.find((e) => e.id === id);
+  const exam = await getExamById(id);
 
   if (!exam) {
     return (

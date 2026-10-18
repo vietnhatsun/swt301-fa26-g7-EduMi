@@ -67,17 +67,41 @@ export default function ExamLobbyClient() {
   const [selectedExam, setSelectedExam] = useState<ExamItem | null>(null);
   const [modalMode, setModalMode] = useState<"exam" | "practice">("exam");
 
-  const handleOpenModal = (exam: ExamItem, mode: "exam" | "practice") => {
+  const handleOpenModal = (exam: ExamItem, mode: "exam" | "practice" = "exam") => {
     setSelectedExam(exam);
     setModalMode(mode);
     setIsModalOpen(true);
   };
 
+  // Real exams fetched from Supabase API with MOCK_EXAMS fallback
+  const [examsList, setExamsList] = useState<ExamItem[]>(MOCK_EXAMS);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadExams() {
+      try {
+        const res = await fetch("/api/exams");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.exams) && data.exams.length > 0 && isMounted) {
+            setExamsList(data.exams);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load real exams, using default bank:", err);
+      }
+    }
+    loadExams();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Direct URL support: ?subject=Toán học, ?code=EDM-8899 or ?pin=EDM-8899
   useEffect(() => {
     const subject = searchParams.get("subject")?.trim();
     if (subject) {
-      const matchedSubject = MOCK_EXAMS.find((exam) => exam.subject === subject)?.subject;
+      const matchedSubject = examsList.find((exam) => exam.subject === subject)?.subject;
       if (matchedSubject) setSelectedSubject(matchedSubject);
     }
 
@@ -85,7 +109,7 @@ export default function ExamLobbyClient() {
     if (code) {
       const trimmed = code.trim();
       setSearchQuery(trimmed);
-      const matched = MOCK_EXAMS.find(
+      const matched = examsList.find(
         (e) =>
           e.examCode.toLowerCase() === trimmed.toLowerCase() ||
           e.examCode.toLowerCase().replace("-", "") === trimmed.toLowerCase().replace("-", "") ||
@@ -95,7 +119,7 @@ export default function ExamLobbyClient() {
         handleOpenModal(matched, "exam");
       }
     }
-  }, [searchParams]);
+  }, [searchParams, examsList]);
 
   const hasActiveFilters =
     Boolean(searchQuery) ||
@@ -118,16 +142,16 @@ export default function ExamLobbyClient() {
   const exactPinMatch = useMemo(() => {
     if (!searchQuery.trim()) return null;
     const q = searchQuery.toLowerCase().trim();
-    return MOCK_EXAMS.find(
+    return examsList.find(
       (item) =>
         item.examCode.toLowerCase() === q ||
         item.examCode.toLowerCase().replace("-", "") === q.replace("-", "")
     );
-  }, [searchQuery]);
+  }, [searchQuery, examsList]);
 
   // Filter & Sort Logic
   const filteredExams = useMemo(() => {
-    let list = [...MOCK_EXAMS];
+    let list = [...examsList];
 
     // 1. Search Query (Matches PIN, Title, CardCode, Subject, Category, Author)
     if (searchQuery.trim()) {
