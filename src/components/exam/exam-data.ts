@@ -49,9 +49,9 @@ export const MOCK_EXAMS: ExamItem[] = [
     subject: "Toán học",
     cardCode: "TOÁN 12",
     title: "Đề thi thử THPT Quốc Gia môn Toán 2026 - Đề số 01 (Ma trận mới Bộ GD&ĐT)",
-    description: "Bộ đề bám sát 100% định dạng mới: trắc nghiệm nhiều lựa chọn, đúng/sai và trả lời ngắn.",
+    description: "Chuẩn 100% cấu trúc mới Bộ GD&ĐT: Trắc nghiệm 4 lựa chọn, Trắc nghiệm Đúng/Sai, Trả lời ngắn thập phân 20.5 và Tự luận.",
     durationMinutes: 90,
-    questionCount: 34,
+    questionCount: 9,
     difficulty: "Vận dụng (7-8.5đ)",
     attempts: 45240,
     rating: 4.9,
@@ -271,16 +271,76 @@ export interface QuestionOption {
   text: string;
 }
 
+export interface TrueFalseItem {
+  id: "a" | "b" | "c" | "d";
+  content: string;
+  isCorrect: boolean;
+  explanation?: string;
+}
+
+export type ExamQuestionType = "single_choice" | "true_false" | "short_answer" | "essay";
+
 export interface ExamQuestion {
   id: string;
   questionNumber: number;
-  type: "single_choice" | "true_false" | "short_answer";
+  type: ExamQuestionType;
+  section?: "Trắc nghiệm" | "Tự luận" | string;
+  part?: "Phần I" | "Phần II" | "Phần III" | "Phần IV" | string;
   instruction: string;
   content: string;
-  options: QuestionOption[];
-  correctAnswer: "A" | "B" | "C" | "D";
+  options?: QuestionOption[];
+  trueFalseItems?: TrueFalseItem[];
+  correctAnswer?: string;
   explanation: string;
+  sampleEssayAnswer?: string;
+  rubricCriteria?: string[];
+  wordLimit?: { min?: number; max?: number };
   points: number;
+}
+
+/**
+ * Chuẩn hóa và so sánh câu trả lời ngắn (hỗ trợ số thập phân 20.5 = 20,5 hoặc từ khóa)
+ */
+export function isShortAnswerCorrect(userAns?: string, correctAns?: string): boolean {
+  if (!userAns || !correctAns) return false;
+  const cleanUser = userAns.trim().replace(",", ".").replace(/\s+/g, "").toLowerCase();
+  const cleanCorrect = correctAns.trim().replace(",", ".").replace(/\s+/g, "").toLowerCase();
+
+  const numUser = parseFloat(cleanUser);
+  const numCorrect = parseFloat(cleanCorrect);
+  if (!isNaN(numUser) && !isNaN(numCorrect)) {
+    return Math.abs(numUser - numCorrect) < 0.001;
+  }
+  return cleanUser === cleanCorrect;
+}
+
+/**
+ * Tính điểm câu hỏi Trắc nghiệm Đúng / Sai theo quy chuẩn Bộ GD&ĐT:
+ * - Đúng 1 ý: 0.1 điểm
+ * - Đúng 2 ý: 0.25 điểm
+ * - Đúng 3 ý: 0.5 điểm
+ * - Đúng 4 ý: 1.0 điểm
+ */
+export function calculateTrueFalseScore(
+  userTf: Record<string, boolean> = {},
+  items: TrueFalseItem[] = []
+): { correctCount: number; points: number; totalItems: number } {
+  if (!items || items.length === 0) return { correctCount: 0, points: 0, totalItems: 0 };
+
+  let correctCount = 0;
+  items.forEach((item) => {
+    if (userTf[item.id] !== undefined && userTf[item.id] === item.isCorrect) {
+      correctCount++;
+    }
+  });
+
+  let points = 0;
+  if (correctCount === 1) points = 0.1;
+  else if (correctCount === 2) points = 0.25;
+  else if (correctCount === 3) points = 0.5;
+  else if (correctCount === 4) points = 1.0;
+
+  return { correctCount, points, totalItems: items.length };
 }
 
 // Question bank by exam ID
@@ -290,7 +350,9 @@ export const MOCK_QUESTIONS_DATABASE: Record<string, ExamQuestion[]> = {
       id: "q1",
       questionNumber: 1,
       type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
+      part: "Phần I",
+      section: "Trắc nghiệm",
+      instruction: "Phần I: Chọn một đáp án đúng (A, B, C hoặc D)",
       content: "Cho hàm số y = f(x) có bảng biến thiên với f'(x) đổi dấu từ dương sang âm khi qua x = 2. Điểm cực đại của hàm số đã cho là:",
       options: [
         { id: "A", text: "x = 2" },
@@ -306,7 +368,9 @@ export const MOCK_QUESTIONS_DATABASE: Record<string, ExamQuestion[]> = {
       id: "q2",
       questionNumber: 2,
       type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
+      part: "Phần I",
+      section: "Trắc nghiệm",
+      instruction: "Phần I: Chọn một đáp án đúng (A, B, C hoặc D)",
       content: "Tập nghiệm của bất phương trình log₂(x - 1) < 3 là:",
       options: [
         { id: "A", text: "(1; 9)" },
@@ -322,7 +386,9 @@ export const MOCK_QUESTIONS_DATABASE: Record<string, ExamQuestion[]> = {
       id: "q3",
       questionNumber: 3,
       type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
+      part: "Phần I",
+      section: "Trắc nghiệm",
+      instruction: "Phần I: Chọn một đáp án đúng (A, B, C hoặc D)",
       content: "Trong không gian Oxyz, cho mặt phẳng (P): 2x - y + 3z - 5 = 0. Một vectơ pháp tuyến của (P) có tọa độ là:",
       options: [
         { id: "A", text: "n = (2; -1; 3)" },
@@ -338,7 +404,9 @@ export const MOCK_QUESTIONS_DATABASE: Record<string, ExamQuestion[]> = {
       id: "q4",
       questionNumber: 4,
       type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
+      part: "Phần I",
+      section: "Trắc nghiệm",
+      instruction: "Phần I: Chọn một đáp án đúng (A, B, C hoặc D)",
       content: "Tính tích phân I = ∫ từ 0 đến 1 của e^(2x) dx.",
       options: [
         { id: "A", text: "I = (e² - 1) / 2" },
@@ -353,98 +421,121 @@ export const MOCK_QUESTIONS_DATABASE: Record<string, ExamQuestion[]> = {
     {
       id: "q5",
       questionNumber: 5,
-      type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
-      content: "Cho hình chóp S.ABCD có đáy ABCD là hình vuông cạnh a, SA vuông góc với đáy và SA = a√3. Thể tích khối chóp S.ABCD bằng:",
-      options: [
-        { id: "A", text: "(a³√3) / 3" },
-        { id: "B", text: "a³√3" },
-        { id: "C", text: "(a³√3) / 6" },
-        { id: "D", text: "(a³) / 3" },
+      type: "true_false",
+      part: "Phần II",
+      section: "Trắc nghiệm Đúng/Sai",
+      instruction: "Phần II: Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai",
+      content: "Cho hàm số f(x) = x³ - 3x² + 2 có đồ thị là (C). Xét tính đúng sai của các khẳng định sau:",
+      trueFalseItems: [
+        {
+          id: "a",
+          content: "Hàm số đã cho có đạo hàm f'(x) = 3x² - 6x.",
+          isCorrect: true,
+          explanation: "Đạo hàm: (x³ - 3x² + 2)' = 3x² - 6x. Khẳng định ĐÚNG.",
+        },
+        {
+          id: "b",
+          content: "Hàm số đồng biến trên khoảng (0; 2).",
+          isCorrect: false,
+          explanation: "Ta có f'(x) = 3x(x - 2) < 0 với mọi x thuộc (0; 2), do đó hàm số nghịch biến trên khoảng (0; 2). Khẳng định SAI.",
+        },
+        {
+          id: "c",
+          content: "Giá trị cực tiểu của hàm số bằng -2.",
+          isCorrect: true,
+          explanation: "f'(x) đổi dấu từ âm sang dương tại x = 2 nên x = 2 là điểm cực tiểu, f(2) = 2³ - 3(2²) + 2 = -2. Khẳng định ĐÚNG.",
+        },
+        {
+          id: "d",
+          content: "Đồ thị (C) cắt trục hoành tại đúng 3 điểm phân biệt.",
+          isCorrect: true,
+          explanation: "Ta có f(0) = 2 (cực đại) và f(2) = -2 (cực tiểu). Vì y_CĐ * y_CT = 2 * (-2) = -4 < 0 nên đồ thị cắt Ox tại đúng 3 điểm phân biệt. Khẳng định ĐÚNG.",
+        },
       ],
-      correctAnswer: "A",
-      explanation: "Diện tích đáy S_ABCD = a². Chiều cao h = SA = a√3. Thể tích V = (1/3) * S_đáy * h = (1/3) * a² * a√3 = (a³√3)/3.",
-      points: 0.25,
+      explanation: "Phân tích bảng biến thiên hàm bậc ba: Đồng biến trên (-∞; 0) và (2; +∞), nghịch biến trên (0; 2). Cực đại tại (0; 2), cực tiểu tại (2; -2).",
+      points: 1.0,
     },
     {
       id: "q6",
       questionNumber: 6,
-      type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
-      content: "Từ một hộp chứa 5 quả cầu xanh và 4 quả cầu đỏ, lấy ngẫu nhiên đồng thời 2 quả. Xác suất để lấy được 2 quả khác màu là:",
-      options: [
-        { id: "A", text: "5/9" },
-        { id: "B", text: "4/9" },
-        { id: "C", text: "20/81" },
-        { id: "D", text: "1/2" },
+      type: "true_false",
+      part: "Phần II",
+      section: "Trắc nghiệm Đúng/Sai",
+      instruction: "Phần II: Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai",
+      content: "Trong không gian Oxyz, cho mặt cầu (S): (x - 1)² + (y - 2)² + (z + 1)² = 9 và mặt phẳng (P): 2x - 2y + z + 8 = 0. Xét tính đúng sai của các khẳng định sau:",
+      trueFalseItems: [
+        {
+          id: "a",
+          content: "Mặt cầu (S) có tọa độ tâm I(1; 2; -1) và bán kính R = 3.",
+          isCorrect: true,
+          explanation: "Phương trình chính tắc (x - a)² + (y - b)² + (z - c)² = R² => tâm I(1; 2; -1), R = √9 = 3. Khẳng định ĐÚNG.",
+        },
+        {
+          id: "b",
+          content: "Khoảng cách từ tâm I của mặt cầu đến mặt phẳng (P) bằng 1.",
+          isCorrect: false,
+          explanation: "d(I, (P)) = |2(1) - 2(2) + 1(-1) + 8| / √(2² + (-2)² + 1²) = |5| / 3 = 5/3 ≠ 1. Khẳng định SAI.",
+        },
+        {
+          id: "c",
+          content: "Mặt phẳng (P) tiếp xúc với mặt cầu (S).",
+          isCorrect: false,
+          explanation: "Vì d(I, (P)) = 5/3 < R = 3 nên mặt phẳng (P) cắt mặt cầu (S) theo giao tuyến là một đường tròn, không tiếp xúc. Khẳng định SAI.",
+        },
+        {
+          id: "d",
+          content: "Đường thẳng Δ đi qua tâm I và vuông góc với (P) có vectơ chỉ phương u = (2; -2; 1).",
+          isCorrect: true,
+          explanation: "Δ vuông góc với (P) nên vectơ chỉ phương của Δ cùng phương với vectơ pháp tuyến n_(P) = (2; -2; 1). Khẳng định ĐÚNG.",
+        },
       ],
-      correctAnswer: "A",
-      explanation: "Số phần tử không gian mẫu n(Ω) = C(9, 2) = 36. Số cách chọn 1 xanh và 1 đỏ: C(5, 1) * C(4, 1) = 5 * 4 = 20. Xác suất P = 20 / 36 = 5/9.",
-      points: 0.25,
+      explanation: "Vận dụng kiến thức hình học không gian Oxyz: Khoảng cách từ điểm đến mặt phẳng, vị trí tương đối giữa mặt cầu và mặt phẳng.",
+      points: 1.0,
     },
     {
       id: "q7",
       questionNumber: 7,
-      type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
-      content: "Đạo hàm của hàm số y = ln(x² + 1) là:",
-      options: [
-        { id: "A", text: "y' = 2x / (x² + 1)" },
-        { id: "B", text: "y' = 1 / (x² + 1)" },
-        { id: "C", text: "y' = x / (x² + 1)" },
-        { id: "D", text: "y' = 2 / (x² + 1)" },
-      ],
-      correctAnswer: "A",
-      explanation: "Công thức đạo hàm hàm hợp [ln(u)]' = u'/u. Với u = x² + 1 thì u' = 2x. Vậy y' = 2x / (x² + 1).",
-      points: 0.25,
+      type: "short_answer",
+      part: "Phần III",
+      section: "Trả lời ngắn",
+      instruction: "Phần III: Trắc nghiệm trả lời ngắn (Điền kết quả số)",
+      content: "Một doanh nghiệp dự tính hàm số lợi nhuận khi bán x tấn sản phẩm là P(x) = -0.1x² + 4.1x - 15 (triệu đồng). Tìm sản lượng x (tấn) để doanh nghiệp đạt mức lợi nhuận lớn nhất. (Học sinh điền kết quả dạng số thập phân, ví dụ: 20.5)",
+      options: [],
+      correctAnswer: "20.5",
+      explanation: "Hàm bậc hai P(x) = -0.1x² + 4.1x - 15 có hệ số a = -0.1 < 0 nên đạt giá trị lớn nhất tại đỉnh parabol: x = -b / (2a) = -4.1 / (2 * -0.1) = 4.1 / 0.2 = 20.5. Khi đó lợi nhuận cực đại đạt 27.025 triệu đồng.",
+      points: 0.5,
     },
     {
       id: "q8",
       questionNumber: 8,
-      type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
-      content: "Số nghiệm thực của phương trình 3^(x² - 4) = 1 là:",
-      options: [
-        { id: "A", text: "2" },
-        { id: "B", text: "1" },
-        { id: "C", text: "0" },
-        { id: "D", text: "4" },
-      ],
-      correctAnswer: "A",
-      explanation: "3^(x² - 4) = 1 <=> x² - 4 = 0 <=> x = ±2. Vậy phương trình có 2 nghiệm thực phân biệt.",
-      points: 0.25,
+      type: "short_answer",
+      part: "Phần III",
+      section: "Trả lời ngắn",
+      instruction: "Phần III: Trắc nghiệm trả lời ngắn (Điền kết quả số nguyên)",
+      content: "Cho khối chóp tam giác S.ABC có đáy ABC là tam giác vuông tại B, AB = 3, BC = 4. Cạnh bên SA vuông góc với mặt phẳng đáy (ABC) và SA = 6. Tính thể tích V của khối chóp S.ABC.",
+      options: [],
+      correctAnswer: "12",
+      explanation: "Diện tích tam giác vuông ABC: S_đáy = (1/2) * AB * BC = (1/2) * 3 * 4 = 6. Chiều cao khối chóp h = SA = 6. Thể tích V = (1/3) * S_đáy * h = (1/3) * 6 * 6 = 12.",
+      points: 0.5,
     },
     {
       id: "q9",
       questionNumber: 9,
-      type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
-      content: "Tìm giá trị lớn nhất M của hàm số f(x) = x³ - 3x + 2 trên đoạn [0; 2].",
-      options: [
-        { id: "A", text: "M = 4" },
-        { id: "B", text: "M = 2" },
-        { id: "C", text: "M = 0" },
-        { id: "D", text: "M = 6" },
+      type: "essay",
+      part: "Phần IV",
+      section: "Tự luận",
+      instruction: "Phần IV: Tự luận - Trình bày các bước giải chi tiết",
+      content: "Trong không gian Oxyz, cho điểm M(1; 2; -1) và mặt phẳng (P): x + 2y - 2z + 1 = 0.\na) Viết phương trình chính tắc của đường thẳng d đi qua điểm M và vuông góc với mặt phẳng (P).\nb) Tìm tọa độ hình chiếu vuông góc H của điểm M lên mặt phẳng (P). Trình bày rõ các bước giải chi tiết vào khung làm bài.",
+      options: [],
+      correctAnswer: "H(1/9; 2/9; 7/9)",
+      explanation: "Hướng dẫn giải chi tiết:\n1. Đường thẳng d qua M(1; 2; -1) nhận VTPT n_(P) = (1; 2; -2) làm VTCP: (x - 1)/1 = (y - 2)/2 = (z + 1)/(-2).\n2. Tham số hóa H ∈ d: H(1 + t; 2 + 2t; -1 - 2t).\n3. Thay tọa độ H vào (P): (1 + t) + 2(2 + 2t) - 2(-1 - 2t) + 1 = 0 <=> 9t + 8 = 0 => t = -8/9 => H(1/9; 2/9; 7/9).",
+      sampleEssayAnswer: "Lời giải tham khảo:\n- Bước 1: Mặt phẳng (P) có vectơ pháp tuyến n = (1; 2; -2).\n- Bước 2: Vì đường thẳng d ⊥ (P) nên d nhận n làm vectơ chỉ phương.\nPhương trình tham số của d: x = 1 + t, y = 2 + 2t, z = -1 - 2t (t ∈ R).\n- Bước 3: Điểm H là giao điểm của d và (P). Thay phương trình d vào (P):\n(1 + t) + 2(2 + 2t) - 2(-1 - 2t) + 1 = 0 <=> 9t + 8 = 0 <=> t = -8/9.\n- Kết luận: Tọa độ hình chiếu H là H(1/9; 2/9; 7/9).",
+      rubricCriteria: [
+        "Xác định đúng VTCP của đường thẳng d và viết đúng PT đường thẳng (0.5 điểm)",
+        "Thiết lập tọa độ điểm tham số H và lập phương trình tìm t (0.5 điểm)",
+        "Giải đúng giá trị tham số t và kết luận chính xác tọa độ điểm H (0.5 điểm)",
       ],
-      correctAnswer: "A",
-      explanation: "f'(x) = 3x² - 3 = 0 <=> x = 1 (vì thuộc [0; 2]). Tính các giá trị: f(0) = 2, f(1) = 0, f(2) = 4. Vậy M = max = 4 tại x = 2.",
-      points: 0.25,
-    },
-    {
-      id: "q10",
-      questionNumber: 10,
-      type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
-      content: "Cho số phức z = 3 - 4i. Môđun của số phức z bằng:",
-      options: [
-        { id: "A", text: "5" },
-        { id: "B", text: "25" },
-        { id: "C", text: "7" },
-        { id: "D", text: "√7" },
-      ],
-      correctAnswer: "A",
-      explanation: "Môđun của số phức z = a + bi là |z| = √(a² + b²) = √(3² + (-4)²) = √(9 + 16) = √25 = 5.",
-      points: 0.25,
+      points: 1.5,
     },
   ],
   "dgnl-hcm-2026-01": [
@@ -529,6 +620,95 @@ export const MOCK_QUESTIONS_DATABASE: Record<string, ExamQuestion[]> = {
       correctAnswer: "A",
       explanation: "Cụm danh từ 'carbon emission' (khí thải carbon) là thuật ngữ môi trường phổ biến.",
       points: 0.25,
+    },
+  ],
+  "ngu-van-12-nlxh-01": [
+    {
+      id: "v1",
+      questionNumber: 1,
+      type: "short_answer",
+      section: "Tự luận",
+      instruction: "Phần I: Đọc hiểu - Trả lời ngắn",
+      content: "Đọc đoạn trích sau và trả lời câu hỏi:\n\"Con người sinh ra không phải để tan biến như một hạt cát vô danh. Họ sinh ra để in dấu chân trên mặt đất, in dấu ấn vào trái tim người khác. Cuộc sống chỉ thật sự có ý nghĩa khi ta dám đương đầu với những cơn gió ngược và kiên định đi trên con đường mình đã chọn.\"\n\nCâu 1: Xác định phương thức biểu đạt chính được sử dụng trong đoạn trích trên.",
+      options: [],
+      correctAnswer: "Nghị luận",
+      explanation: "Phương thức biểu đạt chính là Nghị luận (bày tỏ quan điểm, tư tưởng, dẫn dắt nhận thức về ý nghĩa cuộc đời).",
+      sampleEssayAnswer: "Phương thức biểu đạt chính của đoạn trích là: Nghị luận.",
+      rubricCriteria: ["Nêu đúng phương thức biểu đạt chính: Nghị luận (0.75 điểm)"],
+      points: 0.75,
+    },
+    {
+      id: "v2",
+      questionNumber: 2,
+      type: "short_answer",
+      section: "Tự luận",
+      instruction: "Phần I: Đọc hiểu - Trả lời câu hỏi",
+      content: "Theo tác giả trong đoạn trích, con người sinh ra trên cõi đời này để làm gì?",
+      options: [],
+      correctAnswer: "Để in dấu chân trên mặt đất, in dấu ấn vào trái tim người khác",
+      explanation: "Căn cứ vào câu văn: 'Họ sinh ra để in dấu chân trên mặt đất, in dấu ấn vào trái tim người khác.'",
+      sampleEssayAnswer: "Theo tác giả, con người sinh ra để: 'in dấu chân trên mặt đất, in dấu ấn vào trái tim người khác', tức là tạo dựng giá trị sống đích thực và lan tỏa tình yêu thương, sự cống hiến cho cộng đồng.",
+      rubricCriteria: [
+        "Trích xuất chính xác ý trong ngữ liệu (0.5 điểm)",
+        "Diễn đạt mạch lạc, chuẩn ngữ pháp (0.25 điểm)",
+      ],
+      points: 0.75,
+    },
+    {
+      id: "v3",
+      questionNumber: 3,
+      type: "essay",
+      section: "Tự luận",
+      instruction: "Phần I: Đọc hiểu - Rút ra bài học",
+      content: "Anh/chị hiểu như thế nào về hình ảnh 'những cơn gió ngược' trong câu văn: 'Cuộc sống chỉ thật sự có ý nghĩa khi ta dám đương đầu với những cơn gió ngược...'?",
+      options: [],
+      correctAnswer: "Gió ngược ẩn dụ cho những nghịch cảnh, khó khăn, thử thách",
+      explanation: "Hình ảnh ẩn dụ 'cơn gió ngược' tượng trưng cho những khó khăn, trở ngại, thất bại hoặc định kiến mà mỗi cá nhân phải đối mặt trên hành trình trưởng thành.",
+      sampleEssayAnswer: "Gợi ý trả lời:\n- 'Những cơn gió ngược' là hình ảnh ẩn dụ biểu tượng cho những chông gai, khó khăn, nghịch cảnh và những thử thách khắc nghiệt trong cuộc sống.\n- Câu nói khẳng định: Giá trị và bản lĩnh của con người chỉ được tôi luyện khi dám dũng cảm đối diện, vượt lên trên thử thách chứ không trốn tránh hay đầu hàng số phận.",
+      rubricCriteria: [
+        "Giải thích đúng ý nghĩa ẩn dụ của 'cơn gió ngược' (0.5 điểm)",
+        "Nêu được bài học nhân sinh sâu sắc về ý chí vươn lên (0.5 điểm)",
+      ],
+      points: 1.0,
+    },
+    {
+      id: "v4",
+      questionNumber: 4,
+      type: "essay",
+      section: "Tự luận",
+      instruction: "Phần II: Làm văn - Đoạn văn Nghị luận xã hội (khoảng 200 chữ)",
+      content: "Từ nội dung đoạn trích ở phần Đọc hiểu, anh/chị hãy viết một đoạn văn (khoảng 200 chữ) trình bày suy nghĩ về ý nghĩa của sự kiên định trong việc theo đuổi ước mơ của tuổi trẻ hiện nay.",
+      options: [],
+      correctAnswer: "Bài viết nghị luận xã hội 200 chữ đạt chuẩn cấu trúc mở - thân - kết.",
+      explanation: "Đoạn văn cần đảm bảo cấu trúc: Nêu vấn đề -> Giải thích -> Bàn luận ý nghĩa -> Phản đề/Mở rộng -> Bài học hành động bản thân.",
+      sampleEssayAnswer: "Đoạn văn mẫu tham khảo (khoảng 200 chữ):\nKiên định theo đuổi ước mơ chính là ngọn hải đăng soi sáng con đường trưởng thành của mỗi người trẻ. Sự kiên định là bản lĩnh giữ vững niềm tin, không lung lay trước thất bại hay những lời bàn tán tiêu cực để kiên trì đi đến cùng mục tiêu đã chọn. Trong thời đại số biến đổi không ngừng, người trẻ có muôn vàn cơ hội nhưng cũng đối diện với không ít áp lực đồng trang lứa. Nếu thiếu đi sự kiên định, chúng ta rất dễ nản lòng và bỏ cuộc trước những 'cơn gió ngược' của cuộc đời. Kiên định không đồng nghĩa với bảo thủ, mà là sự kiên trì có trí tuệ, biết học hỏi từ vấp ngã để hoàn thiện bản thân. Hãy nhớ rằng, hạt giống chỉ có thể nảy mầm khi bền bỉ vươn qua lớp đất dày bóng tối để đón ánh mặt trời. Là một học sinh trước ngưỡng cửa tương lai, tôi tự nhắc nhở mình phải luôn kiên tâm học tập và nuôi dưỡng đam mê mỗi ngày.",
+      rubricCriteria: [
+        "Đảm bảo yêu cầu về hình thức đoạn văn khoảng 200 chữ, không tách đoạn bừa bãi (0.25 điểm)",
+        "Xác định đúng vấn đề nghị luận: Ý nghĩa của sự kiên định với tuổi trẻ (0.25 điểm)",
+        "Bàn luận sâu sắc: Nêu được vai trò, dẫn chứng thực tế, phản đề và bài học liên hệ (1.25 điểm)",
+        "Sáng tạo, diễn đạt giàu cảm xúc, chuẩn chính tả (0.25 điểm)",
+      ],
+      wordLimit: { min: 150, max: 250 },
+      points: 2.0,
+    },
+    {
+      id: "v5",
+      questionNumber: 5,
+      type: "essay",
+      section: "Tự luận",
+      instruction: "Phần II: Làm văn - Bài văn Nghị luận văn học (Soạn thảo trực tiếp)",
+      content: "Anh/chị hãy viết bài văn nghị luận phân tích tư tưởng nhân đạo sâu sắc và thông điệp về khát vọng sống mãnh liệt của con người được thể hiện qua tác phẩm văn học lớp 12 mà anh/chị tâm đắc nhất. (Thí sinh soạn thảo bài làm trực tiếp vào khung bài làm của hệ thống).",
+      options: [],
+      correctAnswer: "Bài văn hoàn chỉnh có mở bài, thân bài, kết bài và phân tích sâu sắc tác phẩm văn học.",
+      explanation: "Đánh giá khả năng cảm thụ tác phẩm, tư duy lập luận văn học và năng lực diễn đạt ngôn ngữ học sinh.",
+      sampleEssayAnswer: "Dàn ý gợi ý bài làm:\nI. Mở bài:\n- Dẫn dắt vấn đề tư tưởng nhân đạo và khát vọng sống trong văn học.\n- Giới thiệu tác giả, tác phẩm tiêu biểu (ví dụ: 'Vợ nhặt' - Kim Lân hoặc 'Hồn Trương Ba, da hàng thịt' - Lưu Quang Vũ).\nII. Thân bài:\n1. Giải thích tư tưởng nhân đạo và khát vọng sống: Sự đồng cảm với nỗi khổ đau, phát hiện và ngợi ca vẻ đẹp tâm hồn con người trong hoàn cảnh khốn cùng.\n2. Phân tích qua tác phẩm:\n- Hoàn cảnh ngặt nghèo đẩy con người đến bờ vực cái chết/sự tha hóa.\n- Khát vọng sống, khát vọng hạnh phúc bùng cháy xua tan bóng tối u ám.\n- Nghệ thuật xây dựng tình huống, miêu tả tâm lý nhân vật tinh tế.\n3. Đánh giá, nâng cao: Giá trị nhân văn vĩnh cửu của tác phẩm đối với thế hệ người đọc hôm nay.\nIII. Kết bài:\n- Khẳng định lại sức sống của tác phẩm và bài học nhân sinh sâu sắc.",
+      rubricCriteria: [
+        "Đầy đủ bố cục 3 phần: Mở bài, Thân bài, Kết bài (0.5 điểm)",
+        "Xác định đúng trọng tâm vấn đề nghị luận văn học (0.5 điểm)",
+        "Triển khai luận điểm logic, kết hợp dẫn chứng xác đáng, phân tích nghệ thuật (3.5 điểm)",
+        "Chính tả, dùng từ, diễn đạt trôi chảy, sáng tạo (0.5 điểm)",
+      ],
+      points: 5.0,
     },
   ],
 };

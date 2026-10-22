@@ -38,14 +38,29 @@ CREATE TABLE IF NOT EXISTS exam_questions (
   exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
   question_number INT NOT NULL,
   type VARCHAR(50) NOT NULL DEFAULT 'single_choice',
+  part VARCHAR(50) DEFAULT 'Phần I',
+  section VARCHAR(50) DEFAULT 'Trắc nghiệm',
   instruction TEXT NOT NULL DEFAULT 'Chọn một đáp án đúng',
   content TEXT NOT NULL,
   options JSONB NOT NULL DEFAULT '[]'::jsonb,
-  correct_answer VARCHAR(10) NOT NULL DEFAULT 'A',
+  true_false_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+  correct_answer TEXT DEFAULT 'A',
   explanation TEXT,
+  sample_essay_answer TEXT,
+  rubric_criteria JSONB DEFAULT '[]'::jsonb,
+  word_limit JSONB DEFAULT '{}'::jsonb,
   points NUMERIC(4,2) NOT NULL DEFAULT 0.25,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Bổ sung cột nếu bảng exam_questions đã tồn tại từ trước
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS part VARCHAR(50) DEFAULT 'Phần I';
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS section VARCHAR(50) DEFAULT 'Trắc nghiệm';
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS true_false_items JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS sample_essay_answer TEXT;
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS rubric_criteria JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS word_limit JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE exam_questions ALTER COLUMN correct_answer TYPE TEXT;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_exams_scope ON exams(scope);
@@ -238,3 +253,145 @@ INSERT INTO exams (
   'Hội đồng Khảo thí EduMi', 'public', 'published'
 )
 ON CONFLICT (exam_code) DO NOTHING;
+
+-- ==============================================================================
+-- Dữ liệu câu hỏi mẫu cho Đề thi EDM-8899 (Toán 12 - Chuẩn cấu trúc 2025/2026)
+-- Gồm đầy đủ 4 phần:
+--   Phần I: 4 câu Trắc nghiệm nhiều lựa chọn (A, B, C, D)
+--   Phần II: 2 câu Trắc nghiệm Đúng / Sai (Mỗi câu 4 mệnh đề a, b, c, d)
+--   Phần III: 2 câu Trắc nghiệm trả lời ngắn (Điền số thập phân 20.5 & số nguyên)
+--   Phần IV: 1 câu Tự luận giải toán chi tiết Oxyz (Có đáp án tham khảo & rubric)
+-- ==============================================================================
+DO $$
+DECLARE
+  v_exam_id UUID;
+BEGIN
+  SELECT id INTO v_exam_id FROM exams WHERE exam_code = 'EDM-8899' LIMIT 1;
+  IF v_exam_id IS NOT NULL THEN
+    -- Xóa câu hỏi cũ nếu đã tồn tại để tránh trùng lặp
+    DELETE FROM exam_questions WHERE exam_id = v_exam_id;
+
+    -- 1. Câu 1 (Phần I - ABCD)
+    INSERT INTO exam_questions (exam_id, question_number, type, part, section, instruction, content, options, correct_answer, points, explanation)
+    VALUES (
+      v_exam_id, 1, 'single_choice', 'Phần I', 'Trắc nghiệm',
+      'Phần I: Chọn một đáp án đúng (A, B, C hoặc D)',
+      'Cho hàm số y = f(x) có bảng biến thiên với f''(x) đổi dấu từ dương sang âm khi qua x = 2. Điểm cực đại của hàm số đã cho là:',
+      '[{"id": "A", "text": "x = 2"}, {"id": "B", "text": "x = -2"}, {"id": "C", "text": "y = 2"}, {"id": "D", "text": "x = 0"}]'::jsonb,
+      'A', 0.25,
+      'Theo định nghĩa, nếu f''(x) đổi dấu từ dương (+) sang âm (-) khi qua điểm x0 thì hàm số đạt cực đại tại điểm x0. Ở đây x0 = 2.'
+    );
+
+    -- 2. Câu 2 (Phần I - ABCD)
+    INSERT INTO exam_questions (exam_id, question_number, type, part, section, instruction, content, options, correct_answer, points, explanation)
+    VALUES (
+      v_exam_id, 2, 'single_choice', 'Phần I', 'Trắc nghiệm',
+      'Phần I: Chọn một đáp án đúng (A, B, C hoặc D)',
+      'Tập nghiệm của bất phương trình log₂(x - 1) < 3 là:',
+      '[{"id": "A", "text": "(1; 9)"}, {"id": "B", "text": "(-∞; 9)"}, {"id": "C", "text": "(1; 8)"}, {"id": "D", "text": "(1; +∞)"}]'::jsonb,
+      'A', 0.25,
+      'Điều kiện xác định: x - 1 > 0 <=> x > 1. Bất phương trình: log₂(x - 1) < 3 <=> x - 1 < 2³ = 8 <=> x < 9. Kết hợp điều kiện ta được tập nghiệm S = (1; 9).'
+    );
+
+    -- 3. Câu 3 (Phần I - ABCD)
+    INSERT INTO exam_questions (exam_id, question_number, type, part, section, instruction, content, options, correct_answer, points, explanation)
+    VALUES (
+      v_exam_id, 3, 'single_choice', 'Phần I', 'Trắc nghiệm',
+      'Phần I: Chọn một đáp án đúng (A, B, C hoặc D)',
+      'Trong không gian Oxyz, cho mặt phẳng (P): 2x - y + 3z - 5 = 0. Một vectơ pháp tuyến của (P) có tọa độ là:',
+      '[{"id": "A", "text": "n = (2; -1; 3)"}, {"id": "B", "text": "n = (2; 1; 3)"}, {"id": "C", "text": "n = (2; -1; -5)"}, {"id": "D", "text": "n = (-2; -1; 3)"}]'::jsonb,
+      'A', 0.25,
+      'Mặt phẳng Ax + By + Cz + D = 0 có một vectơ pháp tuyến là n = (A; B; C). Do đó n = (2; -1; 3).'
+    );
+
+    -- 4. Câu 4 (Phần I - ABCD)
+    INSERT INTO exam_questions (exam_id, question_number, type, part, section, instruction, content, options, correct_answer, points, explanation)
+    VALUES (
+      v_exam_id, 4, 'single_choice', 'Phần I', 'Trắc nghiệm',
+      'Phần I: Chọn một đáp án đúng (A, B, C hoặc D)',
+      'Tính tích phân I = ∫ từ 0 đến 1 của e^(2x) dx.',
+      '[{"id": "A", "text": "I = (e² - 1) / 2"}, {"id": "B", "text": "I = e² - 1"}, {"id": "C", "text": "I = (e² + 1) / 2"}, {"id": "D", "text": "I = 2(e² - 1)"}]'::jsonb,
+      'A', 0.25,
+      'Ta có nguyên hàm ∫ e^(2x) dx = (1/2) e^(2x). Thay cận từ 0 đến 1: (1/2) * (e² - e⁰) = (e² - 1)/2.'
+    );
+
+    -- 5. Câu 5 (Phần II - Đúng / Sai)
+    INSERT INTO exam_questions (exam_id, question_number, type, part, section, instruction, content, true_false_items, points, explanation)
+    VALUES (
+      v_exam_id, 5, 'true_false', 'Phần II', 'Trắc nghiệm Đúng/Sai',
+      'Phần II: Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai',
+      'Cho hàm số f(x) = x³ - 3x² + 2 có đồ thị là (C). Xét tính đúng sai của các khẳng định sau:',
+      '[
+        {"id": "a", "content": "Hàm số đã cho có đạo hàm f''(x) = 3x² - 6x.", "isCorrect": true, "explanation": "Đạo hàm: (x³ - 3x² + 2)'' = 3x² - 6x. Khẳng định ĐÚNG."},
+        {"id": "b", "content": "Hàm số đồng biến trên khoảng (0; 2).", "isCorrect": false, "explanation": "Ta có f''(x) = 3x(x - 2) < 0 với mọi x thuộc (0; 2), do đó hàm số nghịch biến trên khoảng (0; 2). Khẳng định SAI."},
+        {"id": "c", "content": "Giá trị cực tiểu của hàm số bằng -2.", "isCorrect": true, "explanation": "f''(x) đổi dấu từ âm sang dương tại x = 2 nên x = 2 là điểm cực tiểu, f(2) = 2³ - 3(2²) + 2 = -2. Khẳng định ĐÚNG."},
+        {"id": "d", "content": "Đồ thị (C) cắt trục hoành tại đúng 3 điểm phân biệt.", "isCorrect": true, "explanation": "Ta có f(0) = 2 (cực đại) và f(2) = -2 (cực tiểu). Vì y_CĐ * y_CT = 2 * (-2) = -4 < 0 nên đồ thị cắt Ox tại đúng 3 điểm phân biệt. Khẳng định ĐÚNG."}
+      ]'::jsonb,
+      1.0,
+      'Phân tích bảng biến thiên hàm bậc ba: Đồng biến trên (-∞; 0) và (2; +∞), nghịch biến trên (0; 2). Cực đại tại (0; 2), cực tiểu tại (2; -2).'
+    );
+
+    -- 6. Câu 6 (Phần II - Đúng / Sai)
+    INSERT INTO exam_questions (exam_id, question_number, type, part, section, instruction, content, true_false_items, points, explanation)
+    VALUES (
+      v_exam_id, 6, 'true_false', 'Phần II', 'Trắc nghiệm Đúng/Sai',
+      'Phần II: Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai',
+      'Trong không gian Oxyz, cho mặt cầu (S): (x - 1)² + (y - 2)² + (z + 1)² = 9 và mặt phẳng (P): 2x - 2y + z + 8 = 0. Xét tính đúng sai của các khẳng định sau:',
+      '[
+        {"id": "a", "content": "Mặt cầu (S) có tọa độ tâm I(1; 2; -1) và bán kính R = 3.", "isCorrect": true, "explanation": "Phương trình chính tắc (x - a)² + (y - b)² + (z - c)² = R² => tâm I(1; 2; -1), R = √9 = 3. Khẳng định ĐÚNG."},
+        {"id": "b", "content": "Khoảng cách từ tâm I của mặt cầu đến mặt phẳng (P) bằng 1.", "isCorrect": false, "explanation": "d(I, (P)) = |2(1) - 2(2) + 1(-1) + 8| / √(2² + (-2)² + 1²) = |5| / 3 = 5/3 ≠ 1. Khẳng định SAI."},
+        {"id": "c", "content": "Mặt phẳng (P) tiếp xúc với mặt cầu (S).", "isCorrect": false, "explanation": "Vì d(I, (P)) = 5/3 < R = 3 nên mặt phẳng (P) cắt mặt cầu (S) theo giao tuyến là một đường tròn, không tiếp xúc. Khẳng định SAI."},
+        {"id": "d", "content": "Đường thẳng Δ đi qua tâm I và vuông góc với (P) có vectơ chỉ phương u = (2; -2; 1).", "isCorrect": true, "explanation": "Δ vuông góc với (P) nên vectơ chỉ phương của Δ cùng phương với vectơ pháp tuyến n_(P) = (2; -2; 1). Khẳng định ĐÚNG."}
+      ]'::jsonb,
+      1.0,
+      'Vận dụng kiến thức hình học không gian Oxyz: Khoảng cách từ điểm đến mặt phẳng, vị trí tương đối giữa mặt cầu và mặt phẳng.'
+    );
+
+    -- 7. Câu 7 (Phần III - Điền số thập phân 20.5)
+    INSERT INTO exam_questions (exam_id, question_number, type, part, section, instruction, content, correct_answer, points, explanation)
+    VALUES (
+      v_exam_id, 7, 'short_answer', 'Phần III', 'Trả lời ngắn',
+      'Phần III: Trắc nghiệm trả lời ngắn (Điền kết quả số)',
+      'Một doanh nghiệp dự tính hàm số lợi nhuận khi bán x tấn sản phẩm là P(x) = -0.1x² + 4.1x - 15 (triệu đồng). Tìm sản lượng x (tấn) để doanh nghiệp đạt mức lợi nhuận lớn nhất. (Học sinh điền kết quả dạng số thập phân, ví dụ: 20.5)',
+      '20.5', 0.5,
+      'Hàm bậc hai P(x) = -0.1x² + 4.1x - 15 có hệ số a = -0.1 < 0 nên đạt giá trị lớn nhất tại đỉnh parabol: x = -b / (2a) = -4.1 / (2 * -0.1) = 4.1 / 0.2 = 20.5. Khi đó lợi nhuận cực đại đạt 27.025 triệu đồng.'
+    );
+
+    -- 8. Câu 8 (Phần III - Điền số nguyên 12)
+    INSERT INTO exam_questions (exam_id, question_number, type, part, section, instruction, content, correct_answer, points, explanation)
+    VALUES (
+      v_exam_id, 8, 'short_answer', 'Phần III', 'Trả lời ngắn',
+      'Phần III: Trắc nghiệm trả lời ngắn (Điền kết quả số nguyên)',
+      'Cho khối chóp tam giác S.ABC có đáy ABC là tam giác vuông tại B, AB = 3, BC = 4. Cạnh bên SA vuông góc với mặt phẳng đáy (ABC) và SA = 6. Tính thể tích V của khối chóp S.ABC.',
+      '12', 0.5,
+      'Diện tích tam giác vuông ABC: S_đáy = (1/2) * AB * BC = (1/2) * 3 * 4 = 6. Chiều cao khối chóp h = SA = 6. Thể tích V = (1/3) * S_đáy * h = (1/3) * 6 * 6 = 12.'
+    );
+
+    -- 9. Câu 9 (Phần IV - Tự luận)
+    INSERT INTO exam_questions (exam_id, question_number, type, part, section, instruction, content, correct_answer, sample_essay_answer, rubric_criteria, points, explanation)
+    VALUES (
+      v_exam_id, 9, 'essay', 'Phần IV', 'Tự luận',
+      'Phần IV: Tự luận - Trình bày các bước giải chi tiết',
+      'Trong không gian Oxyz, cho điểm M(1; 2; -1) và mặt phẳng (P): x + 2y - 2z + 1 = 0.
+a) Viết phương trình chính tắc của đường thẳng d đi qua điểm M và vuông góc với mặt phẳng (P).
+b) Tìm tọa độ hình chiếu vuông góc H của điểm M lên mặt phẳng (P). Trình bày rõ các bước giải chi tiết vào khung làm bài.',
+      'H(1/9; 2/9; 7/9)',
+      'Lời giải tham khảo:
+- Bước 1: Mặt phẳng (P) có vectơ pháp tuyến n = (1; 2; -2).
+- Bước 2: Vì đường thẳng d ⊥ (P) nên d nhận n làm vectơ chỉ phương.
+Phương trình tham số của d: x = 1 + t, y = 2 + 2t, z = -1 - 2t (t ∈ R).
+- Bước 3: Điểm H là giao điểm của d và (P). Thay phương trình d vào (P):
+(1 + t) + 2(2 + 2t) - 2(-1 - 2t) + 1 = 0 <=> 9t + 8 = 0 <=> t = -8/9.
+- Kết luận: Tọa độ hình chiếu H là H(1/9; 2/9; 7/9).',
+      '["Xác định đúng VTCP của đường thẳng d và viết đúng PT đường thẳng (0.5 điểm)", "Thiết lập tọa độ điểm tham số H và lập phương trình tìm t (0.5 điểm)", "Giải đúng giá trị tham số t và kết luận chính xác tọa độ điểm H (0.5 điểm)"]'::jsonb,
+      1.5,
+      'Hướng dẫn giải chi tiết:
+1. Đường thẳng d qua M(1; 2; -1) nhận VTPT n_(P) = (1; 2; -2) làm VTCP: (x - 1)/1 = (y - 2)/2 = (z + 1)/(-2).
+2. Tham số hóa H ∈ d: H(1 + t; 2 + 2t; -1 - 2t).
+3. Thay tọa độ H vào (P): (1 + t) + 2(2 + 2t) - 2(-1 - 2t) + 1 = 0 <=> 9t + 8 = 0 => t = -8/9 => H(1/9; 2/9; 7/9).'
+    );
+
+    -- Cập nhật question_count cho bài thi EDM-8899 là 9
+    UPDATE exams SET question_count = 9 WHERE id = v_exam_id;
+  END IF;
+END $$;

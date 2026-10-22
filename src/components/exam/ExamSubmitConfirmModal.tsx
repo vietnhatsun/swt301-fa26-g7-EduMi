@@ -12,6 +12,16 @@ interface ExamSubmitConfirmModalProps {
   totalQuestions: number;
   violations: number;
   timeRemaining: string;
+  multipleChoiceAnswered?: number;
+  totalMultipleChoice?: number;
+  essayAnswered?: number;
+  totalEssay?: number;
+  singleChoiceAnswered?: number;
+  totalSingleChoice?: number;
+  trueFalseAnswered?: number;
+  totalTrueFalse?: number;
+  shortAnswerAnswered?: number;
+  totalShortAnswer?: number;
 }
 
 export default function ExamSubmitConfirmModal({
@@ -22,6 +32,16 @@ export default function ExamSubmitConfirmModal({
   totalQuestions,
   violations,
   timeRemaining,
+  multipleChoiceAnswered,
+  totalMultipleChoice,
+  essayAnswered,
+  totalEssay = 0,
+  singleChoiceAnswered,
+  totalSingleChoice = 0,
+  trueFalseAnswered,
+  totalTrueFalse = 0,
+  shortAnswerAnswered,
+  totalShortAnswer = 0,
 }: ExamSubmitConfirmModalProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -37,6 +57,7 @@ export default function ExamSubmitConfirmModal({
 
   const unansweredCount = totalQuestions - answeredCount;
   const isAllAnswered = unansweredCount === 0;
+  const hasDetailedParts = totalTrueFalse > 0 || totalShortAnswer > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -65,14 +86,14 @@ export default function ExamSubmitConfirmModal({
         {/* Overview Stats */}
         <div className="mt-5 grid grid-cols-3 gap-3">
           <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3 text-center">
-            <div className="text-[11px] font-bold text-slate-500">Đã trả lời</div>
+            <div className="text-[11px] font-bold text-slate-500">Đã hoàn thành</div>
             <div className="mt-0.5 text-lg font-black text-emerald-600">
               {answeredCount}/{totalQuestions}
             </div>
           </div>
 
           <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3 text-center">
-            <div className="text-[11px] font-bold text-slate-500">Chưa trả lời</div>
+            <div className="text-[11px] font-bold text-slate-500">Chưa làm</div>
             <div className={`mt-0.5 text-lg font-black ${unansweredCount > 0 ? "text-amber-600" : "text-slate-400"}`}>
               {unansweredCount} câu
             </div>
@@ -85,6 +106,59 @@ export default function ExamSubmitConfirmModal({
             </div>
           </div>
         </div>
+
+        {/* Breakdown for THPT C3 Official 4-Part Structure */}
+        {hasDetailedParts ? (
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+            {totalSingleChoice > 0 && (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-2 text-center">
+                <span className="text-[10px] font-black text-emerald-800 uppercase">Phần I: TN 4 Lựa chọn</span>
+                <p className="font-black text-slate-800 mt-0.5">
+                  {singleChoiceAnswered ?? 0} / {totalSingleChoice} câu
+                </p>
+              </div>
+            )}
+            {totalTrueFalse > 0 && (
+              <div className="rounded-xl border border-purple-100 bg-purple-50/60 p-2 text-center">
+                <span className="text-[10px] font-black text-purple-800 uppercase">Phần II: Đúng / Sai</span>
+                <p className="font-black text-slate-800 mt-0.5">
+                  {trueFalseAnswered ?? 0} / {totalTrueFalse} câu
+                </p>
+              </div>
+            )}
+            {totalShortAnswer > 0 && (
+              <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-2 text-center">
+                <span className="text-[10px] font-black text-sky-800 uppercase">Phần III: Trả lời ngắn</span>
+                <p className="font-black text-slate-800 mt-0.5">
+                  {shortAnswerAnswered ?? 0} / {totalShortAnswer} câu
+                </p>
+              </div>
+            )}
+            {totalEssay > 0 && (
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-2 text-center">
+                <span className="text-[10px] font-black text-indigo-800 uppercase">Phần IV: Tự luận</span>
+                <p className="font-black text-indigo-900 mt-0.5">
+                  {essayAnswered ?? 0} / {totalEssay} câu
+                </p>
+              </div>
+            )}
+          </div>
+        ) : totalEssay > 0 ? (
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-2 text-center">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Trắc nghiệm</span>
+              <p className="font-black text-slate-800">
+                {multipleChoiceAnswered ?? 0} / {totalMultipleChoice ?? (totalQuestions - totalEssay)} câu
+              </p>
+            </div>
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-2 text-center">
+              <span className="text-[10px] font-bold text-indigo-700 uppercase">Tự luận</span>
+              <p className="font-black text-indigo-900">
+                {essayAnswered ?? 0} / {totalEssay} câu
+              </p>
+            </div>
+          </div>
+        ) : null}
 
         {/* Warning if unanswered */}
         {!isAllAnswered && (

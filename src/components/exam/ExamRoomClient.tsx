@@ -17,8 +17,24 @@ import {
   Send,
   HelpCircle,
   Type,
+  PenTool,
+  FileText,
+  Sparkles,
+  Info,
+  Check,
+  BookOpen,
+  ShieldAlert,
+  ShieldCheck,
+  CheckSquare,
 } from "lucide-react";
-import { ExamItem, ExamQuestion, getExamQuestions } from "./exam-data";
+import {
+  ExamItem,
+  ExamQuestion,
+  getExamQuestions,
+  calculateTrueFalseScore,
+  isShortAnswerCorrect,
+  TrueFalseItem,
+} from "./exam-data";
 import ExamExitConfirmModal from "./ExamExitConfirmModal";
 import ExamSubmitConfirmModal from "./ExamSubmitConfirmModal";
 import ExamResultView from "./ExamResultView";
@@ -137,12 +153,22 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
   // Current Question Pointer
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // User State
-  const [answers, setAnswers] = useState<Record<string, "A" | "B" | "C" | "D">>({});
+  // User Answers State: keys are question IDs, values are selected option ("A".."D") or typed text answers
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  // True / False State: Record<questionId, Record<itemId, boolean>>
+  const [tfAnswers, setTfAnswers] = useState<Record<string, Record<string, boolean>>>({});
+  // Flagged questions
   const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>({});
+  // Anti-cheat violations (tab switching / focus loss)
   const [violations, setViolations] = useState(0);
   const [showViolationToast, setShowViolationToast] = useState(false);
+  const [showPasteToast, setShowPasteToast] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Filter in question list sidebar: all | single_choice | true_false | short_answer | essay
+  const [paletteFilter, setPaletteFilter] = useState<
+    "all" | "single_choice" | "true_false" | "short_answer" | "essay"
+  >("all");
 
   // Time Countdown (in seconds)
   const initialSeconds = isExamMode ? exam.durationMinutes * 60 : 60 * 60;
@@ -154,10 +180,86 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showPracticeHint, setShowPracticeHint] = useState(false);
+  const [showRubricDetails, setShowRubricDetails] = useState(true);
 
   const currentQuestion = questions[currentIndex];
   const totalQuestions = questions.length;
-  const answeredCount = Object.keys(answers).length;
+
+  // Separate question groups according to official THPT C3 structure
+  const singleChoiceQuestions = React.useMemo(
+    () => questions.filter((q) => q.type === "single_choice" || (!q.type && q.options && q.options.length > 0)),
+    [questions]
+  );
+  const trueFalseQuestions = React.useMemo(
+    () => questions.filter((q) => q.type === "true_false"),
+    [questions]
+  );
+  const shortAnswerQuestions = React.useMemo(
+    () => questions.filter((q) => q.type === "short_answer"),
+    [questions]
+  );
+  const essayQuestions = React.useMemo(
+    () => questions.filter((q) => q.type === "essay"),
+    [questions]
+  );
+  const mcQuestions = React.useMemo(
+    () => [...singleChoiceQuestions, ...trueFalseQuestions],
+    [singleChoiceQuestions, trueFalseQuestions]
+  );
+  const hasEssayQuestions = essayQuestions.length > 0;
+  const hasTrueFalseQuestions = trueFalseQuestions.length > 0;
+  const hasShortAnswerQuestions = shortAnswerQuestions.length > 0;
+
+  // Helper: check if a question is answered
+  const isQuestionAnswered = useCallback(
+    (q: ExamQuestion) => {
+      if (q.type === "essay" || q.type === "short_answer") {
+        return Boolean(answers[q.id]?.trim());
+      }
+      if (q.type === "true_false") {
+        const qTf = tfAnswers[q.id];
+        if (!qTf) return false;
+        const totalItems = q.trueFalseItems?.length || 4;
+        return Object.keys(qTf).length >= totalItems;
+      }
+      return Boolean(answers[q.id]);
+    },
+    [answers, tfAnswers]
+  );
+
+  // Helper: check partial true/false answer count
+  const getTrueFalseAnsweredCount = useCallback(
+    (qId: string) => {
+      return Object.keys(tfAnswers[qId] || {}).length;
+    },
+    [tfAnswers]
+  );
+
+  // Count answered
+  const answeredCount = React.useMemo(() => {
+    return questions.filter((q) => isQuestionAnswered(q)).length;
+  }, [questions, isQuestionAnswered]);
+
+  const singleChoiceAnsweredCount = React.useMemo(() => {
+    return singleChoiceQuestions.filter((q) => Boolean(answers[q.id])).length;
+  }, [singleChoiceQuestions, answers]);
+
+  const trueFalseAnsweredCount = React.useMemo(() => {
+    return trueFalseQuestions.filter((q) => isQuestionAnswered(q)).length;
+  }, [trueFalseQuestions, isQuestionAnswered]);
+
+  const shortAnswerAnsweredCount = React.useMemo(() => {
+    return shortAnswerQuestions.filter((q) => Boolean(answers[q.id]?.trim())).length;
+  }, [shortAnswerQuestions, answers]);
+
+  const mcAnsweredCount = React.useMemo(() => {
+    return singleChoiceAnsweredCount + trueFalseAnsweredCount + shortAnswerAnsweredCount;
+  }, [singleChoiceAnsweredCount, trueFalseAnsweredCount, shortAnswerAnsweredCount]);
+
+  const essayAnsweredCount = React.useMemo(() => {
+    return essayQuestions.filter((q) => isQuestionAnswered(q)).length;
+  }, [essayQuestions, isQuestionAnswered]);
+
   const progressPercent = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
 
   // Format Time Display (MM:SS)
@@ -167,36 +269,145 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
     return `${mins < 10 ? "0" : ""}${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  // Helper: Word count
+  const getWordCount = (text: string = "") => {
+    const trimmed = text.trim();
+    if (!trimmed) return 0;
+    return trimmed.split(/\s+/).length;
+  };
+
+  // Anti-Cheat: Block Pasting into text area or inputs
+  const handleBlockPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    setShowPasteToast(true);
+  };
+
   // Core Submit & Save to Storage logic
   const submitAndSaveExam = useCallback(() => {
+    const isDgnl = exam.category === "ĐGNL ĐHQG";
+    const totalQ = questions.length;
+
     let correctCount = 0;
     let wrongCount = 0;
     let skippedCount = 0;
 
-    questions.forEach((q) => {
+    let earnedAutoPoints = 0;
+    let maxAutoPoints = 0;
+
+    // 1. Single Choice evaluation (Phần I)
+    singleChoiceQuestions.forEach((q) => {
+      const qPts = q.points || 0.25;
+      maxAutoPoints += qPts;
       const selected = answers[q.id];
       if (!selected) {
         skippedCount++;
       } else if (selected === q.correctAnswer) {
         correctCount++;
+        earnedAutoPoints += qPts;
       } else {
         wrongCount++;
       }
     });
 
-    const isDgnl = exam.category === "ĐGNL ĐHQG";
-    const totalQ = questions.length;
-    const rawScore = totalQ > 0 ? (correctCount / totalQ) * (isDgnl ? 1200 : 10) : 0;
-    const finalScore = isDgnl ? Math.round(rawScore) : Number(rawScore.toFixed(1));
+    // 2. True / False evaluation (Phần II) - Quy chuẩn Bộ GD&ĐT
+    trueFalseQuestions.forEach((q) => {
+      const qPts = q.points || 1.0;
+      maxAutoPoints += qPts;
+      const userTf = tfAnswers[q.id] || {};
+      const tfCount = Object.keys(userTf).length;
+
+      if (tfCount === 0) {
+        skippedCount++;
+      } else {
+        const tfResult = calculateTrueFalseScore(userTf, q.trueFalseItems);
+        earnedAutoPoints += tfResult.points;
+        if (tfResult.correctCount === tfResult.totalItems) {
+          correctCount++;
+        } else {
+          wrongCount++;
+        }
+      }
+    });
+
+    // 3. Short Answer evaluation (Phần III) - Hỗ trợ chuẩn hóa số thập phân 20.5 = 20,5
+    shortAnswerQuestions.forEach((q) => {
+      const qPts = q.points || 0.5;
+      maxAutoPoints += qPts;
+      const userText = answers[q.id]?.trim();
+      if (!userText) {
+        skippedCount++;
+      } else if (isShortAnswerCorrect(userText, q.correctAnswer)) {
+        correctCount++;
+        earnedAutoPoints += qPts;
+      } else {
+        wrongCount++;
+      }
+    });
+
+    // 4. Essay evaluation (Phần IV): Giữ trạng thái chờ giáo viên chấm
+    const essayWordCounts: Record<string, number> = {};
+    let essayDoneCount = 0;
+    let essaySkippedCount = 0;
+
+    essayQuestions.forEach((q) => {
+      const text = answers[q.id]?.trim() || "";
+      const wc = getWordCount(text);
+      essayWordCounts[q.id] = wc;
+
+      if (text) {
+        essayDoneCount++;
+      } else {
+        essaySkippedCount++;
+        skippedCount++;
+      }
+    });
+
+    const totalAutoGradedCount =
+      singleChoiceQuestions.length + trueFalseQuestions.length + shortAnswerQuestions.length;
+    const hasEssay = essayQuestions.length > 0;
+    const isPureEssay = hasEssay && totalAutoGradedCount === 0;
+
+    let rawScore = 0;
+    let finalScore = 0;
     const maxScore = isDgnl ? 1200 : 10;
-    const accuracyPercent = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
+    let scoreDisplay = "";
+    let accuracyPercent = 0;
+
+    if (isPureEssay) {
+      scoreDisplay = "Chờ chấm điểm / 10";
+      rawScore = 0;
+      finalScore = 0;
+      accuracyPercent = essayDoneCount > 0 ? 100 : 0;
+    } else if (totalAutoGradedCount > 0 && maxAutoPoints > 0) {
+      accuracyPercent = Math.min(100, Math.round((earnedAutoPoints / maxAutoPoints) * 100));
+
+      if (isDgnl) {
+        finalScore = Math.round((earnedAutoPoints / maxAutoPoints) * 1200);
+        rawScore = finalScore;
+        scoreDisplay = `${finalScore} / 1200`;
+      } else if (hasEssay) {
+        // Có tự luận: hiển thị điểm trắc nghiệm đã chấm và số câu tự luận chờ chấm
+        finalScore = Number(earnedAutoPoints.toFixed(2));
+        rawScore = finalScore;
+        scoreDisplay = `${finalScore}đ (+ Chờ chấm ${essayQuestions.length} câu tự luận)`;
+      } else {
+        // Đề trắc nghiệm thuần túy: chuẩn hóa về thang điểm 10 nếu tổng điểm khác 10
+        if (Math.abs(maxAutoPoints - 10) < 0.1) {
+          finalScore = Number(earnedAutoPoints.toFixed(2));
+        } else {
+          finalScore = Number(((earnedAutoPoints / maxAutoPoints) * 10).toFixed(1));
+        }
+        rawScore = finalScore;
+        scoreDisplay = `${finalScore} / ${maxScore}`;
+      }
+    }
 
     const now = new Date();
     const dateFormatted = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
     const durationFormatted = `${Math.max(1, Math.ceil(timeSpent / 60))} phút`;
 
     const status: "Đã hoàn thành" | "Đạt" | "Cần cố gắng" =
-      rawScore >= (isDgnl ? 800 : 8.0)
+      isPureEssay || rawScore >= (isDgnl ? 800 : 8.0)
         ? "Đã hoàn thành"
         : rawScore >= (isDgnl ? 600 : 5.0)
         ? "Đạt"
@@ -213,7 +424,7 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
       date: dateFormatted,
       duration: durationFormatted,
       durationSeconds: timeSpent,
-      score: `${finalScore} / ${maxScore}`,
+      score: scoreDisplay,
       rawScore: finalScore,
       maxScore,
       accuracyPercent,
@@ -228,6 +439,13 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
           : "bg-rose-50 text-rose-700 border-rose-200",
       userAnswers: answers,
+      essayAnswers: answers,
+      essayWordCounts,
+      hasEssay,
+      essayCount: essayQuestions.length,
+      essaySubmittedCount: essayDoneCount,
+      multipleChoiceScore: totalAutoGradedCount > 0 ? finalScore : undefined,
+      essayPendingGrading: hasEssay,
       mode,
       completedAt: now.toISOString(),
     };
@@ -235,7 +453,19 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
     saveExamSubmission(record);
     setIsSubmitModalOpen(false);
     setIsCompleted(true);
-  }, [answers, exam, mode, questions, timeSpent, violations]);
+  }, [
+    answers,
+    tfAnswers,
+    exam,
+    mode,
+    questions,
+    singleChoiceQuestions,
+    trueFalseQuestions,
+    shortAnswerQuestions,
+    essayQuestions,
+    timeSpent,
+    violations,
+  ]);
 
   // Timer Tick
   useEffect(() => {
@@ -294,12 +524,48 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
     }
   }, [showViolationToast]);
 
-  // Select Answer Handler
+  // Auto hide paste toast after 4 seconds
+  useEffect(() => {
+    if (showPasteToast) {
+      const timer = setTimeout(() => {
+        setShowPasteToast(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showPasteToast]);
+
+  // Select Option Handler for MC (A, B, C, D)
   const handleSelectOption = (optionId: "A" | "B" | "C" | "D") => {
     if (!currentQuestion) return;
     setAnswers((prev) => ({
       ...prev,
       [currentQuestion.id]: optionId,
+    }));
+  };
+
+  // Select True/False Handler for true_false questions (sub-items a, b, c, d)
+  const handleSelectTrueFalse = (qId: string, itemId: string, value: boolean) => {
+    setTfAnswers((prev) => {
+      const qTf = { ...(prev[qId] || {}) };
+      qTf[itemId] = value;
+      const next = { ...prev, [qId]: qTf };
+
+      // Also serialize to answers[qId] so it is persisted in userAnswers
+      setAnswers((prevAns) => ({
+        ...prevAns,
+        [qId]: JSON.stringify(next[qId]),
+      }));
+
+      return next;
+    });
+  };
+
+  // Text Answer change handler for short_answer and essay
+  const handleTextAnswerChange = (text: string) => {
+    if (!currentQuestion) return;
+    setAnswers((prev) => ({
+      ...prev,
+      [currentQuestion.id]: text,
     }));
   };
 
@@ -313,9 +579,17 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
   };
 
   // Keyboard navigation & Shortcuts (A, B, C, D, Arrow Left/Right)
+  // Prevent overriding when user is typing in textarea or input!
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isCompleted || isExitModalOpen || isSubmitModalOpen) return;
+
+      const activeEl = document.activeElement;
+      const isTyping =
+        activeEl?.tagName === "INPUT" ||
+        activeEl?.tagName === "TEXTAREA" ||
+        (activeEl as HTMLElement)?.isContentEditable;
+      if (isTyping) return;
 
       const key = e.key.toUpperCase();
       if (key === "ARROWLEFT" && currentIndex > 0) {
@@ -325,13 +599,19 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
         setCurrentIndex((i) => i + 1);
         setShowPracticeHint(false);
       } else if (["A", "B", "C", "D"].includes(key)) {
-        handleSelectOption(key as "A" | "B" | "C" | "D");
+        if (
+          currentQuestion?.type === "single_choice" ||
+          currentQuestion?.type === "true_false" ||
+          (currentQuestion?.options && currentQuestion.options.length > 0)
+        ) {
+          handleSelectOption(key as "A" | "B" | "C" | "D");
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, totalQuestions, isCompleted, isExitModalOpen, isSubmitModalOpen]);
+  }, [currentIndex, totalQuestions, isCompleted, isExitModalOpen, isSubmitModalOpen, currentQuestion]);
 
   // Fullscreen toggle
   const toggleFullscreen = () => {
@@ -358,6 +638,7 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
 
   const handleRetakeExam = () => {
     setAnswers({});
+    setTfAnswers({});
     setFlaggedQuestions({});
     setViolations(0);
     setSecondsRemaining(initialSeconds);
@@ -383,8 +664,12 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
     );
   }
 
+  const currentWordCount = getWordCount(answers[currentQuestion?.id || ""] || "");
+  const minWords = currentQuestion?.wordLimit?.min;
+  const maxWords = currentQuestion?.wordLimit?.max;
+
   return (
-    <div className="flex min-h-screen flex-col bg-[#eef2f6] text-[#10213a] select-none font-sans">
+    <div className="flex min-h-screen flex-col bg-[#eef2f6] text-[#10213a] font-sans">
       {/* ── Top Bar Header ── */}
       <header className="relative z-30 flex h-[72px] items-center justify-between border-b border-slate-200/90 bg-white px-4 sm:px-8 shadow-xs">
         {/* Left: Branding & Mascot */}
@@ -402,7 +687,7 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
               EduMi Classroom Exam
             </div>
             <div className="text-[11px] font-medium text-slate-400">
-              Không gian làm bài tập trung
+              Phòng thi Trắc nghiệm & Tự luận
             </div>
           </div>
         </div>
@@ -412,10 +697,22 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
           <h1 className="text-sm sm:text-base font-black text-slate-900 max-w-lg truncate">
             {exam.cardCode}: {exam.title}
           </h1>
-          <div className="text-[11px] font-semibold text-slate-500">
-            Mã đề: <span className="font-bold text-slate-800">{exam.examCode}</span> ·{" "}
-            {totalQuestions} câu hỏi ·{" "}
-            <span className="text-emerald-700">Tự động ghi nhận vi phạm</span>
+          <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-2">
+            <span>
+              Mã đề: <strong className="text-slate-800">{exam.examCode}</strong>
+            </span>
+            <span>·</span>
+            <span>{totalQuestions} câu hỏi</span>
+            {hasEssayQuestions && (
+              <>
+                <span>·</span>
+                <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.2 text-[10px] font-black text-indigo-700">
+                  Có phần Tự luận
+                </span>
+              </>
+            )}
+            <span>·</span>
+            <span className="text-emerald-700">Ghi nhận vi phạm</span>
           </div>
         </div>
 
@@ -432,7 +729,7 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
 
         {/* Right: Status Pills & Action */}
         <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Text Size Adjuster Bar (75%, 100%, 125%, 150%) - Controls Question Card Font Size */}
+          {/* Text Size Adjuster Bar (75%, 100%, 125%, 150%) */}
           <div className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-slate-100 p-1 border border-slate-200/90 text-xs font-bold text-slate-600 shadow-2xs">
             <span className="flex items-center gap-1 px-2 text-[11px] font-bold text-slate-500">
               <Type className="h-3.5 w-3.5 text-slate-500" />
@@ -485,7 +782,7 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
         </div>
       </header>
 
-      {/* ── Anti-Cheat Toast Warning ── */}
+      {/* ── Anti-Cheat Toast Warning: Tab Switching ── */}
       {showViolationToast && (
         <div className="fixed top-20 right-6 z-50 flex items-center gap-3 rounded-2xl border border-rose-300 bg-rose-600 text-white px-5 py-3 shadow-2xl animate-in slide-in-from-top-4 duration-200">
           <AlertTriangle className="h-5 w-5 shrink-0" />
@@ -498,13 +795,26 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
         </div>
       )}
 
-      {/* ── Main Workspace Body (Expanded to near full width on left/right) ── */}
+      {/* ── Anti-Cheat Toast Warning: Paste Blocked ── */}
+      {showPasteToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-600 text-white px-6 py-3.5 shadow-2xl animate-in slide-in-from-top-4 duration-200 max-w-md">
+          <ShieldAlert className="h-5 w-5 shrink-0 text-white" />
+          <div className="text-xs font-bold leading-tight">
+            <div className="text-sm font-black">⚠️ KHÔNG THỂ DÁN VĂN BẢN:</div>
+            <div className="font-normal opacity-95 text-[11px] mt-0.5">
+              Để chống gian lận và sao chép từ bên ngoài, hệ thống khóa tính năng Dán (Paste). Thí sinh vui lòng tự gõ bài làm trực tiếp!
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Main Workspace Body ── */}
       <div className="mx-auto flex w-full max-w-[1880px] flex-1 gap-5 lg:gap-6 px-3 sm:px-5 lg:px-6 py-4 sm:py-5">
-        {/* ── Left Sidebar: Unified Single Card for Timer, Progress & Question Palette ── */}
+        {/* ── Left Sidebar: Timer, Progress & Question Palette ── */}
         <aside className="w-full sm:w-[290px] lg:w-[320px] shrink-0 flex flex-col">
           <div className="flex-1 rounded-[32px] bg-white p-5 shadow-sm border border-slate-200/80 flex flex-col justify-between">
             <div>
-              {/* 1. Timer Block inside the single card */}
+              {/* 1. Timer Block */}
               <div className="rounded-2xl bg-gradient-to-br from-[#009b77] via-[#008f6c] to-[#017a5c] p-4.5 text-white shadow-xs text-center">
                 <div className="flex items-center justify-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-white/90">
                   <Clock className="h-3.5 w-3.5" />
@@ -532,30 +842,157 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
-                <div className="mt-2 text-[11px] font-bold text-slate-500">
-                  Đã trả lời <strong className="text-slate-800">{answeredCount}/{totalQuestions}</strong> câu
+                <div className="mt-2 flex items-center justify-between text-[11px] font-bold text-slate-500">
+                  <span>
+                    Đã hoàn thành <strong className="text-slate-800">{answeredCount}/{totalQuestions}</strong> câu
+                  </span>
+                  {hasEssayQuestions && (
+                    <span className="text-indigo-700 font-extrabold text-[10px]">
+                      TL: {essayAnsweredCount}/{essayQuestions.length}
+                    </span>
+                  )}
                 </div>
               </div>
 
               {/* 3. Question Number Palette Grid */}
               <div className="pt-4">
-                <div className="mb-3 text-[11px] font-black uppercase tracking-wider text-slate-700">
-                  DANH SÁCH CÂU HỎI
+                <div className="mb-2.5 flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                    DANH SÁCH CÂU HỎI
+                  </span>
+                  {hasEssayQuestions && (
+                    <span className="text-[10px] font-bold text-slate-400">
+                      (TL = Tự luận)
+                    </span>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[360px] overflow-y-auto pr-1">
+                {/* Filter Tabs if exam has multiple question formats */}
+                {(hasTrueFalseQuestions || hasShortAnswerQuestions || hasEssayQuestions) && (
+                  <div className="flex flex-wrap items-center gap-1 mb-3 p-1 rounded-xl bg-slate-100 text-[11px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setPaletteFilter("all")}
+                      className={`px-2 py-1 rounded-lg text-center transition cursor-pointer ${
+                        paletteFilter === "all"
+                          ? "bg-white text-slate-900 shadow-2xs font-black"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      Tất cả ({questions.length})
+                    </button>
+                    {singleChoiceQuestions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPaletteFilter("single_choice")}
+                        className={`px-2 py-1 rounded-lg text-center transition cursor-pointer ${
+                          paletteFilter === "single_choice"
+                            ? "bg-white text-emerald-800 shadow-2xs font-black"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        ABCD ({singleChoiceQuestions.length})
+                      </button>
+                    )}
+                    {trueFalseQuestions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPaletteFilter("true_false")}
+                        className={`px-2 py-1 rounded-lg text-center transition cursor-pointer ${
+                          paletteFilter === "true_false"
+                            ? "bg-white text-purple-800 shadow-2xs font-black"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        Đ/S ({trueFalseQuestions.length})
+                      </button>
+                    )}
+                    {shortAnswerQuestions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPaletteFilter("short_answer")}
+                        className={`px-2 py-1 rounded-lg text-center transition cursor-pointer ${
+                          paletteFilter === "short_answer"
+                            ? "bg-white text-sky-800 shadow-2xs font-black"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        Điền số ({shortAnswerQuestions.length})
+                      </button>
+                    )}
+                    {essayQuestions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPaletteFilter("essay")}
+                        className={`px-2 py-1 rounded-lg text-center transition cursor-pointer ${
+                          paletteFilter === "essay"
+                            ? "bg-white text-indigo-700 shadow-2xs font-black"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        Tự luận ({essayQuestions.length})
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[340px] overflow-y-auto pr-1">
                   {questions.map((q, idx) => {
-                    const isAnswered = Boolean(answers[q.id]);
+                    const isAnswered = isQuestionAnswered(q);
                     const isCurrent = idx === currentIndex;
                     const isFlagged = Boolean(flaggedQuestions[q.id]);
+                    const isEssay = q.type === "essay";
+                    const isTrueFalse = q.type === "true_false";
+                    const isShortAnswer = q.type === "short_answer";
+                    const isSingleChoice = q.type === "single_choice" || (!q.type && q.options && q.options.length > 0);
+
+                    // True/False partial count
+                    const tfCount = isTrueFalse ? getTrueFalseAnsweredCount(q.id) : 0;
+                    const tfTotal = q.trueFalseItems?.length || 4;
+                    const isTfPartial = isTrueFalse && tfCount > 0 && tfCount < tfTotal;
+
+                    // Check if dimmed by filter
+                    const isDimmed =
+                      paletteFilter !== "all" &&
+                      ((paletteFilter === "single_choice" && !isSingleChoice) ||
+                        (paletteFilter === "true_false" && !isTrueFalse) ||
+                        (paletteFilter === "short_answer" && !isShortAnswer) ||
+                        (paletteFilter === "essay" && !isEssay));
 
                     let btnStyles = "border border-slate-200 bg-white text-slate-700 hover:border-slate-300";
 
                     if (isCurrent) {
-                      btnStyles = "border-2 border-[#009b77] bg-white text-[#009b77] font-black ring-2 ring-[#009b77]/25 shadow-xs";
+                      if (isTrueFalse) {
+                        btnStyles = "border-2 border-purple-600 bg-white text-purple-700 font-black ring-2 ring-purple-500/25 shadow-xs";
+                      } else if (isShortAnswer) {
+                        btnStyles = "border-2 border-sky-600 bg-white text-sky-700 font-black ring-2 ring-sky-500/25 shadow-xs";
+                      } else if (isEssay) {
+                        btnStyles = "border-2 border-indigo-600 bg-white text-indigo-700 font-black ring-2 ring-indigo-500/25 shadow-xs";
+                      } else {
+                        btnStyles = "border-2 border-[#009b77] bg-white text-[#009b77] font-black ring-2 ring-[#009b77]/25 shadow-xs";
+                      }
                     } else if (isAnswered) {
-                      btnStyles = "border border-[#009b77]/40 bg-[#e0f5ee] text-[#007a5e] font-black";
+                      if (isTrueFalse) {
+                        btnStyles = "border border-purple-300 bg-purple-50 text-purple-800 font-black";
+                      } else if (isShortAnswer) {
+                        btnStyles = "border border-sky-300 bg-sky-50 text-sky-800 font-black";
+                      } else if (isEssay) {
+                        btnStyles = "border border-indigo-300 bg-indigo-50 text-indigo-800 font-black";
+                      } else {
+                        btnStyles = "border border-[#009b77]/40 bg-[#e0f5ee] text-[#007a5e] font-black";
+                      }
+                    } else if (isTfPartial) {
+                      btnStyles = "border-2 border-amber-400 bg-amber-50/70 text-amber-900 font-black";
                     }
+
+                    // Format badge tag
+                    const typeBadgeText = isTrueFalse
+                      ? "Đ/S"
+                      : isShortAnswer
+                      ? "ĐS"
+                      : isEssay
+                      ? "TL"
+                      : "TN";
 
                     return (
                       <button
@@ -565,10 +1002,48 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
                           setCurrentIndex(idx);
                           setShowPracticeHint(false);
                         }}
-                        className={`relative flex h-11 w-full items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 ${btnStyles}`}
-                        title={`Câu ${idx + 1}${isAnswered ? " (Đã chọn đáp án)" : ""}`}
+                        className={`relative flex h-11 w-full items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 ${btnStyles} ${
+                          isDimmed ? "opacity-25 pointer-events-none" : ""
+                        }`}
+                        title={`Câu ${idx + 1} (${typeBadgeText})${
+                          isAnswered ? " - Đã làm" : isTfPartial ? ` - Đã chọn ${tfCount}/${tfTotal} ý` : " - Chưa làm"
+                        }`}
                       >
-                        <span>{idx + 1}</span>
+                        <span className="relative z-10">{idx + 1}</span>
+
+                        {/* Format badge indicator on top-left */}
+                        <span
+                          className={`absolute top-0.5 left-1 text-[8px] font-black px-1 rounded-sm leading-tight ${
+                            isCurrent
+                              ? isTrueFalse
+                                ? "bg-purple-600 text-white"
+                                : isShortAnswer
+                                ? "bg-sky-600 text-white"
+                                : isEssay
+                                ? "bg-indigo-600 text-white"
+                                : "bg-[#009b77] text-white"
+                              : isAnswered
+                              ? isTrueFalse
+                                ? "bg-purple-200 text-purple-900"
+                                : isShortAnswer
+                                ? "bg-sky-200 text-sky-900"
+                                : isEssay
+                                ? "bg-indigo-200 text-indigo-900"
+                                : "bg-emerald-200 text-emerald-900"
+                              : "bg-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {typeBadgeText}
+                        </span>
+
+                        {/* Partial indicator for True/False */}
+                        {isTfPartial && !isAnswered && (
+                          <span className="absolute bottom-0.5 right-1 text-[8px] font-black text-amber-700">
+                            {tfCount}/{tfTotal}
+                          </span>
+                        )}
+
+                        {/* Flagged icon */}
                         {isFlagged && (
                           <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-amber-400">
                             <span className="h-1.5 w-1.5 rounded-full bg-amber-900" />
@@ -581,28 +1056,55 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
               </div>
             </div>
 
-            {/* 4. Anti-Cheat Guidelines Card (Bottom of the SAME single card) */}
-            <div className="mt-6 rounded-2xl border border-[#ffeed3] bg-[#fff6ea] p-3.5 text-[11px] font-medium leading-relaxed text-[#b35900] shadow-2xs">
+            {/* 4. Anti-Cheat Guidelines Card */}
+            <div className="mt-5 rounded-2xl border border-[#ffeed3] bg-[#fff6ea] p-3.5 text-[11px] font-medium leading-relaxed text-[#b35900] shadow-2xs">
               <div className="flex items-center gap-1.5 font-black text-[#964a00] mb-1">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                <span>Quy chế phòng thi:</span>
+                <span>Quy chế bảo vệ phòng thi:</span>
               </div>
               <p>
-                Không rời tab, đổi cửa sổ hoặc thoát toàn màn hình trong khi làm bài. Mỗi lần vi phạm đều được ghi nhận.
+                Không rời tab, đổi cửa sổ hoặc sao chép/dán nội dung từ bên ngoài. Mọi hành vi vi phạm đều được hệ thống ghi nhận tự động.
               </p>
             </div>
           </div>
         </aside>
 
-        {/* ── Right Main Panel: Question Card (Scales ONLY this box with textScale) ── */}
-        <main className="flex-1 flex flex-col justify-between rounded-[32px] bg-white p-6 sm:p-8 shadow-sm border border-slate-200/80 min-h-[520px]">
+        {/* ── Right Main Panel: Question Card ── */}
+        <main className="flex-1 flex flex-col justify-between rounded-[32px] bg-white p-6 sm:p-8 shadow-sm border border-slate-200/80 min-h-[580px]">
           <div>
-            {/* Question Card Header */}
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+            {/* Question Card Top Header */}
+            {/* Question Card Top Header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <h2 className={`${scaleConfig.titleSize} font-black tracking-wide text-[#009b77] transition-all`}>
-                  CÂU HỎI {currentIndex + 1}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className={`${scaleConfig.titleSize} font-black tracking-wide text-[#009b77] transition-all`}>
+                    CÂU HỎI {currentIndex + 1}
+                  </h2>
+                  {currentQuestion?.type === "single_choice" && (
+                    <span className="flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-black text-emerald-800 shadow-2xs">
+                      <span>Phần I: TN 4 Lựa chọn</span>
+                    </span>
+                  )}
+                  {currentQuestion?.type === "true_false" && (
+                    <span className="flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-xs font-black text-purple-800 shadow-2xs">
+                      <CheckSquare className="h-3 w-3 text-purple-600" />
+                      <span>Phần II: Đúng / Sai</span>
+                    </span>
+                  )}
+                  {currentQuestion?.type === "short_answer" && (
+                    <span className="flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2.5 py-0.5 text-xs font-black text-sky-800 shadow-2xs">
+                      <FileText className="h-3 w-3 text-sky-600" />
+                      <span>Phần III: Trả lời ngắn</span>
+                    </span>
+                  )}
+                  {currentQuestion?.type === "essay" && (
+                    <span className="flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 text-xs font-black text-indigo-700 shadow-2xs">
+                      <PenTool className="h-3 w-3" />
+                      <span>Phần IV: Tự luận</span>
+                    </span>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={handleToggleFlag}
@@ -618,58 +1120,326 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
                 </button>
               </div>
 
-              <div className={`${scaleConfig.instructionSize} font-semibold text-slate-500 transition-all`}>
-                {currentQuestion?.instruction || "Chọn một đáp án đúng"}
+              <div className="flex items-center gap-3">
+                {currentQuestion?.points && (
+                  <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-800 border border-emerald-200/80">
+                    +{currentQuestion.points} điểm
+                  </span>
+                )}
+                <div className={`${scaleConfig.instructionSize} font-semibold text-slate-500 transition-all`}>
+                  {currentQuestion?.instruction ||
+                    (currentQuestion?.type === "true_false"
+                      ? "Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai"
+                      : currentQuestion?.type === "short_answer"
+                      ? "Điền kết quả số vào ô trống"
+                      : currentQuestion?.type === "essay"
+                      ? "Trình bày bài làm tự luận"
+                      : "Chọn một đáp án đúng (A, B, C hoặc D)")}
+                </div>
               </div>
             </div>
 
             {/* Question Content Body */}
             <div className="py-4 sm:py-6">
-              <h3 className={`${scaleConfig.contentSize} font-bold leading-relaxed text-slate-900 transition-all`}>
+              <h3 className={`${scaleConfig.contentSize} font-bold leading-relaxed text-slate-900 transition-all whitespace-pre-line`}>
                 {currentQuestion?.content}
               </h3>
             </div>
 
-            {/* Answer Options Stack (A, B, C, D) */}
-            <div className="space-y-3">
-              {currentQuestion?.options.map((opt) => {
-                const isSelected = answers[currentQuestion.id] === opt.id;
+            {/* ── CASE 1: Multiple Choice Options (A, B, C, D) ── */}
+            {(currentQuestion?.type === "single_choice" || (!currentQuestion?.type && currentQuestion?.options && currentQuestion.options.length > 0)) && (
+              <div className="space-y-3">
+                {currentQuestion?.options?.map((opt) => {
+                  const isSelected = answers[currentQuestion.id] === opt.id;
 
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => handleSelectOption(opt.id)}
-                    className={`w-full text-left rounded-2xl border ${scaleConfig.optionPadding} transition-all flex items-center gap-4 cursor-pointer active:scale-[0.99] select-none ${
-                      isSelected
-                        ? "border-2 border-[#009b77] bg-[#eefaf5] shadow-xs text-slate-950 font-bold"
-                        : "border-slate-200 bg-white hover:border-[#009b77]/50 hover:bg-slate-50/70 text-slate-800"
-                    }`}
-                  >
-                    {/* Badge Letter A/B/C/D */}
-                    <span
-                      className={`flex ${scaleConfig.badgeSize} shrink-0 items-center justify-center font-black transition-all ${
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => handleSelectOption(opt.id)}
+                      className={`w-full text-left rounded-2xl border ${scaleConfig.optionPadding} transition-all flex items-center gap-4 cursor-pointer active:scale-[0.99] select-none ${
                         isSelected
-                          ? "bg-[#009b77] text-white shadow-xs"
-                          : "bg-slate-100 text-slate-700"
+                          ? "border-2 border-[#009b77] bg-[#eefaf5] shadow-xs text-slate-950 font-bold"
+                          : "border-slate-200 bg-white hover:border-[#009b77]/50 hover:bg-slate-50/70 text-slate-800"
                       }`}
                     >
-                      {opt.id}
-                    </span>
+                      {/* Badge Letter A/B/C/D */}
+                      <span
+                        className={`flex ${scaleConfig.badgeSize} shrink-0 items-center justify-center font-black transition-all ${
+                          isSelected
+                            ? "bg-[#009b77] text-white shadow-xs"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {opt.id}
+                      </span>
 
-                    {/* Option Text */}
-                    <span className={`flex-1 ${scaleConfig.optionTextSize} leading-relaxed transition-all`}>
-                      {opt.text}
-                    </span>
+                      {/* Option Text */}
+                      <span className={`flex-1 ${scaleConfig.optionTextSize} leading-relaxed transition-all`}>
+                        {opt.text}
+                      </span>
 
-                    {/* Selected Checkmark Indicator */}
-                    {isSelected && (
-                      <CheckCircle2 className={`${scaleConfig.checkIconSize} shrink-0 text-[#009b77] transition-all`} />
+                      {/* Selected Checkmark Indicator */}
+                      {isSelected && (
+                        <CheckCircle2 className={`${scaleConfig.checkIconSize} shrink-0 text-[#009b77] transition-all`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── CASE 2: True / False Questions (Phần II: Đúng / Sai chuẩn Bộ GD&ĐT) ── */}
+            {currentQuestion?.type === "true_false" && (
+              <div className="space-y-4">
+                {/* Bộ GD&ĐT progressive rubric reminder */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-purple-200 bg-purple-50/70 p-3.5 text-xs text-purple-950 shadow-2xs">
+                  <div className="flex items-center gap-2 font-black text-purple-900">
+                    <Sparkles className="h-4 w-4 text-purple-600 shrink-0" />
+                    <span>Quy chuẩn chấm điểm Bộ GD&ĐT:</span>
+                    <span className="font-semibold text-purple-800">
+                      Đúng 1 ý = <strong>0.1đ</strong> · Đúng 2 ý = <strong>0.25đ</strong> · Đúng 3 ý = <strong>0.5đ</strong> · Đúng 4 ý = <strong>1.0đ</strong>
+                    </span>
+                  </div>
+                  <div className="rounded-full bg-purple-200/80 px-2.5 py-0.5 text-[11px] font-black text-purple-900">
+                    Đã chọn: {getTrueFalseAnsweredCount(currentQuestion.id)} / {currentQuestion.trueFalseItems?.length || 4} ý
+                  </div>
+                </div>
+
+                {/* Sub-items a, b, c, d */}
+                <div className="space-y-3">
+                  {currentQuestion.trueFalseItems?.map((item) => {
+                    const userVal = tfAnswers[currentQuestion.id]?.[item.id];
+                    const isTrue = userVal === true;
+                    const isFalse = userVal === false;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`rounded-2xl border p-4 transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 ${
+                          userVal !== undefined
+                            ? "border-purple-200 bg-gradient-to-r from-purple-50/20 via-white to-purple-50/10 shadow-2xs"
+                            : "border-slate-200 bg-white hover:border-purple-300"
+                        }`}
+                      >
+                        {/* Sub-item label & text */}
+                        <div className="flex items-start gap-3 flex-1">
+                          <span
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-black transition-all ${
+                              userVal !== undefined
+                                ? "bg-purple-600 text-white shadow-xs"
+                                : "bg-slate-100 text-slate-700"
+                            }`}
+                          >
+                            {item.id})
+                          </span>
+                          <div className="text-sm sm:text-base font-semibold leading-relaxed text-slate-800 pt-0.5">
+                            {item.content}
+                          </div>
+                        </div>
+
+                        {/* True / False Toggle Buttons */}
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                          {/* Button ĐÚNG */}
+                          <button
+                            type="button"
+                            onClick={() => handleSelectTrueFalse(currentQuestion.id, item.id, true)}
+                            className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black transition-all cursor-pointer active:scale-95 ${
+                              isTrue
+                                ? "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400"
+                                : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:bg-emerald-50/60"
+                            }`}
+                          >
+                            <Check className={`h-4 w-4 ${isTrue ? "stroke-[3]" : ""}`} />
+                            <span>ĐÚNG</span>
+                          </button>
+
+                          {/* Button SAI */}
+                          <button
+                            type="button"
+                            onClick={() => handleSelectTrueFalse(currentQuestion.id, item.id, false)}
+                            className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black transition-all cursor-pointer active:scale-95 ${
+                              isFalse
+                                ? "bg-rose-600 text-white shadow-md ring-2 ring-rose-400"
+                                : "border border-slate-200 bg-white text-slate-700 hover:border-rose-400 hover:bg-rose-50/60"
+                            }`}
+                          >
+                            <X className={`h-4 w-4 ${isFalse ? "stroke-[3]" : ""}`} />
+                            <span>SAI</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── CASE 3: Short Answer Input (Phần III: Trả lời ngắn điền kết quả số) ── */}
+            {currentQuestion?.type === "short_answer" && (
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-sky-200 bg-sky-50/50 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label
+                      htmlFor={`sa-input-${currentQuestion.id}`}
+                      className="text-xs font-black uppercase tracking-wider text-sky-900 flex items-center gap-1.5"
+                    >
+                      <FileText className="h-4 w-4 text-sky-600" />
+                      <span>Ô điền đáp án của thí sinh (kết quả số):</span>
+                    </label>
+                    {answers[currentQuestion.id]?.trim() && (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <Check className="h-3 w-3" /> Đã nhập câu trả lời
+                      </span>
                     )}
-                  </button>
-                );
-              })}
-            </div>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      id={`sa-input-${currentQuestion.id}`}
+                      type="text"
+                      value={answers[currentQuestion.id] || ""}
+                      onChange={(e) => handleTextAnswerChange(e.target.value)}
+                      onPaste={handleBlockPaste}
+                      placeholder="Nhập kết quả số (ví dụ: 20.5 hoặc 12)..."
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base sm:text-lg font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:border-sky-500 focus:outline-none focus:ring-3 focus:ring-sky-100 transition shadow-inner font-mono"
+                      autoComplete="off"
+                    />
+                    {answers[currentQuestion.id] && (
+                      <button
+                        type="button"
+                        onClick={() => handleTextAnswerChange("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                        title="Xóa câu trả lời"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
+                    <Info className="h-3.5 w-3.5 text-sky-600 shrink-0" />
+                    <span>
+                      Lưu ý: Hỗ trợ số nguyên, số thập phân (dấu chấm '.' hoặc dấu phẩy ',' ví dụ 20.5 hay 20,5 đều được công nhận), số âm. Hệ thống khóa chức năng dán (Paste).
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── CASE 3: Rich Essay Studio (Phần thi Tự luận gõ bài trực tiếp) ── */}
+            {currentQuestion?.type === "essay" && (
+              <div className="space-y-5">
+                {/* Writing Area Container */}
+                <div className="rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50/40 via-white to-slate-50 p-4 sm:p-5 shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-indigo-100">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
+                        <PenTool className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <div className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-2">
+                          <span>Khung soạn thảo bài làm tự luận</span>
+                          <span className="flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-black text-emerald-800">
+                            <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                            Khóa chức năng dán (Paste)
+                          </span>
+                        </div>
+                        <div className="text-[11px] font-semibold text-slate-500">
+                          Thí sinh tự soạn thảo trực tiếp bài làm vào ô bên dưới (không hỗ trợ đính kèm ảnh bên ngoài để chống gian lận)
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live Word Count & Target Indicator */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200/80 px-3 py-1 text-xs font-bold text-indigo-900">
+                        <span>✍️ {currentWordCount} từ</span>
+                        <span className="text-indigo-400">·</span>
+                        <span className="text-indigo-700">{(answers[currentQuestion.id] || "").length} ký tự</span>
+                      </div>
+
+                      {minWords && (
+                        <div
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-black ${
+                            currentWordCount >= minWords && (!maxWords || currentWordCount <= maxWords)
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                              : currentWordCount < minWords
+                              ? "bg-amber-100 text-amber-800 border border-amber-300"
+                              : "bg-rose-100 text-rose-800 border border-rose-300"
+                          }`}
+                        >
+                          {currentWordCount >= minWords && (!maxWords || currentWordCount <= maxWords)
+                            ? `✓ Đạt độ dài (${minWords}${maxWords ? `-${maxWords}` : "+"} từ)`
+                            : currentWordCount < minWords
+                            ? `Cần thêm ${minWords - currentWordCount} từ`
+                            : `Vượt ${currentWordCount - (maxWords || 0)} từ`}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Main Essay Textarea */}
+                  <div className="relative">
+                    <textarea
+                      value={answers[currentQuestion.id] || ""}
+                      onChange={(e) => handleTextAnswerChange(e.target.value)}
+                      onPaste={handleBlockPaste}
+                      placeholder="Nhập toàn bộ nội dung bài làm tự luận của bạn tại đây... (Thí sinh tự gõ trực tiếp bài làm, chia thành các đoạn văn, mở bài, thân bài, kết bài hoặc các bước giải chi tiết)."
+                      rows={10}
+                      className="w-full rounded-2xl border border-slate-300 bg-white p-4 text-sm sm:text-base font-normal leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-3 focus:ring-indigo-100 transition shadow-inner resize-y min-h-[240px]"
+                    />
+                  </div>
+
+                  {/* Anti-cheat & Auto-save status footer */}
+                  <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 px-1">
+                    <span className="flex items-center gap-1.5 font-medium text-emerald-700">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Hệ thống tự động lưu bài làm liên tục vào bộ nhớ phòng thi</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-500 font-medium">
+                      <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
+                      <span>Không sao chép từ nguồn ngoài · Tự nhập bài làm để bài thi được công nhận</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* ── Rubric & Grading Criteria Box ── */}
+                {currentQuestion.rubricCriteria && currentQuestion.rubricCriteria.length > 0 && (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowRubricDetails(!showRubricDetails)}
+                      className="flex w-full items-center justify-between text-left text-xs font-black text-amber-950 cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <BookOpen className="h-4 w-4 text-amber-700" />
+                        <span>Thang điểm & Tiêu chuẩn chấm thi của giáo viên:</span>
+                      </span>
+                      <span className="text-[11px] font-bold text-amber-800">
+                        {showRubricDetails ? "Thu gọn" : "Xem chi tiết tiêu chí"}
+                      </span>
+                    </button>
+
+                    {showRubricDetails && (
+                      <div className="mt-3 space-y-2 border-t border-amber-200/80 pt-3 animate-in fade-in duration-150">
+                        {currentQuestion.rubricCriteria.map((criterion, crIdx) => (
+                          <div
+                            key={crIdx}
+                            className="flex items-start gap-2 text-xs font-semibold text-amber-900/90"
+                          >
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-black mt-0.5">
+                              {crIdx + 1}
+                            </span>
+                            <span>{criterion}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Practice Mode: Toggle Solution Hint */}
             {!isExamMode && (
@@ -688,14 +1458,16 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
                     <strong className="text-emerald-900 font-black block mb-1">
                       🐾 Hướng dẫn từ Gia sư Capybara:
                     </strong>
-                    {currentQuestion?.explanation}
+                    <div className="whitespace-pre-line leading-relaxed">
+                      {currentQuestion?.explanation}
+                    </div>
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* ── Bottom Action Navigation Bar (Matching Reference Image) ── */}
+          {/* ── Bottom Action Navigation Bar ── */}
           <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-6">
             {/* Left: Previous and Next Buttons */}
             <div className="flex items-center gap-2.5">
@@ -730,14 +1502,14 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
               </button>
             </div>
 
-            {/* Right: Submit Button (Bold Teal Button matching Reference) */}
+            {/* Right: Submit Button */}
             <button
               type="button"
               onClick={() => setIsSubmitModalOpen(true)}
               className="flex items-center gap-2 rounded-xl bg-[#0d7d6b] hover:bg-[#096859] px-7 py-2.5 text-xs sm:text-sm font-black text-white shadow-md transition hover:shadow-lg cursor-pointer active:scale-95"
             >
               <Send className="h-4 w-4" />
-              <span>Nộp bài</span>
+              <span>Nộp bài thi</span>
             </button>
           </footer>
         </main>
@@ -760,6 +1532,16 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
         totalQuestions={totalQuestions}
         violations={violations}
         timeRemaining={formatTimer(secondsRemaining)}
+        singleChoiceAnswered={singleChoiceAnsweredCount}
+        totalSingleChoice={singleChoiceQuestions.length}
+        trueFalseAnswered={trueFalseAnsweredCount}
+        totalTrueFalse={trueFalseQuestions.length}
+        shortAnswerAnswered={shortAnswerAnsweredCount}
+        totalShortAnswer={shortAnswerQuestions.length}
+        essayAnswered={essayAnsweredCount}
+        totalEssay={essayQuestions.length}
+        multipleChoiceAnswered={mcAnsweredCount}
+        totalMultipleChoice={singleChoiceQuestions.length + trueFalseQuestions.length + shortAnswerQuestions.length}
       />
     </div>
   );

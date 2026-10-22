@@ -24,7 +24,15 @@ export interface ExamSubmissionRecord {
   violations: number;
   status: "Đã hoàn thành" | "Đạt" | "Cần cố gắng";
   badgeColor: string;
-  userAnswers: Record<string, "A" | "B" | "C" | "D">;
+  userAnswers: Record<string, string>;
+  essayAnswers?: Record<string, string>;
+  essayAttachments?: Record<string, string[]>;
+  essayWordCounts?: Record<string, number>;
+  hasEssay?: boolean;
+  essayCount?: number;
+  essaySubmittedCount?: number;
+  multipleChoiceScore?: number;
+  essayPendingGrading?: boolean;
   mode: "exam" | "practice";
   completedAt: string; // ISO string
 }

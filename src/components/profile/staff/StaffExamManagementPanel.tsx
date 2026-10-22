@@ -94,7 +94,8 @@ const SAMPLE_QUESTIONS_TEMPLATE: ExamQuestion[] = [
     id: "sq-1",
     questionNumber: 1,
     type: "single_choice",
-    instruction: "Chọn một đáp án đúng",
+    part: "Phần I",
+    instruction: "Phần I: Chọn một đáp án đúng (A, B, C hoặc D)",
     content: "Cho hàm số y = f(x) có bảng biến thiên với f'(x) đổi dấu từ dương sang âm khi qua điểm x = 2. Điểm cực đại của hàm số đã cho là:",
     options: [
       { id: "A", text: "x = 2" },
@@ -109,50 +110,48 @@ const SAMPLE_QUESTIONS_TEMPLATE: ExamQuestion[] = [
   {
     id: "sq-2",
     questionNumber: 2,
-    type: "single_choice",
-    instruction: "Chọn một đáp án đúng",
-    content: "Tập nghiệm của bất phương trình log₂(x - 1) < 3 là:",
-    options: [
-      { id: "A", text: "(1; 9)" },
-      { id: "B", text: "(-∞; 9)" },
-      { id: "C", text: "(1; 8)" },
-      { id: "D", text: "(1; +∞)" },
+    type: "true_false",
+    part: "Phần II",
+    instruction: "Phần II: Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai",
+    content: "Cho hàm số f(x) = x³ - 3x² + 2 có đồ thị là (C). Xét tính đúng sai của các khẳng định sau:",
+    trueFalseItems: [
+      { id: "a", content: "Hàm số đã cho có đạo hàm f'(x) = 3x² - 6x.", isCorrect: true, explanation: "Đạo hàm đúng." },
+      { id: "b", content: "Hàm số đồng biến trên khoảng (0; 2).", isCorrect: false, explanation: "Nghịch biến trên (0; 2) vì f'(x) < 0." },
+      { id: "c", content: "Giá trị cực tiểu của hàm số bằng -2.", isCorrect: true, explanation: "f(2) = -2 là giá trị cực tiểu." },
+      { id: "d", content: "Đồ thị (C) cắt trục hoành tại đúng 3 điểm phân biệt.", isCorrect: true, explanation: "y_CĐ * y_CT = 2 * (-2) < 0." },
     ],
-    correctAnswer: "A",
-    explanation: "ĐK: x - 1 > 0 <=> x > 1. BPT <=> x - 1 < 2³ = 8 <=> x < 9. Kết hợp đk: S = (1; 9).",
-    points: 0.25,
+    explanation: "Phân tích cực trị và bảng biến thiên của hàm đa thức bậc 3 chuẩn cấu trúc Bộ GD&ĐT.",
+    points: 1.0,
   },
   {
     id: "sq-3",
     questionNumber: 3,
-    type: "single_choice",
-    instruction: "Chọn một đáp án đúng",
-    content: "Trong không gian Oxyz, cho mặt phẳng (P): 2x - y + 3z - 5 = 0. Một vectơ pháp tuyến của (P) có tọa độ là:",
-    options: [
-      { id: "A", text: "n = (2; -1; 3)" },
-      { id: "B", text: "n = (2; 1; 3)" },
-      { id: "C", text: "n = (2; -1; -5)" },
-      { id: "D", text: "n = (-2; -1; 3)" },
-    ],
-    correctAnswer: "A",
-    explanation: "Mặt phẳng Ax + By + Cz + D = 0 có VTPT n = (A; B; C) = (2; -1; 3).",
-    points: 0.25,
+    type: "short_answer",
+    part: "Phần III",
+    instruction: "Phần III: Trắc nghiệm trả lời ngắn (Điền kết quả số)",
+    content: "Một doanh nghiệp dự tính hàm số lợi nhuận khi bán x tấn sản phẩm là P(x) = -0.1x² + 4.1x - 15 (triệu đồng). Tìm sản lượng x (tấn) để doanh nghiệp đạt mức lợi nhuận lớn nhất. (Học sinh điền kết quả số thập phân, ví dụ: 20.5)",
+    options: [],
+    correctAnswer: "20.5",
+    explanation: "Đỉnh parabol: x = -b / (2a) = -4.1 / (2 * -0.1) = 20.5 tấn.",
+    points: 0.5,
   },
   {
     id: "sq-4",
     questionNumber: 4,
-    type: "single_choice",
-    instruction: "Chọn một đáp án đúng",
-    content: "Tính tích phân I = ∫ từ 0 đến 1 của e^(2x) dx.",
-    options: [
-      { id: "A", text: "I = (e² - 1) / 2" },
-      { id: "B", text: "I = e² - 1" },
-      { id: "C", text: "I = (e² + 1) / 2" },
-      { id: "D", text: "I = 2(e² - 1)" },
+    type: "essay",
+    part: "Phần IV",
+    instruction: "Phần IV: Tự luận - Trình bày các bước giải chi tiết",
+    content: "Trong không gian Oxyz, cho điểm M(1; 2; -1) và mặt phẳng (P): x + 2y - 2z + 1 = 0.\na) Viết phương trình chính tắc của đường thẳng d đi qua M và vuông góc với (P).\nb) Tìm tọa độ hình chiếu vuông góc H của điểm M lên mặt phẳng (P).",
+    options: [],
+    correctAnswer: "H(1/9; 2/9; 7/9)",
+    sampleEssayAnswer: "Lời giải chi tiết:\n1. Vectơ pháp tuyến n_(P) = (1; 2; -2) là vectơ chỉ phương của d: (x - 1)/1 = (y - 2)/2 = (z + 1)/(-2).\n2. Tham số hóa H ∈ d: H(1 + t; 2 + 2t; -1 - 2t).\n3. Thay vào (P) tìm được t = -8/9 => H(1/9; 2/9; 7/9).",
+    rubricCriteria: [
+      "Viết đúng phương trình đường thẳng d (0.5 điểm)",
+      "Thiết lập tọa độ điểm H theo tham số t (0.5 điểm)",
+      "Giải đúng tham số t và kết luận tọa độ điểm H (0.5 điểm)",
     ],
-    correctAnswer: "A",
-    explanation: "∫ e^(2x) dx = (1/2) e^(2x). Thay cận 0->1: (1/2)(e² - 1).",
-    points: 0.25,
+    explanation: "Vận dụng kiến thức hình học giải tích trong không gian Oxyz.",
+    points: 1.5,
   },
 ];
 
@@ -276,10 +275,36 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
   // Cập nhật option text của câu hỏi
   const handleUpdateOption = (qIndex: number, optId: "A" | "B" | "C" | "D", text: string) => {
     const updated = [...questions];
-    const opts = updated[qIndex].options.map((opt) =>
+    const currentQuestion = updated[qIndex];
+    if (!currentQuestion) return;
+    const currentOptions = currentQuestion.options || [];
+    const opts = currentOptions.map((opt) =>
       opt.id === optId ? { ...opt, text } : opt
     );
-    updated[qIndex] = { ...updated[qIndex], options: opts };
+    updated[qIndex] = { ...currentQuestion, options: opts };
+    setQuestions(updated);
+  };
+
+  // Cập nhật sub-item của câu hỏi Đúng/Sai
+  const handleUpdateTrueFalseItem = (
+    qIndex: number,
+    itemId: "a" | "b" | "c" | "d",
+    field: "content" | "isCorrect",
+    val: any
+  ) => {
+    const updated = [...questions];
+    const q = updated[qIndex];
+    if (!q) return;
+    const items = q.trueFalseItems || [
+      { id: "a", content: "", isCorrect: true },
+      { id: "b", content: "", isCorrect: false },
+      { id: "c", content: "", isCorrect: true },
+      { id: "d", content: "", isCorrect: false },
+    ];
+    const updatedItems = items.map((it) =>
+      it.id === itemId ? { ...it, [field]: val } : it
+    );
+    updated[qIndex] = { ...q, trueFalseItems: updatedItems };
     setQuestions(updated);
   };
 
@@ -1227,79 +1252,267 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
 
               {/* Render danh sách từng câu hỏi */}
               <div className="mt-5 space-y-4">
-                {questions.map((q, qIndex) => (
-                  <div
-                    key={q.id || qIndex}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition focus-within:border-indigo-300 focus-within:bg-white"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="rounded-lg bg-indigo-100 px-2.5 py-0.5 text-xs font-black text-indigo-800">
-                        Câu {q.questionNumber || qIndex + 1}
-                      </span>
-                      {questions.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveQuestion(qIndex)}
-                          className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
+                {questions.map((q, qIndex) => {
+                  const qType = q.type || "single_choice";
 
-                    {/* Nội dung câu hỏi */}
-                    <textarea
-                      rows={2}
-                      placeholder={`Nội dung câu hỏi số ${qIndex + 1}...`}
-                      value={q.content}
-                      onChange={(e) => handleUpdateQuestion(qIndex, "content", e.target.value)}
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-semibold text-slate-900 outline-none transition focus:border-indigo-500"
-                    />
+                  return (
+                    <div
+                      key={q.id || qIndex}
+                      className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition focus-within:border-indigo-300 focus-within:bg-white space-y-3"
+                    >
+                      {/* Header câu hỏi: Số câu, Loại câu hỏi, Điểm số, Xóa */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-lg bg-indigo-100 px-2.5 py-0.5 text-xs font-black text-indigo-800">
+                            Câu {q.questionNumber || qIndex + 1}
+                          </span>
 
-                    {/* 4 phương án A, B, C, D */}
-                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {(["A", "B", "C", "D"] as const).map((optId) => {
-                        const opt = q.options.find((o) => o.id === optId);
-                        const isCorrect = q.correctAnswer === optId;
-                        return (
-                          <div
-                            key={optId}
-                            className={`flex items-center gap-2 rounded-xl border p-1.5 transition ${
-                              isCorrect ? "border-emerald-500 bg-emerald-50/60" : "border-slate-200 bg-white"
-                            }`}
+                          {/* Chọn loại câu hỏi */}
+                          <select
+                            value={qType}
+                            onChange={(e) => {
+                              const nextType = e.target.value as ExamQuestion["type"];
+                              let nextPoints = 0.25;
+                              let nextTf = q.trueFalseItems;
+                              if (nextType === "true_false") {
+                                nextPoints = 1.0;
+                                if (!nextTf || nextTf.length === 0) {
+                                  nextTf = [
+                                    { id: "a", content: "Mệnh đề a...", isCorrect: true },
+                                    { id: "b", content: "Mệnh đề b...", isCorrect: false },
+                                    { id: "c", content: "Mệnh đề c...", isCorrect: true },
+                                    { id: "d", content: "Mệnh đề d...", isCorrect: false },
+                                  ];
+                                }
+                              } else if (nextType === "short_answer") {
+                                nextPoints = 0.5;
+                              } else if (nextType === "essay") {
+                                nextPoints = 1.5;
+                              }
+
+                              const updated = [...questions];
+                              updated[qIndex] = {
+                                ...updated[qIndex],
+                                type: nextType,
+                                points: nextPoints,
+                                trueFalseItems: nextTf,
+                              };
+                              setQuestions(updated);
+                            }}
+                            className="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 shadow-2xs"
                           >
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateQuestion(qIndex, "correctAnswer", optId)}
-                              title={`Chọn ${optId} làm đáp án đúng`}
-                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
-                                isCorrect ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                              }`}
-                            >
-                              {optId}
-                            </button>
+                            <option value="single_choice">Phần I: TN 4 Lựa chọn (A, B, C, D)</option>
+                            <option value="true_false">Phần II: TN Đúng / Sai (4 ý a, b, c, d)</option>
+                            <option value="short_answer">Phần III: Trả lời ngắn (Điền số)</option>
+                            <option value="essay">Phần IV: Tự luận</option>
+                          </select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Điểm số */}
+                          <div className="flex items-center gap-1 text-xs font-bold text-slate-500">
+                            <span>Điểm:</span>
                             <input
-                              type="text"
-                              placeholder={`Phương án ${optId}...`}
-                              value={opt?.text || ""}
-                              onChange={(e) => handleUpdateOption(qIndex, optId, e.target.value)}
-                              className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
+                              type="number"
+                              step="0.25"
+                              min="0.1"
+                              max="10"
+                              value={q.points || 0.25}
+                              onChange={(e) =>
+                                handleUpdateQuestion(qIndex, "points", parseFloat(e.target.value) || 0.25)
+                              }
+                              className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-center text-xs font-black text-slate-800 outline-none"
                             />
                           </div>
-                        );
-                      })}
-                    </div>
 
-                    {/* Lời giải thích */}
-                    <input
-                      type="text"
-                      placeholder="Lời giải thích chi tiết cho câu hỏi này (tùy chọn)..."
-                      value={q.explanation || ""}
-                      onChange={(e) => handleUpdateQuestion(qIndex, "explanation", e.target.value)}
-                      className="mt-2.5 w-full rounded-xl border border-slate-200 bg-white p-2 text-xs font-medium text-slate-600 outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                ))}
+                          {questions.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveQuestion(qIndex)}
+                              className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
+                              title="Xóa câu hỏi này"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Nội dung câu hỏi */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                          Nội dung câu hỏi:
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder={`Nội dung đề bài số ${qIndex + 1}...`}
+                          value={q.content}
+                          onChange={(e) => handleUpdateQuestion(qIndex, "content", e.target.value)}
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-semibold text-slate-900 outline-none transition focus:border-indigo-500"
+                        />
+                      </div>
+
+                      {/* ── CASE 1: 4 phương án A, B, C, D ── */}
+                      {qType === "single_choice" && (
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                            Phương án lựa chọn (Click nút chữ cái để chọn đáp án đúng):
+                          </label>
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {(["A", "B", "C", "D"] as const).map((optId) => {
+                              const opt = q.options?.find((o) => o.id === optId);
+                              const isCorrect = q.correctAnswer === optId;
+                              return (
+                                <div
+                                  key={optId}
+                                  className={`flex items-center gap-2 rounded-xl border p-1.5 transition ${
+                                    isCorrect ? "border-emerald-500 bg-emerald-50/60" : "border-slate-200 bg-white"
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateQuestion(qIndex, "correctAnswer", optId)}
+                                    title={`Chọn ${optId} làm đáp án đúng`}
+                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black transition cursor-pointer ${
+                                      isCorrect ? "bg-emerald-600 text-white shadow-xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                    }`}
+                                  >
+                                    {optId}
+                                  </button>
+                                  <input
+                                    type="text"
+                                    placeholder={`Phương án ${optId}...`}
+                                    value={opt?.text || ""}
+                                    onChange={(e) => handleUpdateOption(qIndex, optId, e.target.value)}
+                                    className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── CASE 2: Trắc nghiệm Đúng / Sai 4 ý a, b, c, d ── */}
+                      {qType === "true_false" && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-[11px] font-bold text-purple-900 uppercase">
+                              4 ý khẳng định (Chọn Đúng hoặc Sai cho từng ý):
+                            </label>
+                            <span className="text-[10px] font-bold text-purple-700">
+                              Chuẩn barem Bộ GD&ĐT: 1 ý = 0.1đ | 2 ý = 0.25đ | 3 ý = 0.5đ | 4 ý = 1.0đ
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {(["a", "b", "c", "d"] as const).map((subId) => {
+                              const item = q.trueFalseItems?.find((it) => it.id === subId) || {
+                                id: subId,
+                                content: "",
+                                isCorrect: true,
+                              };
+                              return (
+                                <div
+                                  key={subId}
+                                  className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-purple-200/80 bg-purple-50/30 p-2"
+                                >
+                                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-900 text-xs font-black">
+                                    {subId})
+                                  </span>
+                                  <input
+                                    type="text"
+                                    placeholder={`Mệnh đề khẳng định ý ${subId}...`}
+                                    value={item.content}
+                                    onChange={(e) =>
+                                      handleUpdateTrueFalseItem(qIndex, subId, "content", e.target.value)
+                                    }
+                                    className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-purple-500"
+                                  />
+                                  <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateTrueFalseItem(qIndex, subId, "isCorrect", true)
+                                      }
+                                      className={`px-2.5 py-1 rounded-lg text-xs font-black transition cursor-pointer ${
+                                        item.isCorrect
+                                          ? "bg-emerald-600 text-white shadow-xs"
+                                          : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50"
+                                      }`}
+                                    >
+                                      ✓ ĐÚNG
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateTrueFalseItem(qIndex, subId, "isCorrect", false)
+                                      }
+                                      className={`px-2.5 py-1 rounded-lg text-xs font-black transition cursor-pointer ${
+                                        !item.isCorrect
+                                          ? "bg-rose-600 text-white shadow-xs"
+                                          : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50"
+                                      }`}
+                                    >
+                                      ✕ SAI
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── CASE 3: Trả lời ngắn (Điền kết quả số) ── */}
+                      {qType === "short_answer" && (
+                        <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3">
+                          <label className="block text-[11px] font-bold text-sky-900 uppercase mb-1">
+                            Đáp án số chuẩn hệ thống (VD: 20.5, 12, -4...):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Nhập kết quả số chuẩn (hỗ trợ số nguyên, số thập phân 20.5 hoặc 20,5)..."
+                            value={q.correctAnswer || ""}
+                            onChange={(e) => handleUpdateQuestion(qIndex, "correctAnswer", e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono font-bold text-slate-900 outline-none focus:border-sky-500"
+                          />
+                        </div>
+                      )}
+
+                      {/* ── CASE 4: Tự luận ── */}
+                      {qType === "essay" && (
+                        <div className="space-y-2 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
+                          <label className="block text-[11px] font-bold text-indigo-900 uppercase">
+                            Đáp án mẫu & Dàn ý giải chi tiết cho giáo viên chấm:
+                          </label>
+                          <textarea
+                            rows={3}
+                            placeholder="Nhập các bước giải, gợi ý đáp án mẫu để học sinh đối chiếu sau khi nộp bài..."
+                            value={q.sampleEssayAnswer || ""}
+                            onChange={(e) =>
+                              handleUpdateQuestion(qIndex, "sampleEssayAnswer", e.target.value)
+                            }
+                            className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      )}
+
+                      {/* Lời giải thích chung */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase">
+                          Lời giải thích chung cho cả câu:
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Lời giải thích chi tiết cho câu hỏi này (tùy chọn)..."
+                          value={q.explanation || ""}
+                          onChange={(e) => handleUpdateQuestion(qIndex, "explanation", e.target.value)}
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-xs font-medium text-slate-600 outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

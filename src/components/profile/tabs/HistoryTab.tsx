@@ -59,7 +59,7 @@ export default function HistoryTab() {
   const [reviewModalData, setReviewModalData] = useState<{
     exam: ExamItem;
     questions: ExamQuestion[];
-    userAnswers: Record<string, "A" | "B" | "C" | "D">;
+    userAnswers: Record<string, string>;
     violations: number;
     timeSpentSeconds: number;
     mode: "exam" | "practice";
@@ -299,7 +299,7 @@ export default function HistoryTab() {
     };
 
     const questions = getExamQuestions(foundExam.id);
-    const mockAnswers: Record<string, "A" | "B" | "C" | "D"> = {};
+    const mockAnswers: Record<string, string> = {};
     const totalQ = questions.length;
     const targetCorrect = Math.min(
       totalQ,
@@ -308,7 +308,7 @@ export default function HistoryTab() {
 
     questions.forEach((q, idx) => {
       if (idx < targetCorrect) {
-        mockAnswers[q.id] = q.correctAnswer;
+        mockAnswers[q.id] = q.correctAnswer || "A";
       } else {
         mockAnswers[q.id] = q.correctAnswer === "A" ? "B" : "A";
       }
