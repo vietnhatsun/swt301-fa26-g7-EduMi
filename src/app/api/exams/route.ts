@@ -3,6 +3,9 @@ import { createServiceClient } from "@/lib/supabase";
 import { MOCK_EXAMS } from "@/components/exam/exam-data";
 import { formatExamResponse, DbExam } from "@/app/api/staff/exams/route";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -61,13 +64,27 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      source: "supabase",
-      exams,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        source: "supabase",
+        exams,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error("[Public Exams API Exception]:", error);
-    return NextResponse.json({ success: true, source: "mock", exams: MOCK_EXAMS });
+    return NextResponse.json(
+      { success: true, source: "mock", exams: MOCK_EXAMS },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
   }
 }

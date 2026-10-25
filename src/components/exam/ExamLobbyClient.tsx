@@ -51,7 +51,11 @@ function DropLetterTitle() {
   );
 }
 
-export default function ExamLobbyClient() {
+interface ExamLobbyClientProps {
+  initialExams?: ExamItem[];
+}
+
+export default function ExamLobbyClient({ initialExams }: ExamLobbyClientProps) {
   const searchParams = useSearchParams();
 
   // Filter States
@@ -73,14 +77,24 @@ export default function ExamLobbyClient() {
     setIsModalOpen(true);
   };
 
-  // Real exams fetched from Supabase API with MOCK_EXAMS fallback
-  const [examsList, setExamsList] = useState<ExamItem[]>(MOCK_EXAMS);
+  // Real exams fetched from Supabase API with server initialExams & MOCK_EXAMS fallback
+  const [examsList, setExamsList] = useState<ExamItem[]>(() => {
+    if (initialExams && initialExams.length > 0) return initialExams;
+    return MOCK_EXAMS;
+  });
+
+  // Sync if initialExams updates
+  useEffect(() => {
+    if (initialExams && initialExams.length > 0) {
+      setExamsList(initialExams);
+    }
+  }, [initialExams]);
 
   useEffect(() => {
     let isMounted = true;
     async function loadExams() {
       try {
-        const res = await fetch("/api/exams");
+        const res = await fetch("/api/exams", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           if (data.success && Array.isArray(data.exams) && data.exams.length > 0 && isMounted) {
@@ -201,8 +215,39 @@ export default function ExamLobbyClient() {
     } else if (selectedSort === "duration_asc") {
       list.sort((a, b) => a.durationMinutes - b.durationMinutes);
     } else {
-      // Default: hot first
-      list.sort((a, b) => (b.isHot ? 1 : 0) - (a.isHot ? 1 : 0));
+      // Default: "popular"
+      // Ưu tiên:
+      // 1. Đề thi MỚI tạo (isNew: true) và có ngày tạo mới nhất (createdAt) xếp trên cùng
+      // 2. Đề thi HOT (isHot: true)
+      // 3. Lượt thi (attempts)
+      list.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+        // Nếu a mới và b không mới
+        const isNewA = Boolean(a.isNew);
+        const isNewB = Boolean(b.isNew);
+        if (isNewA && !isNewB) return -1;
+        if (!isNewA && isNewB) return 1;
+
+        // Nếu cả hai cùng mới, đề nào tạo gần đây hơn xếp trước
+        if (isNewA && isNewB && timeB !== timeA) {
+          return timeB - timeA;
+        }
+
+        // Đề HOT
+        const isHotA = Boolean(a.isHot);
+        const isHotB = Boolean(b.isHot);
+        if (isHotA && !isHotB) return -1;
+        if (!isHotA && isHotB) return 1;
+
+        // Thời gian tạo
+        if (timeB !== timeA) {
+          return timeB - timeA;
+        }
+
+        return (b.attempts || 0) - (a.attempts || 0);
+      });
     }
 
     return list;
@@ -254,7 +299,7 @@ export default function ExamLobbyClient() {
         width={480}
         height={480}
         priority
-        className="class-hero-mascot-pop pointer-events-none absolute right-[180px] top-[75px] z-[2] hidden h-auto w-[330px] xl:block 2xl:right-[260px] 2xl:w-[380px] drop-shadow-[0_24px_34px_rgba(17,42,25,0.24)]"
+        className="class-hero-mascot-pop pointer-events-none absolute right-[180px] top-[56px] z-[2] hidden h-auto w-[330px] xl:block 2xl:right-[260px] 2xl:w-[380px] drop-shadow-[0_24px_34px_rgba(17,42,25,0.24)]"
       />
 
       {/* Hero Section */}

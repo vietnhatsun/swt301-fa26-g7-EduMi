@@ -39,6 +39,8 @@ export interface ExamItem {
   isHot?: boolean;
   isNew?: boolean;
   author: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export const MOCK_EXAMS: ExamItem[] = [
@@ -720,7 +722,7 @@ export function getExamQuestions(examId: string): ExamQuestion[] {
   }
 
   const exam = MOCK_EXAMS.find((e) => e.id === examId);
-  const count = Math.min(exam?.questionCount || 10, 10);
+  const count = exam?.questionCount || 10;
   const subjectName = exam?.subject || "Kiến thức tổng hợp";
 
   const genericBank: ExamQuestion[] = [];

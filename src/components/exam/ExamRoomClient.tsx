@@ -119,9 +119,10 @@ const TEXT_SCALE_MAP: Record<
 interface ExamRoomClientProps {
   exam: ExamItem;
   mode: "exam" | "practice";
+  initialQuestions?: ExamQuestion[];
 }
 
-export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
+export default function ExamRoomClient({ exam, mode, initialQuestions }: ExamRoomClientProps) {
   const router = useRouter();
   const isExamMode = mode === "exam";
 
@@ -147,8 +148,11 @@ export default function ExamRoomClient({ exam, mode }: ExamRoomClientProps) {
 
   // Questions Bank
   const questions: ExamQuestion[] = React.useMemo(() => {
+    if (initialQuestions && initialQuestions.length > 0) {
+      return initialQuestions;
+    }
     return getExamQuestions(exam.id);
-  }, [exam.id]);
+  }, [exam.id, initialQuestions]);
 
   // Current Question Pointer
   const [currentIndex, setCurrentIndex] = useState(0);

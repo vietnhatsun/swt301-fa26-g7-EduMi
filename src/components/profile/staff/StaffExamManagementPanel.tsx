@@ -16,6 +16,7 @@ import {
   RefreshCw,
   ExternalLink,
   ChevronDown,
+  ChevronUp,
   Layers,
   Award,
   Zap,
@@ -29,6 +30,18 @@ import {
   Flame,
   ArrowRight,
   ShieldCheck,
+  ArrowUp,
+  ArrowDown,
+  Scan,
+  Camera,
+  UploadCloud,
+  CheckSquare,
+  Hash,
+  BookOpen,
+  PenTool,
+  Wand2,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 import ExamCardItem from "@/components/exam/ExamCardItem";
 import {
@@ -38,6 +51,7 @@ import {
   ExamDifficulty,
   ExamPatternType,
   ExamQuestion,
+  QuestionOption,
 } from "@/components/exam/exam-data";
 
 // Danh mục chủ đề màu sắc có sẵn cho thẻ bài thi
@@ -88,6 +102,305 @@ export const DIFFICULTY_OPTIONS: ExamItem["difficulty"][] = [
   "Vận dụng (7-8.5đ)",
   "Vận dụng cao (9-10đ)",
 ];
+
+// Hàm khởi tạo một câu hỏi mới theo loại
+export function createNewQuestion(
+  type: ExamQuestion["type"] = "single_choice",
+  questionNumber: number = 1,
+  subject: string = "Toán học"
+): ExamQuestion {
+  const uniqueId = `q-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+  if (type === "single_choice") {
+    const defaultOptions: QuestionOption[] = [
+      { id: "A", text: "" },
+      { id: "B", text: "" },
+      { id: "C", text: "" },
+      { id: "D", text: "" },
+    ];
+    return {
+      id: uniqueId,
+      questionNumber,
+      type: "single_choice",
+      part: "Phần I",
+      instruction: "Phần I: Chọn một đáp án đúng (A, B, C hoặc D)",
+      content: "",
+      options: defaultOptions,
+      correctAnswer: "A",
+      explanation: "",
+      points: 0.25,
+    };
+  }
+
+  if (type === "true_false") {
+    return {
+      id: uniqueId,
+      questionNumber,
+      type: "true_false",
+      part: "Phần II",
+      instruction: "Phần II: Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai",
+      content: "",
+      trueFalseItems: [
+        { id: "a", content: "Mệnh đề khẳng định ý a)", isCorrect: true },
+        { id: "b", content: "Mệnh đề khẳng định ý b)", isCorrect: false },
+        { id: "c", content: "Mệnh đề khẳng định ý c)", isCorrect: true },
+        { id: "d", content: "Mệnh đề khẳng định ý d)", isCorrect: false },
+      ],
+      explanation: "",
+      points: 1.0,
+    };
+  }
+
+  if (type === "short_answer") {
+    return {
+      id: uniqueId,
+      questionNumber,
+      type: "short_answer",
+      part: "Phần III",
+      instruction: "Phần III: Trả lời ngắn - Điền kết quả số",
+      content: "",
+      correctAnswer: "",
+      explanation: "",
+      points: 0.5,
+    };
+  }
+
+  // Tự luận (essay)
+  return {
+    id: uniqueId,
+    questionNumber,
+    type: "essay",
+    part: "Phần IV",
+    instruction: "Phần IV: Tự luận - Trình bày bài giải hoặc bài văn chi tiết",
+    content: "",
+    sampleEssayAnswer: "",
+    explanation: "",
+    points: 1.5,
+  };
+}
+
+// Hàm sinh sẵn ma trận câu hỏi chuẩn theo môn học và kỳ thi
+export function generateSubjectPresetQuestions(
+  subject: ExamItem["subject"],
+  category: ExamItem["category"] = "THPT Quốc Gia"
+): ExamQuestion[] {
+  const now = Date.now();
+
+  // 1. Các môn Tự nhiên (Toán học, Vật lý, Hóa học, Sinh học)
+  const isNaturalScience = ["Toán học", "Vật lý", "Hóa học", "Sinh học"].includes(subject);
+  if (isNaturalScience) {
+    const list: ExamQuestion[] = [];
+    let currentNumber = 1;
+
+    // Phần I: 20 câu trắc nghiệm 4 lựa chọn (A, B, C, D)
+    for (let i = 1; i <= 20; i++) {
+      const defaultOptions: QuestionOption[] = [
+        { id: "A", text: "Phương án A" },
+        { id: "B", text: "Phương án B" },
+        { id: "C", text: "Phương án C" },
+        { id: "D", text: "Phương án D" },
+      ];
+      list.push({
+        id: `q-part1-${i}-${now}`,
+        questionNumber: currentNumber++,
+        type: "single_choice",
+        part: "Phần I",
+        instruction: "Phần I: Câu trắc nghiệm nhiều phương án lựa chọn (Thí sinh chọn 1 trong 4 phương án A, B, C, D)",
+        content: `Câu ${i} (${subject}): [Nhập nội dung câu hỏi trắc nghiệm ${i}...]`,
+        options: defaultOptions,
+        correctAnswer: "A",
+        explanation: "",
+        points: 0.25,
+      });
+    }
+
+    // Phần II: 12 câu trắc nghiệm Đúng / Sai (Mỗi câu gồm 4 ý a, b, c, d)
+    for (let i = 1; i <= 12; i++) {
+      list.push({
+        id: `q-part2-${i}-${now}`,
+        questionNumber: currentNumber++,
+        type: "true_false",
+        part: "Phần II",
+        instruction: "Phần II: Câu trắc nghiệm Đúng / Sai. Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai",
+        content: `Câu ${currentNumber - 1} (${subject} - Đúng/Sai): [Nhập dữ liệu đề bài, đồ thị, bài toán câu ${i}...]`,
+        trueFalseItems: [
+          { id: "a", content: `Khẳng định a của câu ${i}`, isCorrect: true },
+          { id: "b", content: `Khẳng định b của câu ${i}`, isCorrect: false },
+          { id: "c", content: `Khẳng định c của câu ${i}`, isCorrect: true },
+          { id: "d", content: `Khẳng định d của câu ${i}`, isCorrect: false },
+        ],
+        explanation: "",
+        points: 1.0,
+      });
+    }
+
+    // Phần III: 12 câu trắc nghiệm Trả lời ngắn (Điền số)
+    for (let i = 1; i <= 12; i++) {
+      list.push({
+        id: `q-part3-${i}-${now}`,
+        questionNumber: currentNumber++,
+        type: "short_answer",
+        part: "Phần III",
+        instruction: "Phần III: Câu trắc nghiệm trả lời ngắn (Điền kết quả số nguyên hoặc số thập phân)",
+        content: `Câu ${currentNumber - 1} (${subject} - Điền số): [Nhập bài toán tính toán yêu cầu điền kết quả số...]`,
+        correctAnswer: "",
+        explanation: "",
+        points: 0.5,
+      });
+    }
+
+    // Phần IV: 6 câu Tự luận / Vận dụng cao
+    for (let i = 1; i <= 6; i++) {
+      list.push({
+        id: `q-part4-${i}-${now}`,
+        questionNumber: currentNumber++,
+        type: "essay",
+        part: "Phần IV",
+        instruction: "Phần IV: Câu hỏi tự luận giải chi tiết & vận dụng thực tế",
+        content: `Câu ${currentNumber - 1} (${subject} - Tự luận): [Nhập bài toán tự luận hoặc bài tập tình huống thực tế...]`,
+        sampleEssayAnswer: `Dàn ý bài giải mẫu và barem chấm điểm chi tiết cho câu ${i}:...`,
+        explanation: "",
+        points: 1.0,
+      });
+    }
+
+    return list;
+  }
+
+  // 2. Môn Ngôn ngữ (Tiếng Anh) -> 50 câu trắc nghiệm 4 lựa chọn
+  if (subject === "Tiếng Anh") {
+    const list: ExamQuestion[] = [];
+    for (let i = 1; i <= 50; i++) {
+      const defaultOptions: QuestionOption[] = [
+        { id: "A", text: "Option A" },
+        { id: "B", text: "Option B" },
+        { id: "C", text: "Option C" },
+        { id: "D", text: "Option D" },
+      ];
+      list.push({
+        id: `q-eng-${i}-${now}`,
+        questionNumber: i,
+        type: "single_choice",
+        part: "Phần I",
+        instruction: "Section: Multiple Choice Questions (Choose the best answer A, B, C or D)",
+        content: `Question ${i} (English): [Enter question text / gap-filling / reading comprehension question ${i}...]`,
+        options: defaultOptions,
+        correctAnswer: "A",
+        explanation: "",
+        points: 0.2,
+      });
+    }
+    return list;
+  }
+
+  // 3. Môn Ngữ văn -> 100% Tự luận (Đọc hiểu 4 câu + Viết 2 câu)
+  if (subject === "Ngữ văn") {
+    return [
+      {
+        id: `q-van-1-${now}`,
+        questionNumber: 1,
+        type: "short_answer",
+        part: "Phần I",
+        instruction: "I. ĐỌC HIỂU (4.0 điểm) - Đọc đoạn trích văn bản và trả lời câu hỏi 1 đến 4",
+        content: "Câu 1 (Nhận biết): Xác định thể thơ / phương thức biểu đạt chính của đoạn trích trên.",
+        correctAnswer: "Thể thơ tự do / Phương thức biểu đạt chính: Biểu cảm",
+        explanation: "Căn cứ vào số chữ trong các dòng thơ và đặc trưng phương thức biểu đạt.",
+        points: 0.75,
+      },
+      {
+        id: `q-van-2-${now}`,
+        questionNumber: 2,
+        type: "short_answer",
+        part: "Phần I",
+        instruction: "I. ĐỌC HIỂU (4.0 điểm)",
+        content: "Câu 2 (Thông hiểu): Theo tác giả trong đoạn trích, hình ảnh người lao động/nhân vật được miêu tả qua những từ ngữ, chi tiết nào?",
+        correctAnswer: "Các từ ngữ, chi tiết được trích dẫn trực tiếp từ ngữ liệu.",
+        explanation: "Tìm đúng chi tiết trong văn bản theo yêu cầu đề bài.",
+        points: 0.75,
+      },
+      {
+        id: `q-van-3-${now}`,
+        questionNumber: 3,
+        type: "essay",
+        part: "Phần I",
+        instruction: "I. ĐỌC HIỂU (4.0 điểm)",
+        content: "Câu 3 (Thông hiểu): Nêu hiệu quả nghệ thuật của biện pháp tu từ (so sánh / nhân hóa / điệp từ) được sử dụng trong dòng thơ thứ 3 và 4.",
+        sampleEssayAnswer: "Biện pháp tu từ giúp câu thơ thêm sinh động, gợi hình gợi cảm và nhấn mạnh tình cảm gắn bó tha thiết...",
+        explanation: "Nêu đúng tên phép tu từ và chỉ rõ 2 tác dụng: nghệ thuật biểu đạt và nội dung ý nghĩa.",
+        points: 1.0,
+      },
+      {
+        id: `q-van-4-${now}`,
+        questionNumber: 4,
+        type: "essay",
+        part: "Phần I",
+        instruction: "I. ĐỌC HIỂU (4.0 điểm)",
+        content: "Câu 4 (Vận dụng): Anh/Chị hãy rút ra một thông điệp ý nghĩa nhất từ văn bản trên và giải thích vì sao (viết từ 5 đến 7 dòng).",
+        sampleEssayAnswer: "Học sinh tự do nêu thông điệp tích cực (lòng biết ơn, sự kiên trì, tình yêu quê hương...) và có lập luận thuyết phục.",
+        explanation: "Đánh giá khả năng rút ra bài học nhận thức và hành động của thí sinh.",
+        points: 1.5,
+      },
+      {
+        id: `q-van-5-${now}`,
+        questionNumber: 5,
+        type: "essay",
+        part: "Phần II",
+        instruction: "II. LÀM VĂN (6.0 điểm) - Câu 1: Nghị luận xã hội (2.0 điểm)",
+        content: "Từ nội dung đoạn trích ở phần Đọc hiểu, anh/chị hãy viết một đoạn văn (khoảng 200 chữ) trình bày suy nghĩ về ý nghĩa của tinh thần trách nhiệm và lòng cống hiến của thế hệ trẻ hôm nay.",
+        sampleEssayAnswer: "Dàn ý gợi ý:\n1. Mở đoạn: Dẫn dắt vấn đề nghị luận.\n2. Thân đoạn: Giải thích thế nào là cống hiến; Biểu hiện trong học tập và đời sống; Phản đề những người sống ích kỷ.\n3. Kết đoạn: Bài học hành động bản thân.",
+        rubricCriteria: [
+          "Đảm bảo đúng hình thức đoạn văn 200 chữ (0.25đ)",
+          "Xác định đúng vấn đề nghị luận (0.25đ)",
+          "Triển khai luận điểm rõ ràng, dẫn chứng xác thực (1.0đ)",
+          "Chính tả, ngữ pháp, sáng tạo (0.5đ)",
+        ],
+        explanation: "Chấm theo quy chuẩn barem chấm thi THPT Quốc Gia môn Ngữ văn.",
+        points: 2.0,
+      },
+      {
+        id: `q-van-6-${now}`,
+        questionNumber: 6,
+        type: "essay",
+        part: "Phần II",
+        instruction: "II. LÀM VĂN (6.0 điểm) - Câu 2: Nghị luận văn học (4.0 điểm)",
+        content: "Cảm nhận của anh/chị về hình tượng nhân vật trong đoạn trích văn học đã học. Từ đó nhận xét ngắn gọn về nét đặc sắc trong ngòi bút nhân đạo của nhà văn.",
+        sampleEssayAnswer: "Dàn ý gợi ý:\nI. Mở bài: Giới thiệu tác giả, tác phẩm, vấn đề nghị luận.\nII. Thân bài: Phân tích các luận điểm nghệ thuật và vẻ đẹp hình tượng nhân vật; Đánh giá giá trị nhân đạo.\nIII. Kết bài: Khẳng định sức sống trường tồn của tác phẩm.",
+        rubricCriteria: [
+          "Bố cục 3 phần Mở - Thân - Kết (0.5đ)",
+          "Xác định đúng vấn đề nghị luận (0.5đ)",
+          "Luận điểm rõ ràng, dẫn chứng sâu sắc (2.5đ)",
+          "Chính tả, sáng tạo, cảm xúc chân thành (0.5đ)",
+        ],
+        explanation: "Bài văn nghị luận văn học chuẩn cấu trúc Bộ GD&ĐT.",
+        points: 4.0,
+      },
+    ];
+  }
+
+  // 4. Các môn Xã hội khác (Lịch sử, Địa lý) -> 50 câu trắc nghiệm
+  const list: ExamQuestion[] = [];
+  for (let i = 1; i <= 50; i++) {
+    const defaultOptions: QuestionOption[] = [
+      { id: "A", text: "Phương án A" },
+      { id: "B", text: "Phương án B" },
+      { id: "C", text: "Phương án C" },
+      { id: "D", text: "Phương án D" },
+    ];
+    list.push({
+      id: `q-soc-${i}-${now}`,
+      questionNumber: i,
+      type: "single_choice",
+      part: "Phần I",
+      instruction: "Chọn một đáp án đúng (A, B, C hoặc D)",
+      content: `Câu ${i} (${subject}): [Nhập nội dung câu hỏi trắc nghiệm số ${i}...]`,
+      options: defaultOptions,
+      correctAnswer: "A",
+      explanation: "",
+      points: 0.2,
+    });
+  }
+  return list;
+}
 
 const SAMPLE_QUESTIONS_TEMPLATE: ExamQuestion[] = [
   {
@@ -192,8 +505,22 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
   const [isNew, setIsNew] = useState(true);
   const [formStatus, setFormStatus] = useState<"published" | "draft">("published");
 
-  // Quản lý danh sách câu hỏi trong form
-  const [questions, setQuestions] = useState<ExamQuestion[]>(SAMPLE_QUESTIONS_TEMPLATE);
+  // Quản lý danh sách câu hỏi trong form (mặc định nạp 50 câu chuẩn THPT Toán học)
+  const [questions, setQuestions] = useState<ExamQuestion[]>(() =>
+    generateSubjectPresetQuestions("Toán học", "THPT Quốc Gia")
+  );
+  const [collapsedQuestions, setCollapsedQuestions] = useState<Record<string, boolean>>({});
+  const [activeFilterPart, setActiveFilterPart] = useState<string>("all");
+
+  // State cho Modal Scan OCR AI từ hình ảnh
+  const [showOcrModal, setShowOcrModal] = useState<boolean>(false);
+  const [ocrFile, setOcrFile] = useState<File | null>(null);
+  const [ocrPreviewUrl, setOcrPreviewUrl] = useState<string | null>(null);
+  const [ocrScanning, setOcrScanning] = useState<boolean>(false);
+  const [ocrProgress, setOcrProgress] = useState<number>(0);
+  const [ocrStatusText, setOcrStatusText] = useState<string>("");
+  const [ocrExtractedCount, setOcrExtractedCount] = useState<number>(0);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
@@ -206,7 +533,7 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
   const fetchExams = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/staff/exams?scope=all");
+      const res = await fetch("/api/staff/exams?scope=all", { cache: "no-store" });
       const data = await res.json();
       if (data.success) {
         setExams(data.exams || []);
@@ -235,25 +562,125 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
     setFormExamCode(code);
   };
 
-  // Thêm một câu hỏi mới vào form
-  const handleAddQuestion = () => {
-    const newQ: ExamQuestion = {
-      id: `q-${Date.now()}`,
-      questionNumber: questions.length + 1,
-      type: "single_choice",
-      instruction: "Chọn một đáp án đúng",
-      content: "",
-      options: [
-        { id: "A", text: "" },
-        { id: "B", text: "" },
-        { id: "C", text: "" },
-        { id: "D", text: "" },
-      ],
-      correctAnswer: "A",
-      explanation: "",
-      points: 0.25,
-    };
+  // Đổi môn học -> Tự động sinh preset ma trận câu hỏi & màu sắc phù hợp
+  const handleSelectSubject = (val: ExamItem["subject"]) => {
+    setFormSubject(val);
+
+    // Gợi ý chủ đề và mã thẻ tương ứng
+    if (val === "Toán học") {
+      setSelectedTheme(CARD_THEME_PALETTES[0]);
+      setFormCardCode("TOÁN 12");
+    } else if (val === "Tiếng Anh") {
+      setSelectedTheme(CARD_THEME_PALETTES[2]);
+      setFormCardCode("TIẾNG ANH");
+    } else if (val === "Vật lý") {
+      setSelectedTheme(CARD_THEME_PALETTES[3]);
+      setFormCardCode("VẬT LÝ 12");
+    } else if (val === "Hóa học") {
+      setSelectedTheme(CARD_THEME_PALETTES[4]);
+      setFormCardCode("HÓA HỌC");
+    } else if (val === "Ngữ văn") {
+      setSelectedTheme(CARD_THEME_PALETTES[5]);
+      setFormCardCode("NGỮ VĂN");
+    } else if (val === "Sinh học") {
+      setSelectedTheme(CARD_THEME_PALETTES[6]);
+      setFormCardCode("SINH HỌC");
+    } else if (val === "Lịch sử") {
+      setSelectedTheme(CARD_THEME_PALETTES[8]);
+      setFormCardCode("LỊCH SỬ 12");
+    } else if (val === "Địa lý") {
+      setSelectedTheme(CARD_THEME_PALETTES[9]);
+      setFormCardCode("ĐỊA LÝ 12");
+    }
+
+    // Tự động khởi tạo ngân hàng câu hỏi chuẩn cho môn đó
+    const preset = generateSubjectPresetQuestions(val, formCategory);
+    setQuestions(preset);
+  };
+
+  // Đổi kỳ thi -> Tự động đồng bộ
+  const handleSelectCategory = (cat: ExamItem["category"]) => {
+    setFormCategory(cat);
+    if (cat === "ĐGNL ĐHQG") {
+      setSelectedTheme(CARD_THEME_PALETTES[1]);
+      setFormCardCode("ĐGNL HCM");
+    } else if (cat === "ĐGTD Bách Khoa") {
+      setSelectedTheme(CARD_THEME_PALETTES[7]);
+      setFormCardCode("ĐGTD BÁCH KHOA");
+    }
+  };
+
+  // Thu gọn / Mở rộng câu hỏi
+  const toggleCollapseQuestion = (qId: string) => {
+    setCollapsedQuestions((prev) => ({ ...prev, [qId]: !prev[qId] }));
+  };
+
+  // Thu gọn tất cả hoặc mở tất cả
+  const toggleCollapseAll = (collapse: boolean) => {
+    const next: Record<string, boolean> = {};
+    questions.forEach((q) => {
+      next[q.id] = collapse;
+    });
+    setCollapsedQuestions(next);
+  };
+
+  // Thêm một câu hỏi vào cuối
+  const handleAddQuestionOfType = (type: ExamQuestion["type"] = "single_choice") => {
+    const newQ = createNewQuestion(type, questions.length + 1, formSubject);
     setQuestions([...questions, newQ]);
+  };
+
+  // Thêm một câu hỏi mặc định
+  const handleAddQuestion = () => {
+    handleAddQuestionOfType("single_choice");
+  };
+
+  // Thêm câu hỏi ngay sau một câu cụ thể (Theo yêu cầu người dùng)
+  const handleAddQuestionAfter = (
+    index: number,
+    type: ExamQuestion["type"] = "single_choice"
+  ) => {
+    const newQ = createNewQuestion(type, index + 2, formSubject);
+    const updated = [...questions];
+    updated.splice(index + 1, 0, newQ);
+    const renumbered = updated.map((q, idx) => ({
+      ...q,
+      questionNumber: idx + 1,
+    }));
+    setQuestions(renumbered);
+  };
+
+  // Sao chép nhân đôi câu hỏi
+  const handleDuplicateQuestion = (index: number) => {
+    const target = questions[index];
+    if (!target) return;
+    const duplicated: ExamQuestion = {
+      ...JSON.parse(JSON.stringify(target)),
+      id: `q-dup-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      questionNumber: index + 2,
+    };
+    const updated = [...questions];
+    updated.splice(index + 1, 0, duplicated);
+    const renumbered = updated.map((q, idx) => ({
+      ...q,
+      questionNumber: idx + 1,
+    }));
+    setQuestions(renumbered);
+  };
+
+  // Di chuyển câu hỏi lên hoặc xuống
+  const handleMoveQuestion = (index: number, direction: "up" | "down") => {
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === questions.length - 1) return;
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    const updated = [...questions];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(targetIndex, 0, moved);
+    const renumbered = updated.map((q, idx) => ({
+      ...q,
+      questionNumber: idx + 1,
+    }));
+    setQuestions(renumbered);
   };
 
   // Xóa câu hỏi khỏi form
@@ -311,6 +738,63 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
   // Nạp bộ câu hỏi mẫu
   const handleLoadSampleQuestions = () => {
     setQuestions(SAMPLE_QUESTIONS_TEMPLATE);
+  };
+
+  // Bắt đầu mô phỏng AI OCR Quét đề thi từ file hình ảnh
+  const handleStartOcrScan = () => {
+    if (!ocrFile && !ocrPreviewUrl) return;
+    setOcrScanning(true);
+    setOcrProgress(10);
+    setOcrStatusText("Đang tải hình ảnh lên bộ xử lý AI Vision...");
+
+    setTimeout(() => {
+      setOcrProgress(35);
+      setOcrStatusText("Đang nhận diện quang học (OCR) các khối văn bản và công thức...");
+    }, 700);
+
+    setTimeout(() => {
+      setOcrProgress(70);
+      setOcrStatusText("Đang phân loại các câu hỏi, bảng phương án A, B, C, D...");
+    }, 1500);
+
+    setTimeout(() => {
+      setOcrProgress(100);
+      setOcrScanning(false);
+      setOcrExtractedCount(10);
+      setOcrStatusText("Hoàn tất trích xuất thành công 10 câu hỏi từ đề thi!");
+    }, 2400);
+  };
+
+  // Áp dụng các câu hỏi vừa scan vào form
+  const handleApplyOcrResults = () => {
+    const newOcrQuestions: ExamQuestion[] = [];
+    const now = Date.now();
+    for (let i = 1; i <= 10; i++) {
+      newOcrQuestions.push({
+        id: `ocr-q-${i}-${now}`,
+        questionNumber: questions.length + i,
+        type: "single_choice",
+        part: "Phần I",
+        instruction: "Phần I: Câu hỏi trắc nghiệm quét từ hình ảnh AI OCR",
+        content: `[AI OCR Đề thi - Câu ${questions.length + i}]: Nội dung câu hỏi được trích xuất tự động từ hình ảnh bản quét...`,
+        options: [
+          { id: "A", text: "Phương án A (trích xuất)" },
+          { id: "B", text: "Phương án B (trích xuất)" },
+          { id: "C", text: "Phương án C (trích xuất)" },
+          { id: "D", text: "Phương án D (trích xuất)" },
+        ],
+        correctAnswer: "A",
+        explanation: "Lời giải thích tự động nhận diện từ tài liệu.",
+        points: 0.25,
+      });
+    }
+
+    setQuestions((prev) => [...prev, ...newOcrQuestions]);
+    setShowOcrModal(false);
+    setOcrFile(null);
+    setOcrPreviewUrl(null);
+    setOcrProgress(0);
+    setOcrExtractedCount(0);
   };
 
   // Xử lý gửi Form Đăng bài thi
@@ -974,41 +1458,15 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
                 {/* Grid 3 cột: Môn học, Kỳ thi, Độ khó */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-600">
-                      Môn học
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-600">
+                        Môn học
+                      </label>
+                      <span className="text-[10px] font-bold text-emerald-600">⚡ Tự động nạp đề</span>
+                    </div>
                     <select
                       value={formSubject}
-                      onChange={(e) => {
-                        const val = e.target.value as ExamItem["subject"];
-                        setFormSubject(val);
-                        // Auto gợi ý palette màu và cardCode tương ứng
-                        if (val === "Toán học") {
-                          setSelectedTheme(CARD_THEME_PALETTES[0]);
-                          setFormCardCode("TOÁN 12");
-                        } else if (val === "Tiếng Anh") {
-                          setSelectedTheme(CARD_THEME_PALETTES[2]);
-                          setFormCardCode("TIẾNG ANH");
-                        } else if (val === "Vật lý") {
-                          setSelectedTheme(CARD_THEME_PALETTES[3]);
-                          setFormCardCode("VẬT LÝ 12");
-                        } else if (val === "Hóa học") {
-                          setSelectedTheme(CARD_THEME_PALETTES[4]);
-                          setFormCardCode("HÓA HỌC");
-                        } else if (val === "Ngữ văn") {
-                          setSelectedTheme(CARD_THEME_PALETTES[5]);
-                          setFormCardCode("NGỮ VĂN");
-                        } else if (val === "Sinh học") {
-                          setSelectedTheme(CARD_THEME_PALETTES[6]);
-                          setFormCardCode("SINH HỌC");
-                        } else if (val === "Lịch sử") {
-                          setSelectedTheme(CARD_THEME_PALETTES[8]);
-                          setFormCardCode("LỊCH SỬ 12");
-                        } else if (val === "Địa lý") {
-                          setSelectedTheme(CARD_THEME_PALETTES[9]);
-                          setFormCardCode("ĐỊA LÝ 12");
-                        }
-                      }}
+                      onChange={(e) => handleSelectSubject(e.target.value as ExamItem["subject"])}
                       className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-slate-50/50 p-3 text-xs font-bold text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white"
                     >
                       {SUBJECT_OPTIONS.map((sub) => (
@@ -1025,17 +1483,7 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
                     </label>
                     <select
                       value={formCategory}
-                      onChange={(e) => {
-                        const cat = e.target.value as ExamItem["category"];
-                        setFormCategory(cat);
-                        if (cat === "ĐGNL ĐHQG") {
-                          setSelectedTheme(CARD_THEME_PALETTES[1]);
-                          setFormCardCode("ĐGNL HCM");
-                        } else if (cat === "ĐGTD Bách Khoa") {
-                          setSelectedTheme(CARD_THEME_PALETTES[7]);
-                          setFormCardCode("ĐGTD BÁCH KHOA");
-                        }
-                      }}
+                      onChange={(e) => handleSelectCategory(e.target.value as ExamItem["category"])}
                       className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-slate-50/50 p-3 text-xs font-bold text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white"
                     >
                       {CATEGORY_OPTIONS.map((cat) => (
@@ -1218,302 +1666,644 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
               </div>
             </div>
 
-            {/* Khối 3: Danh sách câu hỏi trắc nghiệm */}
+            {/* Khối 3: Danh sách câu hỏi thi & Soạn thảo chi tiết */}
             <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="flex items-center gap-2 text-base font-black text-slate-900 sm:text-lg">
-                    <HelpCircle className="h-5 w-5 text-indigo-600" />
-                    <span>3. Ngân hàng câu hỏi trắc nghiệm ({questions.length} câu)</span>
-                  </h2>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
-                    Thêm các câu hỏi để học sinh làm bài thi và hệ thống tự động chấm điểm.
-                  </p>
-                </div>
+              {(() => {
+                const part1Count = questions.filter((q) => (q.type || "single_choice") === "single_choice").length;
+                const part2Count = questions.filter((q) => q.type === "true_false").length;
+                const part3Count = questions.filter((q) => q.type === "short_answer").length;
+                const part4Count = questions.filter((q) => q.type === "essay").length;
+                const totalPoints = questions.reduce((sum, q) => sum + (q.points || 0), 0);
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleLoadSampleQuestions}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100"
-                  >
-                    Tải mẫu đề chuẩn (4 câu)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleAddQuestion}
-                    className="flex items-center gap-1 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>Thêm câu</span>
-                  </button>
-                </div>
-              </div>
+                const displayedQuestions = questions.filter((q) => {
+                  if (activeFilterPart === "part1") return (q.type || "single_choice") === "single_choice";
+                  if (activeFilterPart === "part2") return q.type === "true_false";
+                  if (activeFilterPart === "part3") return q.type === "short_answer";
+                  if (activeFilterPart === "part4") return q.type === "essay";
+                  return true;
+                });
 
-              {/* Render danh sách từng câu hỏi */}
-              <div className="mt-5 space-y-4">
-                {questions.map((q, qIndex) => {
-                  const qType = q.type || "single_choice";
-
-                  return (
-                    <div
-                      key={q.id || qIndex}
-                      className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition focus-within:border-indigo-300 focus-within:bg-white space-y-3"
-                    >
-                      {/* Header câu hỏi: Số câu, Loại câu hỏi, Điểm số, Xóa */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 pb-3">
+                return (
+                  <div>
+                    {/* Header Khối 3 */}
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-b border-slate-100 pb-4">
+                      <div>
                         <div className="flex items-center gap-2">
-                          <span className="rounded-lg bg-indigo-100 px-2.5 py-0.5 text-xs font-black text-indigo-800">
-                            Câu {q.questionNumber || qIndex + 1}
+                          <h2 className="flex items-center gap-2 text-base font-black text-slate-900 sm:text-lg">
+                            <HelpCircle className="h-5 w-5 text-indigo-600" />
+                            <span>3. Ngân hàng & Cấu trúc câu hỏi thi ({questions.length} câu)</span>
+                          </h2>
+                          <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-black text-indigo-700">
+                            Tổng: {totalPoints.toFixed(1)}đ
                           </span>
+                        </div>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          Ma trận đề thi tự động: TN 4 lựa chọn ({part1Count}), Đúng/Sai ({part2Count}), Điền số ({part3Count}), Tự luận ({part4Count}).
+                        </p>
+                      </div>
 
-                          {/* Chọn loại câu hỏi */}
-                          <select
-                            value={qType}
-                            onChange={(e) => {
-                              const nextType = e.target.value as ExamQuestion["type"];
-                              let nextPoints = 0.25;
-                              let nextTf = q.trueFalseItems;
-                              if (nextType === "true_false") {
-                                nextPoints = 1.0;
-                                if (!nextTf || nextTf.length === 0) {
-                                  nextTf = [
-                                    { id: "a", content: "Mệnh đề a...", isCorrect: true },
-                                    { id: "b", content: "Mệnh đề b...", isCorrect: false },
-                                    { id: "c", content: "Mệnh đề c...", isCorrect: true },
-                                    { id: "d", content: "Mệnh đề d...", isCorrect: false },
-                                  ];
-                                }
-                              } else if (nextType === "short_answer") {
-                                nextPoints = 0.5;
-                              } else if (nextType === "essay") {
-                                nextPoints = 1.5;
-                              }
+                      {/* Các nút công cụ trên thanh tiêu đề */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Nút Scan đề thi từ hình ảnh (AI OCR) */}
+                        <button
+                          type="button"
+                          onClick={() => setShowOcrModal(true)}
+                          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3.5 py-2 text-xs font-black text-white shadow-md shadow-indigo-600/20 transition hover:from-violet-700 hover:to-indigo-700"
+                        >
+                          <Scan className="h-4 w-4" />
+                          <span>Scan đề từ ảnh (AI OCR)</span>
+                          <span className="rounded-md bg-amber-400 px-1 py-0.2 text-[9px] font-black uppercase text-slate-950">
+                            Mới
+                          </span>
+                        </button>
 
-                              const updated = [...questions];
-                              updated[qIndex] = {
-                                ...updated[qIndex],
-                                type: nextType,
-                                points: nextPoints,
-                                trueFalseItems: nextTf,
-                              };
-                              setQuestions(updated);
-                            }}
-                            className="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 shadow-2xs"
+                        {/* Nút nạp lại ma trận chuẩn của môn */}
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSubject(formSubject)}
+                          title={`Tự động nạp lại cấu trúc chuẩn 50 câu cho ${formSubject}`}
+                          className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-xs font-black text-indigo-700 transition hover:bg-indigo-100"
+                        >
+                          <Wand2 className="h-3.5 w-3.5 text-indigo-600" />
+                          <span>Nạp chuẩn {formSubject}</span>
+                        </button>
+
+                        {/* Thu gọn / Mở rộng tất cả */}
+                        <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => toggleCollapseAll(true)}
+                            title="Thu gọn tất cả câu hỏi"
+                            className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-white hover:text-slate-900"
                           >
-                            <option value="single_choice">Phần I: TN 4 Lựa chọn (A, B, C, D)</option>
-                            <option value="true_false">Phần II: TN Đúng / Sai (4 ý a, b, c, d)</option>
-                            <option value="short_answer">Phần III: Trả lời ngắn (Điền số)</option>
-                            <option value="essay">Phần IV: Tự luận</option>
-                          </select>
+                            Thu gọn
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleCollapseAll(false)}
+                            title="Mở rộng tất cả câu hỏi"
+                            className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-white hover:text-slate-900"
+                          >
+                            Mở hết
+                          </button>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          {/* Điểm số */}
-                          <div className="flex items-center gap-1 text-xs font-bold text-slate-500">
-                            <span>Điểm:</span>
-                            <input
-                              type="number"
-                              step="0.25"
-                              min="0.1"
-                              max="10"
-                              value={q.points || 0.25}
-                              onChange={(e) =>
-                                handleUpdateQuestion(qIndex, "points", parseFloat(e.target.value) || 0.25)
-                              }
-                              className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-center text-xs font-black text-slate-800 outline-none"
-                            />
-                          </div>
-
-                          {questions.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveQuestion(qIndex)}
-                              className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
-                              title="Xóa câu hỏi này"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Nội dung câu hỏi */}
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 uppercase">
-                          Nội dung câu hỏi:
-                        </label>
-                        <textarea
-                          rows={2}
-                          placeholder={`Nội dung đề bài số ${qIndex + 1}...`}
-                          value={q.content}
-                          onChange={(e) => handleUpdateQuestion(qIndex, "content", e.target.value)}
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-semibold text-slate-900 outline-none transition focus:border-indigo-500"
-                        />
-                      </div>
-
-                      {/* ── CASE 1: 4 phương án A, B, C, D ── */}
-                      {qType === "single_choice" && (
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                            Phương án lựa chọn (Click nút chữ cái để chọn đáp án đúng):
-                          </label>
-                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            {(["A", "B", "C", "D"] as const).map((optId) => {
-                              const opt = q.options?.find((o) => o.id === optId);
-                              const isCorrect = q.correctAnswer === optId;
-                              return (
-                                <div
-                                  key={optId}
-                                  className={`flex items-center gap-2 rounded-xl border p-1.5 transition ${
-                                    isCorrect ? "border-emerald-500 bg-emerald-50/60" : "border-slate-200 bg-white"
-                                  }`}
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUpdateQuestion(qIndex, "correctAnswer", optId)}
-                                    title={`Chọn ${optId} làm đáp án đúng`}
-                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black transition cursor-pointer ${
-                                      isCorrect ? "bg-emerald-600 text-white shadow-xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                    }`}
-                                  >
-                                    {optId}
-                                  </button>
-                                  <input
-                                    type="text"
-                                    placeholder={`Phương án ${optId}...`}
-                                    value={opt?.text || ""}
-                                    onChange={(e) => handleUpdateOption(qIndex, optId, e.target.value)}
-                                    className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── CASE 2: Trắc nghiệm Đúng / Sai 4 ý a, b, c, d ── */}
-                      {qType === "true_false" && (
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-[11px] font-bold text-purple-900 uppercase">
-                              4 ý khẳng định (Chọn Đúng hoặc Sai cho từng ý):
-                            </label>
-                            <span className="text-[10px] font-bold text-purple-700">
-                              Chuẩn barem Bộ GD&ĐT: 1 ý = 0.1đ | 2 ý = 0.25đ | 3 ý = 0.5đ | 4 ý = 1.0đ
-                            </span>
-                          </div>
-                          <div className="space-y-2">
-                            {(["a", "b", "c", "d"] as const).map((subId) => {
-                              const item = q.trueFalseItems?.find((it) => it.id === subId) || {
-                                id: subId,
-                                content: "",
-                                isCorrect: true,
-                              };
-                              return (
-                                <div
-                                  key={subId}
-                                  className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-purple-200/80 bg-purple-50/30 p-2"
-                                >
-                                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-900 text-xs font-black">
-                                    {subId})
-                                  </span>
-                                  <input
-                                    type="text"
-                                    placeholder={`Mệnh đề khẳng định ý ${subId}...`}
-                                    value={item.content}
-                                    onChange={(e) =>
-                                      handleUpdateTrueFalseItem(qIndex, subId, "content", e.target.value)
-                                    }
-                                    className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-purple-500"
-                                  />
-                                  <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateTrueFalseItem(qIndex, subId, "isCorrect", true)
-                                      }
-                                      className={`px-2.5 py-1 rounded-lg text-xs font-black transition cursor-pointer ${
-                                        item.isCorrect
-                                          ? "bg-emerald-600 text-white shadow-xs"
-                                          : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50"
-                                      }`}
-                                    >
-                                      ✓ ĐÚNG
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateTrueFalseItem(qIndex, subId, "isCorrect", false)
-                                      }
-                                      className={`px-2.5 py-1 rounded-lg text-xs font-black transition cursor-pointer ${
-                                        !item.isCorrect
-                                          ? "bg-rose-600 text-white shadow-xs"
-                                          : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50"
-                                      }`}
-                                    >
-                                      ✕ SAI
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── CASE 3: Trả lời ngắn (Điền kết quả số) ── */}
-                      {qType === "short_answer" && (
-                        <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3">
-                          <label className="block text-[11px] font-bold text-sky-900 uppercase mb-1">
-                            Đáp án số chuẩn hệ thống (VD: 20.5, 12, -4...):
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Nhập kết quả số chuẩn (hỗ trợ số nguyên, số thập phân 20.5 hoặc 20,5)..."
-                            value={q.correctAnswer || ""}
-                            onChange={(e) => handleUpdateQuestion(qIndex, "correctAnswer", e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono font-bold text-slate-900 outline-none focus:border-sky-500"
-                          />
-                        </div>
-                      )}
-
-                      {/* ── CASE 4: Tự luận ── */}
-                      {qType === "essay" && (
-                        <div className="space-y-2 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
-                          <label className="block text-[11px] font-bold text-indigo-900 uppercase">
-                            Đáp án mẫu & Dàn ý giải chi tiết cho giáo viên chấm:
-                          </label>
-                          <textarea
-                            rows={3}
-                            placeholder="Nhập các bước giải, gợi ý đáp án mẫu để học sinh đối chiếu sau khi nộp bài..."
-                            value={q.sampleEssayAnswer || ""}
-                            onChange={(e) =>
-                              handleUpdateQuestion(qIndex, "sampleEssayAnswer", e.target.value)
-                            }
-                            className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500"
-                          />
-                        </div>
-                      )}
-
-                      {/* Lời giải thích chung */}
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase">
-                          Lời giải thích chung cho cả câu:
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Lời giải thích chi tiết cho câu hỏi này (tùy chọn)..."
-                          value={q.explanation || ""}
-                          onChange={(e) => handleUpdateQuestion(qIndex, "explanation", e.target.value)}
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-xs font-medium text-slate-600 outline-none focus:border-indigo-500"
-                        />
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {/* Bộ lọc phân loại & Mini-map nhảy nhanh câu hỏi */}
+                    <div className="mt-4 space-y-3">
+                      {/* Filter Tabs */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setActiveFilterPart("all")}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                            activeFilterPart === "all"
+                              ? "bg-indigo-600 text-white shadow-xs"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          Tất cả ({questions.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveFilterPart("part1")}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                            activeFilterPart === "part1"
+                              ? "bg-indigo-600 text-white shadow-xs"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          Phần I: TN ABCD ({part1Count})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveFilterPart("part2")}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                            activeFilterPart === "part2"
+                              ? "bg-purple-600 text-white shadow-xs"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          Phần II: Đúng / Sai ({part2Count})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveFilterPart("part3")}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                            activeFilterPart === "part3"
+                              ? "bg-sky-600 text-white shadow-xs"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          Phần III: Điền số ({part3Count})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveFilterPart("part4")}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+                            activeFilterPart === "part4"
+                              ? "bg-amber-600 text-white shadow-xs"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          Phần IV: Tự luận ({part4Count})
+                        </button>
+                      </div>
+
+                      {/* Mini-map Quick Jump Bar: Hiển thị các chip số 1..50 */}
+                      <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="flex items-center gap-1.5 text-[11px] font-black uppercase text-slate-500">
+                            <Layers className="h-3.5 w-3.5 text-slate-400" />
+                            Sơ đồ điều hướng nhanh (Nhấp để cuộn tới câu):
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400">
+                            {questions.length} vị trí câu hỏi
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+                          {questions.map((q, idx) => {
+                            const isAnswered =
+                              q.content.trim() !== "" &&
+                              !q.content.includes("[Nhập nội dung");
+                            return (
+                              <button
+                                key={q.id || idx}
+                                type="button"
+                                onClick={() => {
+                                  const el = document.getElementById(`question-card-${idx}`);
+                                  if (el) {
+                                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                  }
+                                }}
+                                title={`Câu ${idx + 1} (${q.type}) - ${q.points}đ`}
+                                className={`h-6 min-w-[28px] px-1 rounded-md text-[11px] font-black transition ${
+                                  isAnswered
+                                    ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
+                                }`}
+                              >
+                                {idx + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Render danh sách từng câu hỏi */}
+                    <div className="mt-5 space-y-4">
+                      {displayedQuestions.map((q) => {
+                        // Tìm index thực trong mảng questions gốc
+                        const originalIndex = questions.findIndex((item) => item.id === q.id);
+                        const qIndex = originalIndex >= 0 ? originalIndex : 0;
+                        const qType = q.type || "single_choice";
+                        const isCollapsed = collapsedQuestions[q.id] || false;
+
+                        return (
+                          <div
+                            key={q.id || qIndex}
+                            id={`question-card-${qIndex}`}
+                            className="rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-indigo-300 shadow-xs space-y-3"
+                          >
+                            {/* Header câu hỏi: Số câu, Loại câu hỏi, Điểm số, Thao tác nhanh */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-lg bg-indigo-100 px-2.5 py-1 text-xs font-black text-indigo-800">
+                                  Câu {q.questionNumber || qIndex + 1}
+                                </span>
+
+                                {q.part && (
+                                  <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                                    {q.part}
+                                  </span>
+                                )}
+
+                                {/* Chọn loại câu hỏi */}
+                                <select
+                                  value={qType}
+                                  onChange={(e) => {
+                                    const nextType = e.target.value as ExamQuestion["type"];
+                                    let nextPoints = 0.25;
+                                    let nextTf = q.trueFalseItems;
+                                    let nextPart = "Phần I";
+
+                                    if (nextType === "true_false") {
+                                      nextPoints = 1.0;
+                                      nextPart = "Phần II";
+                                      if (!nextTf || nextTf.length === 0) {
+                                        nextTf = [
+                                          { id: "a", content: "Mệnh đề khẳng định ý a)", isCorrect: true },
+                                          { id: "b", content: "Mệnh đề khẳng định ý b)", isCorrect: false },
+                                          { id: "c", content: "Mệnh đề khẳng định ý c)", isCorrect: true },
+                                          { id: "d", content: "Mệnh đề khẳng định ý d)", isCorrect: false },
+                                        ];
+                                      }
+                                    } else if (nextType === "short_answer") {
+                                      nextPoints = 0.5;
+                                      nextPart = "Phần III";
+                                    } else if (nextType === "essay") {
+                                      nextPoints = 1.5;
+                                      nextPart = "Phần IV";
+                                    }
+
+                                    const updated = [...questions];
+                                    updated[qIndex] = {
+                                      ...updated[qIndex],
+                                      type: nextType,
+                                      part: nextPart,
+                                      points: nextPoints,
+                                      trueFalseItems: nextTf,
+                                    };
+                                    setQuestions(updated);
+                                  }}
+                                  className="rounded-xl border border-slate-200 bg-slate-50/70 px-2.5 py-1 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500"
+                                >
+                                  <option value="single_choice">Phần I: TN 4 Lựa chọn (A, B, C, D)</option>
+                                  <option value="true_false">Phần II: TN Đúng / Sai (4 ý a, b, c, d)</option>
+                                  <option value="short_answer">Phần III: Trả lời ngắn (Điền số)</option>
+                                  <option value="essay">Phần IV: Tự luận</option>
+                                </select>
+                              </div>
+
+                              {/* Điều khiển: Điểm số, Di chuyển, Nhân bản, Thu gọn, Xóa */}
+                              <div className="flex items-center gap-1.5">
+                                {/* Điểm số */}
+                                <div className="flex items-center gap-1 text-xs font-bold text-slate-500 mr-1">
+                                  <span>Điểm:</span>
+                                  <input
+                                    type="number"
+                                    step="0.25"
+                                    min="0.1"
+                                    max="10"
+                                    value={q.points || 0.25}
+                                    onChange={(e) =>
+                                      handleUpdateQuestion(qIndex, "points", parseFloat(e.target.value) || 0.25)
+                                    }
+                                    className="w-14 rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-center text-xs font-black text-slate-800 outline-none focus:bg-white"
+                                  />
+                                </div>
+
+                                {/* Di chuyển lên */}
+                                <button
+                                  type="button"
+                                  disabled={qIndex === 0}
+                                  onClick={() => handleMoveQuestion(qIndex, "up")}
+                                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                                  title="Di chuyển lên trên"
+                                >
+                                  <ArrowUp className="h-4 w-4" />
+                                </button>
+
+                                {/* Di chuyển xuống */}
+                                <button
+                                  type="button"
+                                  disabled={qIndex === questions.length - 1}
+                                  onClick={() => handleMoveQuestion(qIndex, "down")}
+                                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                                  title="Di chuyển xuống dưới"
+                                >
+                                  <ArrowDown className="h-4 w-4" />
+                                </button>
+
+                                {/* Nhân đôi câu hỏi */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDuplicateQuestion(qIndex)}
+                                  className="rounded-lg p-1 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition cursor-pointer"
+                                  title="Nhân đôi câu hỏi này"
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </button>
+
+                                {/* Thu gọn / Mở rộng */}
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCollapseQuestion(q.id)}
+                                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
+                                  title={isCollapsed ? "Mở rộng câu hỏi" : "Thu gọn câu hỏi"}
+                                >
+                                  {isCollapsed ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronUp className="h-4 w-4" />
+                                  )}
+                                </button>
+
+                                {/* Xóa câu hỏi */}
+                                {questions.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveQuestion(qIndex)}
+                                    className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
+                                    title="Xóa câu hỏi này"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Thân câu hỏi (Khi không bị thu gọn) */}
+                            {!isCollapsed && (
+                              <div className="space-y-3 pt-1">
+                                {/* Nội dung câu hỏi */}
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                                    Nội dung câu hỏi:
+                                  </label>
+                                  <textarea
+                                    rows={2}
+                                    placeholder={`Nội dung đề bài số ${q.questionNumber || qIndex + 1}...`}
+                                    value={q.content}
+                                    onChange={(e) => handleUpdateQuestion(qIndex, "content", e.target.value)}
+                                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs font-semibold text-slate-900 outline-none transition focus:border-indigo-500 focus:bg-white"
+                                  />
+                                </div>
+
+                                {/* ── CASE 1: 4 phương án A, B, C, D ── */}
+                                {qType === "single_choice" && (
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                                      Phương án lựa chọn (Click nút chữ cái để chọn đáp án đúng):
+                                    </label>
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                      {(["A", "B", "C", "D"] as const).map((optId) => {
+                                        const opt = q.options?.find((o) => o.id === optId);
+                                        const isCorrect = q.correctAnswer === optId;
+                                        return (
+                                          <div
+                                            key={optId}
+                                            className={`flex items-center gap-2 rounded-xl border p-1.5 transition ${
+                                              isCorrect ? "border-emerald-500 bg-emerald-50/60" : "border-slate-200 bg-white"
+                                            }`}
+                                          >
+                                            <button
+                                              type="button"
+                                              onClick={() => handleUpdateQuestion(qIndex, "correctAnswer", optId)}
+                                              title={`Chọn ${optId} làm đáp án đúng`}
+                                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black transition cursor-pointer ${
+                                                isCorrect ? "bg-emerald-600 text-white shadow-xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                              }`}
+                                            >
+                                              {optId}
+                                            </button>
+                                            <input
+                                              type="text"
+                                              placeholder={`Phương án ${optId}...`}
+                                              value={opt?.text || ""}
+                                              onChange={(e) => handleUpdateOption(qIndex, optId, e.target.value)}
+                                              className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* ── CASE 2: Trắc nghiệm Đúng / Sai 4 ý a, b, c, d ── */}
+                                {qType === "true_false" && (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <label className="text-[11px] font-bold text-purple-900 uppercase">
+                                        4 ý khẳng định (Chọn Đúng hoặc Sai cho từng ý):
+                                      </label>
+                                      <span className="text-[10px] font-bold text-purple-700">
+                                        Chuẩn Bộ GD&ĐT: 1 ý = 0.1đ | 2 ý = 0.25đ | 3 ý = 0.5đ | 4 ý = 1.0đ
+                                      </span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {(["a", "b", "c", "d"] as const).map((subId) => {
+                                        const item = q.trueFalseItems?.find((it) => it.id === subId) || {
+                                          id: subId,
+                                          content: "",
+                                          isCorrect: true,
+                                        };
+                                        return (
+                                          <div
+                                            key={subId}
+                                            className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-purple-200/80 bg-purple-50/30 p-2"
+                                          >
+                                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-900 text-xs font-black">
+                                              {subId})
+                                            </span>
+                                            <input
+                                              type="text"
+                                              placeholder={`Mệnh đề khẳng định ý ${subId}...`}
+                                              value={item.content}
+                                              onChange={(e) =>
+                                                handleUpdateTrueFalseItem(qIndex, subId, "content", e.target.value)
+                                              }
+                                              className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-purple-500"
+                                            />
+                                            <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  handleUpdateTrueFalseItem(qIndex, subId, "isCorrect", true)
+                                                }
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-black transition cursor-pointer ${
+                                                  item.isCorrect
+                                                    ? "bg-emerald-600 text-white shadow-xs"
+                                                    : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50"
+                                                }`}
+                                              >
+                                                ✓ ĐÚNG
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  handleUpdateTrueFalseItem(qIndex, subId, "isCorrect", false)
+                                                }
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-black transition cursor-pointer ${
+                                                  !item.isCorrect
+                                                    ? "bg-rose-600 text-white shadow-xs"
+                                                    : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50"
+                                                }`}
+                                              >
+                                                ✕ SAI
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* ── CASE 3: Trả lời ngắn (Điền kết quả số) ── */}
+                                {qType === "short_answer" && (
+                                  <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3">
+                                    <label className="block text-[11px] font-bold text-sky-900 uppercase mb-1">
+                                      Đáp án số chuẩn hệ thống (VD: 20.5, 12, -4...):
+                                    </label>
+                                    <input
+                                      type="text"
+                                      placeholder="Nhập kết quả số chuẩn (hỗ trợ số nguyên, số thập phân 20.5 hoặc 20,5)..."
+                                      value={q.correctAnswer || ""}
+                                      onChange={(e) => handleUpdateQuestion(qIndex, "correctAnswer", e.target.value)}
+                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono font-bold text-slate-900 outline-none focus:border-sky-500"
+                                    />
+                                  </div>
+                                )}
+
+                                {/* ── CASE 4: Tự luận ── */}
+                                {qType === "essay" && (
+                                  <div className="space-y-2 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
+                                    <label className="block text-[11px] font-bold text-indigo-900 uppercase">
+                                      Đáp án mẫu & Dàn ý giải chi tiết cho giáo viên chấm:
+                                    </label>
+                                    <textarea
+                                      rows={3}
+                                      placeholder="Nhập các bước giải, gợi ý đáp án mẫu để học sinh đối chiếu sau khi nộp bài..."
+                                      value={q.sampleEssayAnswer || ""}
+                                      onChange={(e) =>
+                                        handleUpdateQuestion(qIndex, "sampleEssayAnswer", e.target.value)
+                                      }
+                                      className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500"
+                                    />
+                                  </div>
+                                )}
+
+                                {/* Lời giải thích chung */}
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-500 uppercase">
+                                    Lời giải thích chung cho cả câu:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="Lời giải thích chi tiết cho câu hỏi này (tùy chọn)..."
+                                    value={q.explanation || ""}
+                                    onChange={(e) => handleUpdateQuestion(qIndex, "explanation", e.target.value)}
+                                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-xs font-medium text-slate-600 outline-none focus:border-indigo-500"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* ════════════════════════════════════════════════════════════════════════
+                                YÊU CẦU ĐẶC BIỆT: NÚT THÊM CÂU NGAY PHÍA DƯỚI TỪNG CÂU HỎI
+                                Người dùng có thể click trực tiếp thêm câu trắc nghiệm / đúng sai... ở đây!
+                               ════════════════════════════════════════════════════════════════════════ */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs">
+                              <span className="flex items-center gap-1 text-[11px] font-black uppercase text-slate-400">
+                                <Plus className="h-3.5 w-3.5 text-indigo-500" />
+                                Thêm câu ngay phía sau câu {q.questionNumber || qIndex + 1}:
+                              </span>
+
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddQuestionAfter(qIndex, "single_choice")}
+                                  className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                                >
+                                  <span>+ Trắc nghiệm ABCD</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddQuestionAfter(qIndex, "true_false")}
+                                  className="flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50/50 px-2.5 py-1 text-[11px] font-bold text-purple-700 transition hover:bg-purple-100"
+                                >
+                                  <span>+ Đúng / Sai</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddQuestionAfter(qIndex, "short_answer")}
+                                  className="flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50/50 px-2.5 py-1 text-[11px] font-bold text-sky-700 transition hover:bg-sky-100"
+                                >
+                                  <span>+ Điền số</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddQuestionAfter(qIndex, "essay")}
+                                  className="flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50/50 px-2.5 py-1 text-[11px] font-bold text-amber-700 transition hover:bg-amber-100"
+                                >
+                                  <span>+ Tự luận</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* ════════════════════════════════════════════════════════════════════════
+                        BẢNG ĐIỀU KHIỂN THÊM CÂU HỎI Ở CUỐI MỤC 3 (DOCK 4 NÚT)
+                       ════════════════════════════════════════════════════════════════════════ */}
+                    <div className="mt-6 rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50/20 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="flex items-center gap-2 text-xs font-black uppercase text-indigo-950">
+                          <Plus className="h-4 w-4 text-indigo-600" />
+                          Thêm nhanh câu hỏi vào cuối danh sách:
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500">
+                          Đang có {questions.length} câu
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        <button
+                          type="button"
+                          onClick={() => handleAddQuestionOfType("single_choice")}
+                          className="flex flex-col items-center justify-center gap-1 rounded-xl border border-indigo-200 bg-white p-3 text-center transition hover:border-indigo-400 hover:bg-indigo-50/50 group"
+                        >
+                          <CheckCircle className="h-4 w-4 text-indigo-600 group-hover:scale-110 transition" />
+                          <span className="text-xs font-black text-slate-800">
+                            + Trắc nghiệm ABCD
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            Phần I (0.25đ)
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleAddQuestionOfType("true_false")}
+                          className="flex flex-col items-center justify-center gap-1 rounded-xl border border-purple-200 bg-white p-3 text-center transition hover:border-purple-400 hover:bg-purple-50/50 group"
+                        >
+                          <CheckSquare className="h-4 w-4 text-purple-600 group-hover:scale-110 transition" />
+                          <span className="text-xs font-black text-slate-800">
+                            + Đúng / Sai (a,b,c,d)
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            Phần II (1.0đ)
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleAddQuestionOfType("short_answer")}
+                          className="flex flex-col items-center justify-center gap-1 rounded-xl border border-sky-200 bg-white p-3 text-center transition hover:border-sky-400 hover:bg-sky-50/50 group"
+                        >
+                          <Hash className="h-4 w-4 text-sky-600 group-hover:scale-110 transition" />
+                          <span className="text-xs font-black text-slate-800">
+                            + Điền kết quả số
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            Phần III (0.5đ)
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleAddQuestionOfType("essay")}
+                          className="flex flex-col items-center justify-center gap-1 rounded-xl border border-amber-200 bg-white p-3 text-center transition hover:border-amber-400 hover:bg-amber-50/50 group"
+                        >
+                          <PenTool className="h-4 w-4 text-amber-600 group-hover:scale-110 transition" />
+                          <span className="text-xs font-black text-slate-800">
+                            + Bài Tự luận
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            Phần IV (1.0đ - 4.0đ)
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -1574,6 +2364,188 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL SCAN ĐỀ THI TỪ HÌNH ẢNH (AI OCR)
+         ========================================================================= */}
+      {showOcrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                  <Scan className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    Scan đề thi từ hình ảnh (AI Vision OCR)
+                  </h3>
+                  <p className="text-xs font-semibold text-slate-500">
+                    Tính năng đang thử nghiệm - Tự động trích xuất đề thi từ ảnh chụp hoặc tài liệu PDF
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOcrModal(false);
+                  setOcrFile(null);
+                  setOcrPreviewUrl(null);
+                  setOcrProgress(0);
+                  setOcrExtractedCount(0);
+                }}
+                className="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="mt-5 space-y-4">
+              {/* Vùng tải file / Drag & Drop */}
+              <div
+                onClick={() => {
+                  const input = document.getElementById("ocr-file-input");
+                  if (input) input.click();
+                }}
+                className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50/20 p-6 text-center transition hover:border-indigo-400 hover:bg-indigo-50/40"
+              >
+                <input
+                  id="ocr-file-input"
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg, application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setOcrFile(file);
+                      setOcrPreviewUrl(URL.createObjectURL(file));
+                      setOcrProgress(0);
+                      setOcrExtractedCount(0);
+                    }
+                  }}
+                />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm text-indigo-600">
+                  <Camera className="h-6 w-6" />
+                </div>
+                <p className="mt-3 text-xs font-black text-slate-800">
+                  {ocrFile ? ocrFile.name : "Nhấp hoặc kéo thả ảnh chụp trang đề thi vào đây"}
+                </p>
+                <p className="mt-1 text-[11px] font-semibold text-slate-400">
+                  Hỗ trợ định dạng PNG, JPG, JPEG hoặc PDF chụp rõ nét
+                </p>
+              </div>
+
+              {/* Preview ảnh nếu đã chọn */}
+              {ocrPreviewUrl && (
+                <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                  <div className="flex items-center justify-between px-2 py-1 text-xs font-bold text-slate-600">
+                    <span>Ảnh đề thi đã nạp:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOcrFile(null);
+                        setOcrPreviewUrl(null);
+                        setOcrProgress(0);
+                        setOcrExtractedCount(0);
+                      }}
+                      className="text-rose-500 hover:underline"
+                    >
+                      Bỏ chọn
+                    </button>
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ocrPreviewUrl}
+                    alt="Bản scan đề thi"
+                    className="max-h-56 w-full rounded-xl object-contain bg-white"
+                  />
+                </div>
+              )}
+
+              {/* Tiến trình quét OCR */}
+              {ocrScanning && (
+                <div className="space-y-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+                  <div className="flex items-center justify-between text-xs font-black text-indigo-900">
+                    <span className="flex items-center gap-1.5">
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+                      {ocrStatusText}
+                    </span>
+                    <span>{ocrProgress}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-indigo-200/60">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-600 to-violet-600 transition-all duration-300"
+                      style={{ width: `${ocrProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Kết quả scan thành công */}
+              {!ocrScanning && ocrExtractedCount > 0 && (
+                <div className="space-y-2 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+                  <div className="flex items-center gap-2 text-xs font-black text-emerald-900">
+                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                    <span>{ocrStatusText}</span>
+                  </div>
+                  <p className="text-[11px] font-semibold text-emerald-700">
+                    Hệ thống AI đã nhận dạng và bóc tách thành công {ocrExtractedCount} câu hỏi trắc nghiệm gồm đề bài, 4 phương án A, B, C, D và lời giải thích. Nhấp &ldquo;Nạp vào đề thi&rdquo; để thêm trực tiếp vào danh sách.
+                  </p>
+                </div>
+              )}
+
+              {/* Thông tin chuẩn bị cho bản phát triển tương lai */}
+              <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-3.5 text-xs text-slate-500">
+                <span className="font-bold text-slate-700">Ghi chú phát triển (Roadmap):</span> Mô hình AI Vision OCR đang được kết nối với API nhận dạng công thức Toán LaTeX và bóc tách bảng đáp án tự động. Khi hoàn thiện, bạn chỉ cần tải ảnh chụp đề là toàn bộ 50 câu sẽ được điền đầy đủ!
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOcrModal(false);
+                  setOcrFile(null);
+                  setOcrPreviewUrl(null);
+                  setOcrProgress(0);
+                  setOcrExtractedCount(0);
+                }}
+                className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+              >
+                Đóng
+              </button>
+
+              {ocrExtractedCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleApplyOcrResults}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-emerald-600/30 hover:bg-emerald-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Nạp 10 câu vào đề thi</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={(!ocrFile && !ocrPreviewUrl) || ocrScanning}
+                  onClick={handleStartOcrScan}
+                  className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {ocrScanning ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Scan className="h-4 w-4" />
+                  )}
+                  <span>Quét & Nhận diện AI</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

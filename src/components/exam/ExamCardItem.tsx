@@ -93,6 +93,11 @@ export default function ExamCardItem({ card, onOpenModal }: ExamCardItemProps) {
           <span className="truncate text-[11px] font-black uppercase tracking-wide text-white/90">
             EDUMI | {card.subject}
           </span>
+          {card.isNew && (
+            <span className="shrink-0 rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-950 shadow-xs animate-pulse">
+              MỚI
+            </span>
+          )}
           {/* Mã phòng thi đặt ngay vị trí pill badge như thẻ tài liệu, click để chép nhanh */}
           <button
             suppressHydrationWarning

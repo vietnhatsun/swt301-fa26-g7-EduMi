@@ -273,16 +273,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Chèn các câu hỏi trắc nghiệm (nếu có)
+    // 3. Chèn các câu hỏi trắc nghiệm & tự luận (nếu có)
     if (Array.isArray(questions) && questions.length > 0) {
       const questionRows = questions.map((q: any, idx: number) => ({
         exam_id: insertedExam.id,
         question_number: q.questionNumber || idx + 1,
         type: q.type || "single_choice",
+        part: q.part || "Phần I",
         instruction: q.instruction || "Chọn một đáp án đúng",
         content: q.content || `Câu hỏi số ${idx + 1}`,
         options: Array.isArray(q.options) ? q.options : [],
+        true_false_items: Array.isArray(q.trueFalseItems) ? q.trueFalseItems : [],
         correct_answer: q.correctAnswer || "A",
+        sample_essay_answer: q.sampleEssayAnswer || null,
+        rubric_criteria: Array.isArray(q.rubricCriteria) ? q.rubricCriteria : [],
         explanation: q.explanation || "",
         points: Number(q.points) || 0.25,
       }));
