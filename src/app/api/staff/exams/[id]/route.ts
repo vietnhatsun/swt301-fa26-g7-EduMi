@@ -39,11 +39,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         id: q.id,
         questionNumber: q.question_number,
         type: q.type,
+        part: q.part || (q.type === "true_false" ? "Phần II" : q.type === "short_answer" ? "Phần III" : q.type === "essay" ? "Phần IV" : "Phần I"),
+        section: q.section || (q.type === "essay" ? "Tự luận" : "Trắc nghiệm"),
         instruction: q.instruction,
         content: q.content,
-        options: q.options,
-        correctAnswer: q.correct_answer,
-        explanation: q.explanation,
+        options: q.options || [],
+        trueFalseItems: q.true_false_items || [],
+        correctAnswer: q.correct_answer || "",
+        explanation: q.explanation || "",
+        sampleEssayAnswer: q.sample_essay_answer || "",
+        rubricCriteria: q.rubric_criteria || [],
+        wordLimit: q.word_limit || undefined,
         points: Number(q.points),
       })),
     });
@@ -121,17 +127,48 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     // Cập nhật câu hỏi nếu được gửi lên
     if (Array.isArray(updateFields.questions)) {
       await supabase.from("exam_questions").delete().eq("exam_id", id);
-      const questionRows = updateFields.questions.map((q: any, idx: number) => ({
-        exam_id: id,
-        question_number: q.questionNumber || idx + 1,
-        type: q.type || "single_choice",
-        instruction: q.instruction || "Chọn một đáp án đúng",
-        content: q.content || `Câu hỏi số ${idx + 1}`,
-        options: Array.isArray(q.options) ? q.options : [],
-        correct_answer: q.correctAnswer || "A",
-        explanation: q.explanation || "",
-        points: Number(q.points) || 0.25,
-      }));
+      const questionRows = updateFields.questions.map((q: any, idx: number) => {
+        const qType = q.type || "single_choice";
+        let defaultPart = "Phần I";
+        let defaultSection = "Trắc nghiệm";
+        let defaultInstruction = "Phần I: Chọn một đáp án đúng (A, B, C hoặc D)";
+        let defaultPoints = 0.25;
+
+        if (qType === "true_false") {
+          defaultPart = "Phần II";
+          defaultSection = "Trắc nghiệm Đúng/Sai";
+          defaultInstruction = "Phần II: Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai";
+          defaultPoints = 1.0;
+        } else if (qType === "short_answer") {
+          defaultPart = "Phần III";
+          defaultSection = "Trả lời ngắn";
+          defaultInstruction = "Phần III: Trắc nghiệm trả lời ngắn (Điền kết quả số)";
+          defaultPoints = 0.5;
+        } else if (qType === "essay") {
+          defaultPart = "Phần IV";
+          defaultSection = "Tự luận";
+          defaultInstruction = "Phần IV: Tự luận - Trình bày các bước giải chi tiết";
+          defaultPoints = 1.5;
+        }
+
+        return {
+          exam_id: id,
+          question_number: q.questionNumber || idx + 1,
+          type: qType,
+          part: q.part || defaultPart,
+          section: q.section || defaultSection,
+          instruction: q.instruction || defaultInstruction,
+          content: q.content || `Câu hỏi số ${idx + 1}`,
+          options: Array.isArray(q.options) ? q.options : [],
+          true_false_items: Array.isArray(q.trueFalseItems) ? q.trueFalseItems : [],
+          correct_answer: typeof q.correctAnswer === "string" ? q.correctAnswer : (q.correctAnswer || "A"),
+          explanation: q.explanation || "",
+          sample_essay_answer: q.sampleEssayAnswer || null,
+          rubric_criteria: Array.isArray(q.rubricCriteria) ? q.rubricCriteria : [],
+          word_limit: q.wordLimit || {},
+          points: Number(q.points) > 0 ? Number(q.points) : defaultPoints,
+        };
+      });
 
       if (questionRows.length > 0) {
         await supabase.from("exam_questions").insert(questionRows);

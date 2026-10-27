@@ -273,23 +273,50 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Chèn các câu hỏi trắc nghiệm & tự luận (nếu có)
+    // 3. Chèn các câu hỏi đề thi (hỗ trợ 4 định dạng chuẩn Bộ GD&ĐT 2025/2026)
     if (Array.isArray(questions) && questions.length > 0) {
-      const questionRows = questions.map((q: any, idx: number) => ({
-        exam_id: insertedExam.id,
-        question_number: q.questionNumber || idx + 1,
-        type: q.type || "single_choice",
-        part: q.part || "Phần I",
-        instruction: q.instruction || "Chọn một đáp án đúng",
-        content: q.content || `Câu hỏi số ${idx + 1}`,
-        options: Array.isArray(q.options) ? q.options : [],
-        true_false_items: Array.isArray(q.trueFalseItems) ? q.trueFalseItems : [],
-        correct_answer: q.correctAnswer || "A",
-        sample_essay_answer: q.sampleEssayAnswer || null,
-        rubric_criteria: Array.isArray(q.rubricCriteria) ? q.rubricCriteria : [],
-        explanation: q.explanation || "",
-        points: Number(q.points) || 0.25,
-      }));
+      const questionRows = questions.map((q: any, idx: number) => {
+        const qType = q.type || "single_choice";
+        let defaultPart = "Phần I";
+        let defaultSection = "Trắc nghiệm";
+        let defaultInstruction = "Phần I: Chọn một đáp án đúng (A, B, C hoặc D)";
+        let defaultPoints = 0.25;
+
+        if (qType === "true_false") {
+          defaultPart = "Phần II";
+          defaultSection = "Trắc nghiệm Đúng/Sai";
+          defaultInstruction = "Phần II: Trong mỗi ý a), b), c), d), thí sinh chọn Đúng hoặc Sai";
+          defaultPoints = 1.0;
+        } else if (qType === "short_answer") {
+          defaultPart = "Phần III";
+          defaultSection = "Trả lời ngắn";
+          defaultInstruction = "Phần III: Trắc nghiệm trả lời ngắn (Điền kết quả số)";
+          defaultPoints = 0.5;
+        } else if (qType === "essay") {
+          defaultPart = "Phần IV";
+          defaultSection = "Tự luận";
+          defaultInstruction = "Phần IV: Tự luận - Trình bày các bước giải chi tiết";
+          defaultPoints = 1.5;
+        }
+
+        return {
+          exam_id: insertedExam.id,
+          question_number: q.questionNumber || idx + 1,
+          type: qType,
+          part: q.part || defaultPart,
+          section: q.section || defaultSection,
+          instruction: q.instruction || defaultInstruction,
+          content: q.content || `Câu hỏi số ${idx + 1}`,
+          options: Array.isArray(q.options) ? q.options : [],
+          true_false_items: Array.isArray(q.trueFalseItems) ? q.trueFalseItems : [],
+          correct_answer: typeof q.correctAnswer === "string" ? q.correctAnswer : (q.correctAnswer || "A"),
+          explanation: q.explanation || "",
+          sample_essay_answer: q.sampleEssayAnswer || null,
+          rubric_criteria: Array.isArray(q.rubricCriteria) ? q.rubricCriteria : [],
+          word_limit: q.wordLimit || {},
+          points: Number(q.points) > 0 ? Number(q.points) : defaultPoints,
+        };
+      });
 
       const { error: questionsError } = await supabase.from("exam_questions").insert(questionRows);
       if (questionsError) {

@@ -9,8 +9,7 @@ import {
   Flag,
   ChevronLeft,
   ChevronRight,
-  Maximize2,
-  Minimize2,
+  Lock,
   AlertTriangle,
   Lightbulb,
   CheckCircle2,
@@ -455,6 +454,9 @@ export default function ExamRoomClient({ exam, mode, initialQuestions }: ExamRoo
     };
 
     saveExamSubmission(record);
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
     setIsSubmitModalOpen(false);
     setIsCompleted(true);
   }, [
@@ -517,6 +519,30 @@ export default function ExamRoomClient({ exam, mode, initialQuestions }: ExamRoo
       window.removeEventListener("blur", handleWindowBlur);
     };
   }, [isCompleted, isExamMode]);
+
+  // Anti-Cheat: Lắng nghe sự kiện Toàn màn hình & ghi nhận vi phạm khi thoát
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    // Cập nhật trạng thái toàn màn hình ban đầu
+    setIsFullscreen(!!document.fullscreenElement);
+
+    const handleFullscreenChange = () => {
+      const active = !!document.fullscreenElement;
+      setIsFullscreen(active);
+
+      // Nếu đang trong chế độ thi thử mà thoát toàn màn hình -> tính vi phạm
+      if (isExamMode && !active && !isCompleted && !isExitModalOpen && !isSubmitModalOpen) {
+        setViolations((prev) => prev + 1);
+        setShowViolationToast(true);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [isExamMode, isCompleted, isExitModalOpen, isSubmitModalOpen]);
 
   // Auto hide violation toast after 4 seconds
   useEffect(() => {
@@ -617,21 +643,18 @@ export default function ExamRoomClient({ exam, mode, initialQuestions }: ExamRoo
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentIndex, totalQuestions, isCompleted, isExitModalOpen, isSubmitModalOpen, currentQuestion]);
 
-  // Fullscreen toggle
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
+  // Request Fullscreen helper
+  const requestFullscreenMode = () => {
+    if (typeof document !== "undefined" && !document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-        setIsFullscreen(false);
-      }
     }
   };
 
   // Handlers
   const handleConfirmExit = () => {
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
     setIsExitModalOpen(false);
     router.push("/exam");
   };
@@ -774,15 +797,24 @@ export default function ExamRoomClient({ exam, mode, initialQuestions }: ExamRoo
             <span>Vi phạm: {violations}</span>
           </div>
 
-          {/* Fullscreen Button */}
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className="hidden lg:flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition cursor-pointer"
-            title={isFullscreen ? "Thu nhỏ cửa sổ" : "Mở toàn màn hình"}
-          >
-            {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-          </button>
+          {/* Fullscreen Anti-Cheat Status Badge (Thay thế nút toggle thủ công) */}
+          {isExamMode && (
+            <div
+              className={`hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black shadow-2xs select-none transition-all ${
+                isFullscreen
+                  ? "bg-slate-900 text-white"
+                  : "border border-rose-300 bg-rose-50 text-rose-700 animate-pulse"
+              }`}
+              title={
+                isFullscreen
+                  ? "Chế độ thi: Màn hình đã được khóa toàn màn hình & giám sát chống gian lận"
+                  : "Cảnh báo: Bạn chưa ở chế độ toàn màn hình!"
+              }
+            >
+              <Lock className="h-3.5 w-3.5 text-amber-400" />
+              <span>{isFullscreen ? "Khóa toàn màn hình" : "Chưa mở toàn màn hình"}</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -1547,6 +1579,38 @@ export default function ExamRoomClient({ exam, mode, initialQuestions }: ExamRoo
         multipleChoiceAnswered={mcAnsweredCount}
         totalMultipleChoice={singleChoiceQuestions.length + trueFalseQuestions.length + shortAnswerQuestions.length}
       />
+
+      {/* ── Modal Bắt Buộc Toàn Màn Hình Trong Chế Độ Thi (Tự động mở và khóa) ── */}
+      {isExamMode && !isFullscreen && !isCompleted && !isExitModalOpen && !isSubmitModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-[28px] border border-amber-200 bg-white p-6 sm:p-8 text-center shadow-2xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 ring-8 ring-amber-50">
+              <ShieldAlert className="h-8 w-8" />
+            </div>
+
+            <h3 className="mt-4 text-lg font-black text-slate-900">
+              Yêu cầu Chế độ Toàn Màn Hình
+            </h3>
+
+            <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              Quy chế phòng thi EduMi quy định bài thi phải được thực hiện ở chế độ <strong>Toàn màn hình</strong> để kích hoạt tính năng khóa màn hình giám sát chống gian lận.
+            </p>
+
+            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-[11px] font-bold text-rose-700">
+              ⚠️ Rời khỏi toàn màn hình hoặc chuyển tab sẽ bị ghi nhận lỗi vi phạm phòng thi!
+            </div>
+
+            <button
+              type="button"
+              onClick={requestFullscreenMode}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700 cursor-pointer active:scale-98"
+            >
+              <Lock className="h-4 w-4" />
+              <span>Xác nhận &amp; Mở lại toàn màn hình</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

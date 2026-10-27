@@ -14,6 +14,8 @@ import {
   BookOpen,
   ShieldCheck,
   CheckCircle2,
+  ShieldAlert,
+  Lock,
 } from "lucide-react";
 import { ExamItem } from "./exam-data";
 
@@ -47,7 +49,17 @@ export default function ExamStartModal({
 
   const isExamMode = mode === "exam";
 
-  const handleStart = () => {
+  const handleStart = async () => {
+    // Tự động mở toàn màn hình (Full Screen) ngay khi thí sinh xác nhận vào phòng thi
+    if (isExamMode) {
+      try {
+        if (typeof document !== "undefined" && !document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (err) {
+        console.warn("[Fullscreen Request Failed]:", err);
+      }
+    }
     onClose();
     router.push(`/exam/${exam.id}?mode=${mode}`);
   };
@@ -157,6 +169,26 @@ export default function ExamStartModal({
             </div>
           </div>
 
+          {/* Cảnh báo xác nhận vào phòng, tự động mở full và khóa màn hình */}
+          {isExamMode ? (
+            <div className="rounded-2xl border border-amber-300 bg-amber-50/90 p-4 text-xs shadow-xs">
+              <div className="flex items-center gap-2 font-black text-amber-950">
+                <ShieldAlert className="h-4.5 w-4.5 text-amber-600 shrink-0" />
+                <span>Cảnh báo xác nhận vào phòng thi &amp; Khóa màn hình:</span>
+              </div>
+              <p className="mt-1.5 text-[11px] font-semibold leading-relaxed text-amber-800">
+                Khi bấm <strong>&ldquo;Bắt đầu làm bài ngay&rdquo;</strong>, hệ thống sẽ <strong>tự động mở toàn màn hình (Full Screen)</strong> và kích hoạt chế độ khóa màn hình chống gian lận. Thí sinh tuyệt đối không thu nhỏ cửa sổ, chuyển tab hoặc mở ứng dụng khác trong suốt thời gian làm bài.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-3.5 text-xs text-blue-900">
+              <div className="flex items-center gap-2 font-bold">
+                <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
+                <span>Chế độ luyện đề tự do không áp dụng khóa toàn màn hình.</span>
+              </div>
+            </div>
+          )}
+
           {/* Rules & Guidelines */}
           <div className="space-y-2 rounded-2xl border border-slate-200 p-4 text-xs text-slate-600">
             <div className="font-bold text-slate-900 flex items-center gap-1.5">
@@ -166,7 +198,10 @@ export default function ExamStartModal({
             <ul className="space-y-1.5 list-disc pl-4 text-[11px]">
               <li>Hệ thống <strong>tự động lưu tạm đáp án</strong> mỗi khi bạn chọn câu trả lời.</li>
               {isExamMode && (
-                <li>Khi hết thời gian quy định, bài thi sẽ <strong>tự động thu và chấm điểm</strong>.</li>
+                <>
+                  <li><strong>Tự động kích hoạt toàn màn hình</strong> và khóa giám sát để đảm bảo tính minh bạch, công bằng.</li>
+                  <li>Khi hết thời gian quy định, bài thi sẽ <strong>tự động thu và chấm điểm</strong>.</li>
+                </>
               )}
               <li>Kết quả thi và xếp hạng sẽ được đồng bộ trực tiếp vào hồ sơ học sinh và Cổng phụ huynh.</li>
             </ul>

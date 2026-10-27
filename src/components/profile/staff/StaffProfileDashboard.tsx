@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
@@ -11,6 +12,7 @@ import {
   Download,
   ChevronDown,
   ChevronLeft,
+  ChevronRight,
   FileText,
   GraduationCap,
   LayoutDashboard,
@@ -22,6 +24,9 @@ import {
   ShieldCheck,
   Star,
   Sun,
+  Moon,
+  Award,
+  Home,
   UsersRound,
   WalletCards,
   XCircle,
@@ -30,9 +35,16 @@ import {
   X,
   ExternalLink,
   Check,
+  Lock,
+  Unlock,
+  UserCheck,
+  RefreshCw,
 } from "lucide-react";
+import NotificationDropdown, { NotificationItem } from "../NotificationDropdown";
 import TeacherApprovalPanel from "./TeacherApprovalPanel";
 import StaffExamManagementPanel from "./StaffExamManagementPanel";
+import StaffMaterialManagementPanel from "./StaffMaterialManagementPanel";
+import CustomSelect from "@/components/common/CustomSelect";
 
 export interface StaffUserItem {
   id: string;
@@ -43,6 +55,8 @@ export interface StaffUserItem {
   email: string;
   phone: string;
   status: string;
+  rawStatus?: string;
+  isVerified?: boolean;
   time: string;
   tone: string;
   avatar: string;
@@ -125,111 +139,482 @@ function Sidebar({
   collapsed,
   onToggle,
   pendingCount = 0,
+  staff,
 }: {
   activeTab: StaffTabId;
   onTabChange: (tab: StaffTabId) => void;
   collapsed: boolean;
   onToggle: () => void;
   pendingCount?: number;
+  staff: StaffSession;
 }) {
   return (
-    <aside className={`relative flex h-full flex-col overflow-hidden bg-gradient-to-b from-[#00563f] via-[#087b58] to-[#02845f] text-white shadow-2xl transition-all duration-300 ${collapsed ? "w-22" : "w-72"}`}>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_8%,rgba(255,255,255,0.16),transparent_30%),radial-gradient(circle_at_70%_65%,rgba(255,214,79,0.10),transparent_34%)]" />
-      <div className="relative z-10 flex h-20 items-center justify-between border-b border-white/10 px-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border-2 border-white/70 bg-white shadow-sm">
-            <Image src="/banner-mascot.png" alt="EduMi" fill sizes="48px" className="object-cover" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <h2 className="truncate text-xl font-black leading-tight">EduMi Platform</h2>
-              <p className="text-xs font-bold text-emerald-100">Dạy hay - Học tốt hơn</p>
+    <aside
+      className={`relative z-20 flex h-full flex-col justify-between bg-gradient-to-b from-[#064e3b] via-[#047857] to-[#065f46] text-white border-r border-emerald-900/30 select-none shadow-[4px_0_24px_rgba(6,78,59,0.15)] transition-all duration-300 ease-in-out ${
+        collapsed ? "w-20" : "w-64"
+      }`}
+    >
+      {/* ── Top Header Brand & Nav items ── */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {/* Brand Header */}
+        <div className="h-16 px-4 flex items-center justify-between border-b border-white/10 flex-shrink-0">
+          <Link
+            href="/"
+            className="flex items-center gap-3 overflow-hidden group cursor-pointer"
+          >
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/20 shadow-md flex-shrink-0 relative bg-white group-hover:scale-105 transition-transform duration-200">
+              <Image
+                src="/favicon.jpg"
+                alt="EduMi Logo"
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
             </div>
-          )}
+            {!collapsed && (
+              <div className="flex flex-col truncate">
+                <span className="font-extrabold text-sm sm:text-base tracking-tight leading-tight text-white group-hover:text-emerald-200 transition-colors">
+                  EduMi Platform
+                </span>
+                <span className="text-[10px] text-emerald-200/80 font-medium tracking-wide">
+                  Học tập & Luyện thi
+                </span>
+              </div>
+            )}
+          </Link>
+
+          {/* Collapse toggle button */}
+          <button
+            type="button"
+            onClick={onToggle}
+            className="w-7 h-7 rounded-lg bg-black/20 hover:bg-black/30 border border-white/10 text-emerald-100 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+            title={collapsed ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
+          >
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
+          </button>
         </div>
-        <button onClick={onToggle} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/10 text-white transition-all hover:bg-white/10">
-          <ChevronLeft className={`h-5 w-5 transition-transform ${collapsed ? "rotate-180" : ""}`} />
-        </button>
+
+        {/* Scrollable Nav Items */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4 custom-scrollbar">
+          {navGroups.map((group, groupIndex) => (
+            <div
+              key={group.title}
+              className={groupIndex > 0 ? "pt-3 border-t border-white/10" : ""}
+            >
+              {!collapsed && (
+                <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-emerald-300/80">
+                  {group.title}
+                </div>
+              )}
+              <nav className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  const badge =
+                    item.id === "teachers"
+                      ? pendingCount > 0
+                        ? String(pendingCount)
+                        : undefined
+                      : item.badge;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onTabChange(item.id)}
+                      title={collapsed ? item.label : undefined}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer outline-none focus:outline-none ${
+                        isActive
+                          ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20 font-bold"
+                          : "text-emerald-100/90 hover:bg-white/10 hover:text-white"
+                      } ${collapsed ? "justify-center" : ""}`}
+                    >
+                      <Icon
+                        className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
+                          isActive ? "scale-110 text-slate-950" : "text-emerald-200"
+                        }`}
+                      />
+                      {!collapsed && (
+                        <span className="truncate flex-1 text-left">{item.label}</span>
+                      )}
+                      {!collapsed && badge && (
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                            isActive
+                              ? "bg-slate-950/15 text-slate-900"
+                              : item.id === "teachers" || item.id === "withdrawals"
+                              ? "bg-rose-500 text-white"
+                              : "bg-emerald-400/20 text-emerald-200 border border-emerald-400/30"
+                          }`}
+                        >
+                          {badge}
+                        </span>
+                      )}
+                      {collapsed && badge && (
+                        <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[#064e3b]" />
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <nav className="relative z-10 flex-1 space-y-6 overflow-hidden px-3 py-6">
-        {navGroups.map((group) => (
-          <div key={group.title}>
-            {!collapsed && <p className="mb-3 px-3 text-xs font-black uppercase tracking-wider text-emerald-200/80">{group.title}</p>}
-            <div className="space-y-2">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                const badge =
-                  item.id === "teachers"
-                    ? pendingCount > 0
-                      ? String(pendingCount)
-                      : undefined
-                    : item.badge;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onTabChange(item.id)}
-                    className={`group relative flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all ${isActive ? "bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/25" : "text-emerald-50 hover:bg-white/10"}`}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span className="flex-1 text-sm font-black">{item.label}</span>}
-                    {!collapsed && badge && (
-                      <span className="rounded-full bg-rose-500 px-2.5 py-1 text-xs font-black text-white">
-                        {badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+      {/* ── Bottom Staff Code Card ── */}
+      <div className="p-3 border-t border-white/10 bg-black/10 flex-shrink-0">
+        {!collapsed ? (
+          <div className="p-2.5 rounded-xl bg-black/20 border border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-2.5 truncate">
+              <ShieldCheck className="w-4 h-4 text-amber-300 flex-shrink-0" />
+              <div className="truncate">
+                <p className="text-[10px] text-emerald-200 font-medium">
+                  Mã nhân viên
+                </p>
+                <p className="text-xs font-bold text-white tracking-wide truncate">
+                  {staff.staffCode || "ST-8899"}
+                </p>
+              </div>
             </div>
           </div>
-        ))}
-      </nav>
-
-
+        ) : (
+          <div
+            className="flex items-center justify-center p-2 rounded-xl bg-black/20 border border-white/10"
+            title={`Mã nhân viên: ${staff.staffCode || "ST-8899"}`}
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-300" />
+          </div>
+        )}
+      </div>
     </aside>
   );
 }
 
-function Header({ staff, onToggleMobileSidebar, onLogout }: { staff: StaffSession; onToggleMobileSidebar: () => void; onLogout: () => void }) {
+function Header({
+  staff,
+  onToggleMobileSidebar,
+  onLogout,
+  onNavigate,
+  pendingTeacherCount = 0,
+}: {
+  staff: StaffSession;
+  onToggleMobileSidebar: () => void;
+  onLogout: () => void;
+  onNavigate: (tab: StaffTabId) => void;
+  pendingTeacherCount?: number;
+}) {
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [searchHeaderQuery, setSearchHeaderQuery] = useState("");
+  const searchInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Keyboard shortcut Cmd+K or Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: "notif-1",
+      title: `${pendingTeacherCount || 8} hồ sơ giáo viên mới đang chờ xét duyệt chuyên môn.`,
+      timeAgo: "Vừa xong",
+      isRead: false,
+    },
+    {
+      id: "notif-2",
+      title: "Hệ thống đã cập nhật bộ đề thi thử THPT Quốc Gia & ĐGNL 2026 mới.",
+      timeAgo: "45 phút trước",
+      isRead: false,
+    },
+    {
+      id: "notif-3",
+      title: "6 yêu cầu duyệt đơn rút tiền của giáo viên đang chờ đối soát.",
+      timeAgo: "2 giờ trước",
+      isRead: false,
+    },
+  ]);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const handleSelectNotification = (item: NotificationItem) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
+    );
+    setIsNotificationOpen(false);
+    if (item.id === "notif-1") onNavigate("teachers");
+    else if (item.id === "notif-2") onNavigate("examPosts");
+    else if (item.id === "notif-3") onNavigate("withdrawals");
+  };
+
   return (
-    <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur-xl lg:px-7">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <button onClick={onToggleMobileSidebar} className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 lg:hidden">
-          <Menu className="h-5 w-5" />
+    <header className="h-16 px-4 sm:px-6 bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 flex items-center justify-between gap-3 select-none">
+      {/* Left: Mobile hamburger & Search bar */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-md">
+        <button
+          type="button"
+          onClick={onToggleMobileSidebar}
+          className="lg:hidden w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+          title="Mở menu"
+        >
+          <Menu className="w-5 h-5" />
         </button>
-        <div className="relative hidden w-full max-w-[640px] sm:block">
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-          <input className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-16 text-sm font-semibold outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" placeholder="Tìm lớp học, học viên, giáo viên, tài liệu..." />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-400">⌘K</span>
+
+        <div className="relative flex-1 hidden sm:block">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <Search className="w-4 h-4" />
+          </div>
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchHeaderQuery}
+            onChange={(e) => setSearchHeaderQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && searchHeaderQuery.trim()) {
+                const q = searchHeaderQuery.toLowerCase();
+                if (q.includes("đề") || q.includes("thi") || q.includes("exam")) {
+                  onNavigate("examPosts");
+                } else if (q.includes("tài liệu") || q.includes("sách") || q.includes("file")) {
+                  onNavigate("materials");
+                } else if (q.includes("giáo viên") || q.includes("thầy") || q.includes("cô")) {
+                  onNavigate("teachers");
+                } else {
+                  onNavigate("users");
+                }
+              }
+            }}
+            placeholder="Tìm tài liệu, bài học, bộ đề..."
+            className="w-full pl-9 pr-12 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 transition-all outline-none"
+          />
+          <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center">
+            <kbd
+              onClick={() => searchInputRef.current?.focus()}
+              className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-md cursor-pointer hover:bg-slate-200"
+            >
+              ⌘K
+            </kbd>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button className="hidden h-11 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-black text-amber-700 shadow-sm sm:flex">
-          <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-          {staff.ratingAvg?.toFixed(1) || "5.0"}
-        </button>
-        <button className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-amber-500 shadow-sm"><Sun className="h-5 w-5" /></button>
-        <button className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -right-1 -top-1 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white">3</span>
-        </button>
-        <div className="flex items-center gap-3">
-          <div className="relative h-11 w-11 overflow-hidden rounded-full bg-emerald-800 text-white ring-4 ring-emerald-50">
-            {staff.avatarUrl ? <Image src={staff.avatarUrl} alt={staff.fullName} fill sizes="44px" className="object-cover" /> : <span className="flex h-full w-full items-center justify-center text-base font-black">S</span>}
-          </div>
-          <div className="hidden sm:block">
-            <p className="max-w-[150px] truncate text-sm font-black text-slate-800">{staff.fullName}</p>
-            <p className="text-xs font-bold text-slate-500">Nhân viên</p>
-          </div>
-          <ChevronDown className="hidden h-4 w-4 text-slate-400 sm:block" />
+      {/* Right: Stats, Actions, and User Profile Chip (Identical scale to student profile) */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Rating Badge (Compact Pill style like Student Streak) */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setIsRatingModalOpen(!isRatingModalOpen);
+              setIsNotificationOpen(false);
+              setIsProfileMenuOpen(false);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-700 shadow-sm transition-all hover:shadow cursor-pointer active:scale-95"
+            title="Đánh giá hiệu suất: 5.0 ★"
+          >
+            <Star className="w-4 h-4 text-amber-500 fill-amber-500 animate-pulse" />
+            <span className="text-xs sm:text-sm font-black text-amber-900">
+              {staff.ratingAvg?.toFixed(1) || "5.0"}
+            </span>
+          </button>
+
+          {isRatingModalOpen && (
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsRatingModalOpen(false)} />
+              <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-amber-200 bg-white p-4 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150 origin-top-right">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                    <Award className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase text-amber-900 tracking-wider">Hiệu suất công tác</h4>
+                    <p className="text-sm font-black text-slate-800">5.0 / 5.0 (Xuất sắc)</p>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-2 text-xs font-semibold text-slate-600">
+                  <div className="flex justify-between">
+                    <span>Tỷ lệ duyệt đúng hạn:</span>
+                    <strong className="text-emerald-600 font-black">99.8%</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Thời gian phản hồi TB:</span>
+                    <strong className="text-slate-800 font-black">&lt; 15 phút</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Chuẩn kiểm duyệt:</span>
+                    <strong className="text-amber-600 font-black">Bộ GD&amp;ĐT 2026</strong>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-        <button onClick={onLogout} className="hidden h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-rose-50 hover:text-rose-600 lg:flex" title="Đăng xuất">
-          <LogOut className="h-5 w-5" />
+
+        {/* Light / Dark Mode Toggle Button (w-9 h-9 like Student) */}
+        <button
+          type="button"
+          onClick={() => setIsDarkMode(!isDarkMode)}
+          className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95"
+          title={isDarkMode ? "Chuyển sang chế độ ban ngày" : "Chuyển sang chế độ ban đêm"}
+        >
+          {isDarkMode ? (
+            <Moon className="w-4 h-4 text-indigo-500 transition-transform duration-300 rotate-12" />
+          ) : (
+            <Sun className="w-4 h-4 text-amber-500 transition-transform duration-300 hover:rotate-45" />
+          )}
         </button>
+
+        {/* Notification Bell with NotificationDropdown (w-9 h-9 like Student) */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setIsNotificationOpen(!isNotificationOpen);
+              if (isProfileMenuOpen) setIsProfileMenuOpen(false);
+              if (isRatingModalOpen) setIsRatingModalOpen(false);
+            }}
+            className={`relative w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm flex items-center justify-center active:scale-95 ${
+              isNotificationOpen
+                ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                : "bg-slate-50 hover:bg-slate-100 border-slate-200/80 text-slate-600 hover:text-slate-900"
+            }`}
+            title="Thông báo hệ thống"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse" />
+            )}
+          </button>
+
+          <NotificationDropdown
+            isOpen={isNotificationOpen}
+            onClose={() => setIsNotificationOpen(false)}
+            fullName={staff.fullName}
+            notifications={notifications}
+            onSelectNotification={handleSelectNotification}
+            onViewAllPosts={() => {
+              setIsNotificationOpen(false);
+              onNavigate("overview");
+            }}
+          />
+        </div>
+
+        {/* User Profile Chip (Exactly matching Student ProfileHeader) */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setIsProfileMenuOpen(!isProfileMenuOpen);
+              if (isNotificationOpen) setIsNotificationOpen(false);
+              if (isRatingModalOpen) setIsRatingModalOpen(false);
+            }}
+            className={`flex items-center gap-2 p-1 sm:pr-3 rounded-full transition-all cursor-pointer ${
+              isProfileMenuOpen
+                ? "bg-slate-100 border border-slate-200 shadow-xs"
+                : "hover:bg-slate-100 border border-transparent hover:border-slate-200"
+            }`}
+          >
+            {/* User Avatar w-8 h-8 */}
+            <div className="w-8 h-8 rounded-full bg-[#064e3b] text-white font-bold text-xs flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden relative">
+              {staff.avatarUrl ? (
+                <Image src={staff.avatarUrl} alt={staff.fullName} fill sizes="32px" className="object-cover" />
+              ) : (
+                <span>{staff.fullName ? staff.fullName.charAt(0).toUpperCase() : "S"}</span>
+              )}
+            </div>
+            <span className="hidden sm:inline-block text-xs sm:text-sm font-bold text-slate-800 truncate max-w-[140px]">
+              {staff.fullName}
+            </span>
+            <ChevronDown
+              className={`hidden sm:inline-block w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                isProfileMenuOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {/* User Dropdown Menu with Dropdown Cascade Effect (animate-in slide-in-from-top-2) */}
+          {isProfileMenuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40 bg-transparent"
+                onClick={() => setIsProfileMenuOpen(false)}
+              />
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/90 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 origin-top-right">
+                <div className="px-3 py-2.5 border-b border-slate-100">
+                  <p className="text-xs font-bold text-slate-900 truncate">
+                    {staff.fullName}
+                  </p>
+                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Nhân viên EduMi</span>
+                  </p>
+                </div>
+                <div className="py-1">
+                  <Link
+                    href="/"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors cursor-pointer text-left"
+                  >
+                    <Home className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Trang chủ EduMi</span>
+                  </Link>
+                  <Link
+                    href="/exam"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors cursor-pointer text-left"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Phòng thi trực tuyến</span>
+                  </Link>
+                  <Link
+                    href="/materials"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors cursor-pointer text-left"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Thư viện tài liệu</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      onNavigate("overview");
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition-colors cursor-pointer text-left"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Bảng điều khiển Staff</span>
+                  </button>
+                </div>
+                <div className="pt-1 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      onLogout();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -436,6 +821,13 @@ function UserManagementPanel({
   const [selectedRole, setSelectedRole] = useState("Tất cả vai trò");
   const [selectedStatus, setSelectedStatus] = useState("Tất cả trạng thái");
 
+  // Multi-selection for batch operations
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [isProcessingBatch, setIsProcessingBatch] = useState(false);
+
+  // Per-row processing indicator
+  const [processingUserId, setProcessingUserId] = useState<string | null>(null);
+
   // Modal Xem chi tiết
   const [viewingUser, setViewingUser] = useState<StaffUserItem | null>(null);
   const [viewingDetail, setViewingDetail] = useState<{
@@ -450,6 +842,7 @@ function UserManagementPanel({
     profile?: Record<string, unknown> | null;
   } | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isSavingDetail, setIsSavingDetail] = useState(false);
 
   // Modal Khóa / Mở khóa
   const [targetBanUser, setTargetBanUser] = useState<StaffUserItem | null>(null);
@@ -476,6 +869,35 @@ function UserManagementPanel({
     });
   }, [localUsers, searchQuery, selectedRole, selectedStatus]);
 
+  // Checkbox selection logic
+  const nonSelfFilteredUsers = useMemo(() => {
+    return filteredUsers.filter((u) => u.id !== currentStaffId);
+  }, [filteredUsers, currentStaffId]);
+
+  const allFilteredSelected =
+    nonSelfFilteredUsers.length > 0 &&
+    nonSelfFilteredUsers.every((u) => selectedUserIds.has(u.id));
+
+  const handleToggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedUserIds(new Set());
+    } else {
+      const next = new Set<string>();
+      nonSelfFilteredUsers.forEach((u) => next.add(u.id));
+      setSelectedUserIds(next);
+    }
+  };
+
+  const handleToggleSelectUser = (id: string) => {
+    if (id === currentStaffId) return;
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   // Mở modal xem chi tiết người dùng
   const handleOpenViewUser = async (user: StaffUserItem) => {
     setViewingUser(user);
@@ -494,7 +916,55 @@ function UserManagementPanel({
     }
   };
 
-  // Xác nhận Ban / Unban
+  // Xử lý trực tiếp từ hàng bảng: Kích hoạt / Mở khóa / Ban
+  const handleDirectAction = async (user: StaffUserItem, action: "ban" | "unban" | "activate") => {
+    if (user.id === currentStaffId) {
+      setFeedback({ type: "error", message: "Bạn không thể tự thay đổi tài khoản của chính mình." });
+      return;
+    }
+    setProcessingUserId(user.id);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/staff/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Thao tác cập nhật người dùng thất bại.");
+
+      const newDisplayStatus = data.displayStatus || (action === "ban" ? "Bị khóa" : "Hoạt động");
+      const newRawStatus = data.rawStatus || (action === "ban" ? "banned" : "active");
+      const newIsVerified = data.isVerified !== undefined ? data.isVerified : action !== "ban";
+
+      setLocalUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, status: newDisplayStatus, rawStatus: newRawStatus, isVerified: newIsVerified }
+            : u
+        )
+      );
+
+      if (viewingUser?.id === user.id) {
+        setViewingUser((prev) =>
+          prev ? { ...prev, status: newDisplayStatus, rawStatus: newRawStatus, isVerified: newIsVerified } : null
+        );
+        setViewingDetail((prev) =>
+          prev ? { ...prev, status: newRawStatus, is_verified: newIsVerified } : null
+        );
+      }
+
+      setFeedback({ type: "success", message: `✓ Đã đồng bộ Supabase: ${data.message}` });
+      onRefresh?.();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Đã có lỗi xảy ra.";
+      setFeedback({ type: "error", message: msg });
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
+  // Xác nhận Ban / Unban từ Modal
   const handleConfirmBanToggle = async () => {
     if (!targetBanUser) return;
     setIsProcessingBan(true);
@@ -513,16 +983,27 @@ function UserManagementPanel({
       }
 
       const newDisplayStatus = data.displayStatus || (action === "ban" ? "Bị khóa" : "Hoạt động");
+      const newRawStatus = data.rawStatus || (action === "ban" ? "banned" : "active");
+      const newIsVerified = data.isVerified !== undefined ? data.isVerified : action !== "ban";
 
       setLocalUsers((prev) =>
-        prev.map((u) => (u.id === targetBanUser.id ? { ...u, status: newDisplayStatus } : u))
+        prev.map((u) =>
+          u.id === targetBanUser.id
+            ? { ...u, status: newDisplayStatus, rawStatus: newRawStatus, isVerified: newIsVerified }
+            : u
+        )
       );
 
       if (viewingUser?.id === targetBanUser.id) {
-        setViewingUser((prev) => (prev ? { ...prev, status: newDisplayStatus } : null));
+        setViewingUser((prev) =>
+          prev ? { ...prev, status: newDisplayStatus, rawStatus: newRawStatus, isVerified: newIsVerified } : null
+        );
+        setViewingDetail((prev) =>
+          prev ? { ...prev, status: newRawStatus, is_verified: newIsVerified } : null
+        );
       }
 
-      setFeedback({ type: "success", message: data.message });
+      setFeedback({ type: "success", message: `✓ Đã đồng bộ Supabase: ${data.message}` });
       setTargetBanUser(null);
       onRefresh?.();
     } catch (err: unknown) {
@@ -530,6 +1011,219 @@ function UserManagementPanel({
       setFeedback({ type: "error", message: msg });
     } finally {
       setIsProcessingBan(false);
+    }
+  };
+
+  // Thay đổi trạng thái tài khoản từ Modal xem chi tiết
+  const handleUpdateUserStatusFromModal = async (displayStatus: string) => {
+    if (!viewingUser) return;
+    if (viewingUser.id === currentStaffId) {
+      setFeedback({ type: "error", message: "Bạn không thể tự thay đổi trạng thái của chính mình." });
+      return;
+    }
+
+    const statusMap: Record<string, string> = {
+      "Hoạt động": "active",
+      "Chưa xác thực": "pending_verification",
+      "Tạm ngưng": "inactive",
+      "Bị khóa": "banned",
+    };
+    const rawStatus = statusMap[displayStatus];
+    if (!rawStatus) return;
+
+    setIsSavingDetail(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/staff/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: viewingUser.id,
+          action: "set_status",
+          status: rawStatus,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Cập nhật trạng thái thất bại.");
+
+      const newDisplayStatus = data.displayStatus || displayStatus;
+      const newRawStatus = data.rawStatus || rawStatus;
+      const newIsVerified = data.isVerified !== undefined ? data.isVerified : rawStatus === "active";
+
+      setViewingUser((prev) =>
+        prev ? { ...prev, status: newDisplayStatus, rawStatus: newRawStatus, isVerified: newIsVerified } : null
+      );
+      setViewingDetail((prev) =>
+        prev ? { ...prev, status: newRawStatus, is_verified: newIsVerified } : null
+      );
+
+      setLocalUsers((prev) =>
+        prev.map((u) =>
+          u.id === viewingUser.id
+            ? { ...u, status: newDisplayStatus, rawStatus: newRawStatus, isVerified: newIsVerified }
+            : u
+        )
+      );
+
+      setFeedback({ type: "success", message: `✓ Đã đồng bộ Supabase: ${data.message}` });
+      onRefresh?.();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Đã có lỗi xảy ra.";
+      setFeedback({ type: "error", message: msg });
+    } finally {
+      setIsSavingDetail(false);
+    }
+  };
+
+  // Thay đổi vai trò người dùng từ Modal xem chi tiết
+  const handleUpdateUserRoleFromModal = async (displayRole: string) => {
+    if (!viewingUser) return;
+    if (viewingUser.id === currentStaffId) {
+      setFeedback({ type: "error", message: "Bạn không thể tự thay đổi vai trò của chính mình." });
+      return;
+    }
+
+    const roleMap: Record<string, string> = {
+      "Học sinh": "student",
+      "Giáo viên": "teacher",
+      "Nhân viên": "staff",
+      "Phụ huynh": "parent",
+    };
+    const rawRole = roleMap[displayRole];
+    if (!rawRole) return;
+
+    setIsSavingDetail(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/staff/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: viewingUser.id,
+          action: "set_role",
+          role: rawRole,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Cập nhật vai trò thất bại.");
+
+      const tone =
+        rawRole === "teacher"
+          ? "amber"
+          : rawRole === "staff"
+          ? "rose"
+          : rawRole === "parent"
+          ? "purple"
+          : "blue";
+
+      setViewingUser((prev) => (prev ? { ...prev, role: displayRole, rawRole, tone } : null));
+      setViewingDetail((prev) => (prev ? { ...prev, role: rawRole } : null));
+
+      setLocalUsers((prev) =>
+        prev.map((u) => (u.id === viewingUser.id ? { ...u, role: displayRole, rawRole, tone } : u))
+      );
+
+      setFeedback({ type: "success", message: `✓ Đã đồng bộ Supabase: ${data.message}` });
+      onRefresh?.();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Đã có lỗi xảy ra.";
+      setFeedback({ type: "error", message: msg });
+    } finally {
+      setIsSavingDetail(false);
+    }
+  };
+
+  // Bật/tắt xác thực OTP từ Modal xem chi tiết
+  const handleVerifyOtpFromModal = async (isVerified: boolean) => {
+    if (!viewingUser) return;
+    setIsSavingDetail(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/staff/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: viewingUser.id,
+          action: "set_verified",
+          isVerified,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Cập nhật xác thực OTP thất bại.");
+
+      const newDisplayStatus = data.displayStatus || (isVerified ? "Hoạt động" : "Chưa xác thực");
+      const newRawStatus = data.rawStatus || (isVerified ? "active" : "pending_verification");
+
+      setViewingUser((prev) =>
+        prev ? { ...prev, status: newDisplayStatus, rawStatus: newRawStatus, isVerified } : null
+      );
+      setViewingDetail((prev) =>
+        prev ? { ...prev, is_verified: isVerified, status: newRawStatus } : null
+      );
+
+      setLocalUsers((prev) =>
+        prev.map((u) =>
+          u.id === viewingUser.id
+            ? { ...u, status: newDisplayStatus, rawStatus: newRawStatus, isVerified }
+            : u
+        )
+      );
+
+      setFeedback({ type: "success", message: `✓ Đã đồng bộ Supabase: ${data.message}` });
+      onRefresh?.();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Đã có lỗi xảy ra.";
+      setFeedback({ type: "error", message: msg });
+    } finally {
+      setIsSavingDetail(false);
+    }
+  };
+
+  // Cập nhật hàng loạt (Batch Status)
+  const handleBatchStatus = async (status: "banned" | "active") => {
+    if (selectedUserIds.size === 0) return;
+    setIsProcessingBatch(true);
+    setFeedback(null);
+    const userIds = Array.from(selectedUserIds).filter((id) => id !== currentStaffId);
+
+    if (userIds.length === 0) {
+      setFeedback({ type: "error", message: "Không thể áp dụng thao tác hàng loạt cho tài khoản của chính bạn." });
+      setIsProcessingBatch(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/staff/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "batch_status",
+          userIds,
+          status,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Cập nhật hàng loạt thất bại.");
+
+      const newDisplayStatus = status === "banned" ? "Bị khóa" : "Hoạt động";
+      const newIsVerified = status === "active";
+
+      setLocalUsers((prev) =>
+        prev.map((u) =>
+          userIds.includes(u.id)
+            ? { ...u, status: newDisplayStatus, rawStatus: status, isVerified: newIsVerified }
+            : u
+        )
+      );
+
+      setSelectedUserIds(new Set());
+      setFeedback({ type: "success", message: `✓ Đã đồng bộ Supabase: ${data.message}` });
+      onRefresh?.();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Đã có lỗi xảy ra.";
+      setFeedback({ type: "error", message: msg });
+    } finally {
+      setIsProcessingBatch(false);
     }
   };
 
@@ -545,10 +1239,10 @@ function UserManagementPanel({
       const XLSX = await import("xlsx");
 
       const exportRows = filteredUsers.map((u, idx) => ({
-        "STT": idx + 1,
+        STT: idx + 1,
         "Mã người dùng": u.code || "—",
         "Họ và tên": u.name,
-        "Email": u.email,
+        Email: u.email,
         "Vai trò": u.role,
         "Trạng thái": u.status,
         "Ngày tạo": u.time,
@@ -558,7 +1252,7 @@ function UserManagementPanel({
 
       // Căn chỉnh độ rộng các cột tối ưu cho Microsoft Excel
       worksheet["!cols"] = [
-        { wch: 6 },  // STT
+        { wch: 6 }, // STT
         { wch: 16 }, // Mã người dùng
         { wch: 28 }, // Họ và tên
         { wch: 36 }, // Email
@@ -589,11 +1283,11 @@ function UserManagementPanel({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="relative space-y-5">
       {/* Thông báo Feedback */}
       {feedback && (
         <div
-          className={`flex items-center justify-between rounded-2xl p-4 text-sm font-bold shadow-xs ${
+          className={`flex items-center justify-between rounded-2xl p-4 text-sm font-bold shadow-xs transition-all ${
             feedback.type === "success"
               ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
               : "border border-rose-200 bg-rose-50 text-rose-800"
@@ -630,27 +1324,32 @@ function UserManagementPanel({
               className="w-full bg-transparent text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none"
             />
           </div>
-          <select
+          <CustomSelect
             value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-            className="flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 outline-none cursor-pointer"
-          >
-            <option value="Tất cả vai trò">Tất cả vai trò</option>
-            <option value="Học sinh">Học sinh</option>
-            <option value="Giáo viên">Giáo viên</option>
-            <option value="Nhân viên">Nhân viên</option>
-            <option value="Phụ huynh">Phụ huynh</option>
-          </select>
-          <select
+            onChange={setSelectedRole}
+            options={[
+              "Tất cả vai trò",
+              "Học sinh",
+              "Giáo viên",
+              "Nhân viên",
+              "Phụ huynh",
+            ]}
+            className="w-full"
+            buttonClassName="h-12 rounded-2xl border-slate-200 text-sm font-bold text-slate-700"
+          />
+          <CustomSelect
             value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 outline-none cursor-pointer"
-          >
-            <option value="Tất cả trạng thái">Tất cả trạng thái</option>
-            <option value="Hoạt động">Hoạt động</option>
-            <option value="Chưa xác thực">Chưa xác thực</option>
-            <option value="Bị khóa">Bị khóa</option>
-          </select>
+            onChange={setSelectedStatus}
+            options={[
+              "Tất cả trạng thái",
+              "Hoạt động",
+              "Chưa xác thực",
+              "Bị khóa",
+              "Tạm ngưng",
+            ]}
+            className="w-full"
+            buttonClassName="h-12 rounded-2xl border-slate-200 text-sm font-bold text-slate-700"
+          />
           <div className="flex items-center gap-2">
             {onRefresh && (
               <button
@@ -689,7 +1388,13 @@ function UserManagementPanel({
       <section>
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 p-5">
-            <h2 className="text-xl font-black text-slate-950">Danh sách người dùng hệ thống (Supabase)</h2>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-xl font-black text-slate-950">Danh sách người dùng hệ thống (Supabase)</h2>
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-black text-emerald-700 border border-emerald-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live Sync
+              </span>
+            </div>
             <span className="text-sm font-bold text-slate-400">
               Hiển thị {filteredUsers.length} / {localUsers.length} người dùng
             </span>
@@ -698,7 +1403,15 @@ function UserManagementPanel({
             <table className="w-full min-w-[920px] text-left text-sm">
               <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500">
                 <tr>
-                  <th className="px-4 py-3"><input type="checkbox" className="h-4 w-4 rounded border-slate-300" /></th>
+                  <th className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={handleToggleSelectAll}
+                      title="Chọn tất cả người dùng"
+                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    />
+                  </th>
                   <th className="px-4 py-3">Người dùng</th>
                   <th className="px-4 py-3">Vai trò</th>
                   <th className="px-4 py-3">Email</th>
@@ -713,7 +1426,7 @@ function UserManagementPanel({
                     <td colSpan={7} className="px-4 py-12 text-center text-slate-400 font-bold">
                       <div className="flex items-center justify-center gap-2">
                         <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
-                        <span>Đang tải danh sách người dùng từ cơ sở dữ liệu...</span>
+                        <span>Đang tải danh sách người dùng từ cơ sở dữ liệu Supabase...</span>
                       </div>
                     </td>
                   </tr>
@@ -733,18 +1446,41 @@ function UserManagementPanel({
                         ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
                         : user.status === "Chưa xác thực"
                         ? "border border-amber-200 bg-amber-50 text-amber-700"
+                        : user.status === "Tạm ngưng"
+                        ? "border border-slate-200 bg-slate-100 text-slate-700"
                         : "border border-rose-200 bg-rose-50 text-rose-700";
 
                     const isCurrentUser = user.id === currentStaffId;
+                    const isSelected = selectedUserIds.has(user.id);
+                    const isProcessingThis = processingUserId === user.id;
 
                     return (
-                      <tr key={user.id} className="transition-colors hover:bg-slate-50/70">
-                        <td className="px-4 py-3"><input type="checkbox" className="h-4 w-4 rounded border-slate-300" /></td>
+                      <tr
+                        key={user.id}
+                        className={`transition-colors ${
+                          isSelected ? "bg-emerald-50/40" : "hover:bg-slate-50/70"
+                        }`}
+                      >
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={isCurrentUser}
+                            onChange={() => handleToggleSelectUser(user.id)}
+                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:opacity-40"
+                          />
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {user.avatarUrl ? (
                               <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200">
-                                <Image src={user.avatarUrl} alt={user.name} fill sizes="40px" className="object-cover" />
+                                <Image
+                                  src={user.avatarUrl}
+                                  alt={user.name}
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
+                                />
                               </div>
                             ) : (
                               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-700">
@@ -752,14 +1488,25 @@ function UserManagementPanel({
                               </span>
                             )}
                             <div>
-                              <p className="font-black text-slate-900">{user.name}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-black text-slate-900">{user.name}</p>
+                                {isCurrentUser && (
+                                  <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-black text-emerald-800">
+                                    Bạn
+                                  </span>
+                                )}
+                              </div>
                               {user.code ? (
                                 <p className="text-xs font-bold text-slate-400">{user.code}</p>
                               ) : null}
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3"><span className={`rounded-xl px-3 py-1 text-xs font-black ${roleTone}`}>{user.role}</span></td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-xl px-3 py-1 text-xs font-black ${roleTone}`}>
+                            {user.role}
+                          </span>
+                        </td>
                         <td className="px-4 py-3">
                           <p className="font-semibold text-slate-700">{user.email}</p>
                         </td>
@@ -771,6 +1518,8 @@ function UserManagementPanel({
                                   ? "bg-emerald-500"
                                   : user.status === "Chưa xác thực"
                                   ? "bg-amber-500"
+                                  : user.status === "Tạm ngưng"
+                                  ? "bg-slate-400"
                                   : "bg-rose-500"
                               }`}
                             />
@@ -779,33 +1528,80 @@ function UserManagementPanel({
                         </td>
                         <td className="px-4 py-3 font-bold text-slate-500">{user.time}</td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            {/* Nút Xem chi tiết */}
                             <button
                               type="button"
                               onClick={() => handleOpenViewUser(user)}
                               className="flex h-8 items-center gap-1 rounded-xl border border-slate-200 px-2.5 text-xs font-black text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                             >
-                              <Eye className="h-4 w-4" /> Xem
+                              <Eye className="h-3.5 w-3.5" /> Xem
                             </button>
+
                             {isCurrentUser ? (
-                              <span className="flex h-8 items-center rounded-xl bg-slate-100 px-2 text-[11px] font-bold text-slate-400 select-none">
+                              <span className="flex h-8 items-center rounded-xl bg-slate-100 px-2.5 text-[11px] font-bold text-slate-400 select-none">
                                 Bạn
+                              </span>
+                            ) : isProcessingThis ? (
+                              <span className="flex h-8 items-center gap-1.5 rounded-xl bg-slate-100 px-3 text-xs font-bold text-slate-600">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600" />
+                                Đang lưu...
                               </span>
                             ) : user.status === "Bị khóa" ? (
                               <button
                                 type="button"
                                 onClick={() => setTargetBanUser(user)}
-                                className="flex h-8 items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-black text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+                                className="flex h-8 items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-black text-emerald-700 hover:bg-emerald-100 transition cursor-pointer shadow-xs"
+                                title="Mở khóa tài khoản này trên Supabase"
                               >
-                                <CheckCircle className="h-3.5 w-3.5" /> Mở khóa
+                                <Unlock className="h-3.5 w-3.5" /> Mở khóa
                               </button>
+                            ) : user.status === "Chưa xác thực" ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDirectAction(user, "activate")}
+                                  className="flex h-8 items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-black text-emerald-700 hover:bg-emerald-100 transition cursor-pointer shadow-xs"
+                                  title="Kích hoạt và xác thực OTP tài khoản này trên Supabase"
+                                >
+                                  <UserCheck className="h-3.5 w-3.5" /> Kích hoạt
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setTargetBanUser(user)}
+                                  className="flex h-8 items-center gap-1 rounded-xl border border-rose-100 bg-rose-50 px-2 text-xs font-black text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                                  title="Khóa tài khoản trên Supabase"
+                                >
+                                  <Lock className="h-3.5 w-3.5" /> Ban
+                                </button>
+                              </div>
+                            ) : user.status === "Tạm ngưng" ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDirectAction(user, "activate")}
+                                  className="flex h-8 items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-black text-emerald-700 hover:bg-emerald-100 transition cursor-pointer shadow-xs"
+                                  title="Kích hoạt lại tài khoản này trên Supabase"
+                                >
+                                  <Check className="h-3.5 w-3.5" /> Kích hoạt
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setTargetBanUser(user)}
+                                  className="flex h-8 items-center gap-1 rounded-xl border border-rose-100 bg-rose-50 px-2 text-xs font-black text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                                  title="Khóa tài khoản trên Supabase"
+                                >
+                                  <Lock className="h-3.5 w-3.5" /> Ban
+                                </button>
+                              </div>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => setTargetBanUser(user)}
                                 className="flex h-8 items-center gap-1 rounded-xl border border-rose-100 bg-rose-50 px-2.5 text-xs font-black text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                                title="Khóa tài khoản người dùng trên Supabase"
                               >
-                                <ShieldAlert className="h-3.5 w-3.5" /> Ban
+                                <Lock className="h-3.5 w-3.5" /> Ban
                               </button>
                             )}
                           </div>
@@ -826,16 +1622,75 @@ function UserManagementPanel({
         </div>
       </section>
 
-      {/* Modal 1: Xem chi tiết người dùng */}
+      {/* Floating Toolbar thao tác hàng loạt */}
+      {selectedUserIds.size > 0 && (
+        <div className="sticky bottom-4 z-40 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/95 px-5 py-3.5 text-white shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-3">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-500 text-xs font-black text-slate-950">
+              {selectedUserIds.size}
+            </span>
+            <span className="text-sm font-bold">
+              Đã chọn <strong className="text-emerald-400">{selectedUserIds.size}</strong> người dùng
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={isProcessingBatch}
+              onClick={() => handleBatchStatus("banned")}
+              className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-black text-white hover:bg-rose-700 transition cursor-pointer disabled:opacity-50 shadow-md shadow-rose-600/30"
+            >
+              {isProcessingBatch ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Lock className="h-3.5 w-3.5" />
+              )}
+              Khóa hàng loạt
+            </button>
+
+            <button
+              type="button"
+              disabled={isProcessingBatch}
+              onClick={() => handleBatchStatus("active")}
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700 transition cursor-pointer disabled:opacity-50 shadow-md shadow-emerald-600/30"
+            >
+              {isProcessingBatch ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Unlock className="h-3.5 w-3.5" />
+              )}
+              Mở khóa & Kích hoạt hàng loạt
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedUserIds(new Set())}
+              className="flex h-8 items-center gap-1 rounded-xl bg-slate-800 px-3 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+              Bỏ chọn
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 1: Xem chi tiết và Điều khiển trực tiếp với Supabase */}
       {viewingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] border border-emerald-100 bg-white p-6 shadow-2xl">
             {/* Header Modal */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-xl font-black text-slate-950">Thông tin chi tiết người dùng</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-black text-slate-950">Thông tin chi tiết người dùng</h3>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-700 border border-emerald-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Supabase Live
+                  </span>
+                </div>
                 <p className="mt-0.5 text-xs font-semibold text-slate-400">
-                  Dữ liệu tài khoản thời gian thực trên cơ sở dữ liệu EduMi.
+                  Dữ liệu tài khoản thời gian thực trên cơ sở dữ liệu EduMi. Mọi thay đổi sẽ lập tức đồng bộ với Supabase.
                 </p>
               </div>
               <button
@@ -888,11 +1743,61 @@ function UserManagementPanel({
                         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                         : viewingUser.status === "Chưa xác thực"
                         ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : viewingUser.status === "Tạm ngưng"
+                        ? "bg-slate-100 text-slate-700 border-slate-200"
                         : "bg-rose-50 text-rose-700 border-rose-200"
                     }`}
                   >
                     ● {viewingUser.status}
                   </span>
+                </div>
+              </div>
+
+              {/* Bảng điều khiển đồng bộ Supabase */}
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-700" />
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-900">
+                      Bảng điều khiển Supabase Database
+                    </span>
+                  </div>
+                  {isSavingDetail && (
+                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-700">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Đang đồng bộ với Supabase...
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">
+                      Trạng thái tài khoản (Cột <code className="text-emerald-700">status</code>):
+                    </label>
+                    <CustomSelect
+                      value={viewingUser.status}
+                      onChange={handleUpdateUserStatusFromModal}
+                      options={["Hoạt động", "Chưa xác thực", "Tạm ngưng", "Bị khóa"]}
+                      disabled={isSavingDetail || viewingUser.id === currentStaffId}
+                      className="w-full"
+                      buttonClassName="h-10 rounded-xl border-slate-200 text-xs font-bold bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">
+                      Vai trò người dùng (Cột <code className="text-emerald-700">role</code>):
+                    </label>
+                    <CustomSelect
+                      value={viewingUser.role}
+                      onChange={handleUpdateUserRoleFromModal}
+                      options={["Học sinh", "Giáo viên", "Nhân viên", "Phụ huynh"]}
+                      disabled={isSavingDetail || viewingUser.id === currentStaffId}
+                      className="w-full"
+                      buttonClassName="h-10 rounded-xl border-slate-200 text-xs font-bold bg-white"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -903,26 +1808,41 @@ function UserManagementPanel({
                   <p className="mt-1 text-sm font-black text-slate-900 break-all">{viewingUser.email}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5">
-                  <p className="text-xs font-bold text-slate-400">Trạng thái xác thực Email</p>
-                  <p className="mt-1 flex items-center gap-1.5 text-sm font-black">
+                  <p className="text-xs font-bold text-slate-400">Trạng thái xác thực Email / OTP</p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
                     {viewingDetail?.is_verified ? (
-                      <span className="text-emerald-700 flex items-center gap-1">
+                      <span className="text-emerald-700 flex items-center gap-1 text-xs font-black">
                         <CheckCircle className="h-4 w-4 text-emerald-600" /> Đã xác thực OTP
                       </span>
                     ) : (
-                      <span className="text-amber-700 flex items-center gap-1">
+                      <span className="text-amber-700 flex items-center gap-1 text-xs font-black">
                         <ShieldAlert className="h-4 w-4 text-amber-600" /> Chưa xác thực OTP
                       </span>
                     )}
-                  </p>
+
+                    {viewingUser.id !== currentStaffId && (
+                      <button
+                        type="button"
+                        disabled={isSavingDetail}
+                        onClick={() => handleVerifyOtpFromModal(!viewingDetail?.is_verified)}
+                        className={`rounded-lg px-2.5 py-1 text-[11px] font-black transition cursor-pointer ${
+                          viewingDetail?.is_verified
+                            ? "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                            : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        }`}
+                      >
+                        {viewingDetail?.is_verified ? "Hủy OTP" : "Xác thực ngay"}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5">
                   <p className="text-xs font-bold text-slate-400">Ngày tham gia hệ thống</p>
                   <p className="mt-1 text-sm font-black text-slate-900">{viewingUser.time}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5">
-                  <p className="text-xs font-bold text-slate-400">Quyền phân cấp</p>
-                  <p className="mt-1 text-sm font-black text-slate-900 capitalize">{viewingUser.rawRole}</p>
+                  <p className="text-xs font-bold text-slate-400">Số điện thoại</p>
+                  <p className="mt-1 text-sm font-black text-slate-900">{viewingUser.phone || "Chưa cập nhật"}</p>
                 </div>
               </div>
 
@@ -930,7 +1850,7 @@ function UserManagementPanel({
               {isLoadingDetail ? (
                 <div className="flex items-center justify-center gap-2 py-6 text-sm font-bold text-slate-400">
                   <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
-                  <span>Đang tải thông tin chuyên môn hồ sơ...</span>
+                  <span>Đang tải thông tin chuyên môn hồ sơ từ Supabase...</span>
                 </div>
               ) : viewingDetail?.profile ? (
                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50/30 p-4">
@@ -1042,11 +1962,11 @@ function UserManagementPanel({
                 >
                   {viewingUser.status === "Bị khóa" ? (
                     <>
-                      <CheckCircle className="h-4 w-4" /> Mở khóa tài khoản này
+                      <Unlock className="h-4 w-4" /> Mở khóa tài khoản này
                     </>
                   ) : (
                     <>
-                      <ShieldAlert className="h-4 w-4" /> Khóa tài khoản này
+                      <Lock className="h-4 w-4" /> Khóa tài khoản này
                     </>
                   )}
                 </button>
@@ -1069,9 +1989,9 @@ function UserManagementPanel({
                 }`}
               >
                 {targetBanUser.status === "Bị khóa" ? (
-                  <CheckCircle className="h-6 w-6" />
+                  <Unlock className="h-6 w-6" />
                 ) : (
-                  <ShieldAlert className="h-6 w-6" />
+                  <Lock className="h-6 w-6" />
                 )}
               </div>
               <div>
@@ -1088,8 +2008,8 @@ function UserManagementPanel({
 
             <p className="mt-4 text-xs font-semibold leading-relaxed text-slate-600">
               {targetBanUser.status === "Bị khóa"
-                ? `Bạn có chắc chắn muốn mở khóa cho tài khoản ${targetBanUser.name}? Người dùng sẽ có thể đăng nhập và tiếp tục sử dụng nền tảng EduMi.`
-                : `Bạn có chắc chắn muốn khóa tài khoản của ${targetBanUser.name}? Sau khi khóa, người dùng này sẽ lập tức bị chặn quyền đăng nhập vào hệ thống EduMi.`}
+                ? `Bạn có chắc chắn muốn mở khóa cho tài khoản ${targetBanUser.name}? Trạng thái trên cơ sở dữ liệu Supabase sẽ chuyển sang "active" và người dùng sẽ có thể đăng nhập bình thường.`
+                : `Bạn có chắc chắn muốn khóa tài khoản của ${targetBanUser.name}? Trạng thái trên cơ sở dữ liệu Supabase sẽ chuyển sang "banned" và người dùng sẽ bị chặn quyền đăng nhập ngay lập tức.`}
             </p>
 
             <div className="mt-6 flex items-center justify-end gap-3">
@@ -1114,7 +2034,7 @@ function UserManagementPanel({
                 {isProcessingBan ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Đang xử lý...</span>
+                    <span>Đang xử lý với Supabase...</span>
                   </>
                 ) : targetBanUser.status === "Bị khóa" ? (
                   <span>Xác nhận mở khóa</span>
@@ -1223,6 +2143,32 @@ function ClassManagementPanel() {
   const pendingClasses = classes.filter((item) => item.status === "pending");
   const reviewedClasses = classes.filter((item) => item.status !== "pending");
 
+  const [classSearch, setClassSearch] = useState("");
+  const [classSubjectFilter, setClassSubjectFilter] = useState("Tất cả môn học");
+  const [classStatusFilter, setClassStatusFilter] = useState("Tất cả trạng thái");
+
+  const filteredReviewedClasses = useMemo(() => {
+    return reviewedClasses.filter((item) => {
+      const q = classSearch.toLowerCase().trim();
+      const matchSearch =
+        !q ||
+        item.title.toLowerCase().includes(q) ||
+        item.teacherName.toLowerCase().includes(q) ||
+        item.subject.toLowerCase().includes(q);
+      const matchSubject =
+        classSubjectFilter === "Tất cả môn học" ||
+        item.subject.toLowerCase().includes(classSubjectFilter.toLowerCase());
+      const matchStatus =
+        classStatusFilter === "Tất cả trạng thái" ||
+        (classStatusFilter === "Đã duyệt" && item.status === "approved") ||
+        (classStatusFilter === "Đã ban" && item.status === "hidden") ||
+        (classStatusFilter === "Từ chối" && item.status === "rejected") ||
+        (classStatusFilter === "Hoàn thành" && item.status === "completed") ||
+        (classStatusFilter === "Bản nháp" && item.status === "draft");
+      return matchSearch && matchSubject && matchStatus;
+    });
+  }, [reviewedClasses, classSearch, classSubjectFilter, classStatusFilter]);
+
   const formatCurrency = (value: number) => `${Number(value || 0).toLocaleString("vi-VN")}đ`;
   const formatSubmitted = (createdAt: string) => {
     if (!createdAt) return "Mới gửi";
@@ -1280,20 +2226,79 @@ function ClassManagementPanel() {
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 xl:grid-cols-[1fr_180px_180px_auto]">
-          <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4"><Search className="h-5 w-5 text-slate-400" /><span className="text-sm font-bold text-slate-400">Tìm theo tên lớp, giáo viên, môn học...</span></div>
-          {["Môn học", "Trạng thái"].map((label) => <button key={label} className="flex h-12 items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-600">{label}<ChevronDown className="h-4 w-4" /></button>)}
-          <button onClick={fetchClasses} className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"><RotateCcw className="h-4 w-4" /> Làm mới</button>
+        <div className="grid gap-3 xl:grid-cols-[1fr_200px_200px_auto]">
+          <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 focus-within:border-emerald-500 focus-within:bg-white transition-all">
+            <Search className="h-5 w-5 text-slate-400 shrink-0" />
+            <input
+              type="text"
+              value={classSearch}
+              onChange={(e) => setClassSearch(e.target.value)}
+              placeholder="Tìm theo tên lớp, giáo viên, môn học..."
+              className="w-full bg-transparent text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none"
+            />
+            {classSearch && (
+              <button
+                type="button"
+                onClick={() => setClassSearch("")}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <CustomSelect
+            value={classSubjectFilter}
+            onChange={setClassSubjectFilter}
+            options={[
+              "Tất cả môn học",
+              "Toán học",
+              "Tiếng Anh",
+              "Vật lý",
+              "Hóa học",
+              "Sinh học",
+              "Ngữ văn",
+              "Lịch sử",
+              "Địa lý",
+              "Tin học",
+            ]}
+            className="w-full"
+            buttonClassName="h-12 rounded-2xl border-slate-200 text-sm font-bold text-slate-700"
+          />
+          <CustomSelect
+            value={classStatusFilter}
+            onChange={setClassStatusFilter}
+            options={[
+              "Tất cả trạng thái",
+              "Đã duyệt",
+              "Đã ban",
+              "Từ chối",
+              "Hoàn thành",
+            ]}
+            className="w-full"
+            buttonClassName="h-12 rounded-2xl border-slate-200 text-sm font-bold text-slate-700"
+          />
+          <button
+            type="button"
+            onClick={fetchClasses}
+            disabled={isLoading}
+            className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:opacity-50"
+          >
+            <RotateCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <span>Làm mới</span>
+          </button>
         </div>
       </section>
 
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 p-5"><h2 className="text-xl font-black text-slate-950">Danh sách lớp học</h2><span className="text-sm font-bold text-slate-400">Hiển thị {reviewedClasses.length} / {classes.length} lớp học</span></div>
+        <div className="flex items-center justify-between border-b border-slate-100 p-5">
+          <h2 className="text-xl font-black text-slate-950">Danh sách lớp học</h2>
+          <span className="text-sm font-bold text-slate-400">Hiển thị {filteredReviewedClasses.length} / {classes.length} lớp học</span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] text-left text-sm">
             <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500"><tr><th className="px-4 py-3">Lớp học</th><th className="px-4 py-3">Giảng viên</th><th className="px-4 py-3">Môn học</th><th className="px-4 py-3">Số buổi</th><th className="px-4 py-3">Đánh giá</th><th className="px-4 py-3">Hành động</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {reviewedClasses.map((item) => (
+              {filteredReviewedClasses.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50/70">
                   <td className="px-4 py-4"><p className="font-black text-slate-950">{item.title}</p>{item.rejectReason && <p className="mt-1 text-xs font-bold text-rose-500">Lý do: {item.rejectReason}</p>}</td>
                   <td className="px-4 py-4 font-bold text-slate-600">{item.teacherName}</td>
@@ -1742,11 +2747,13 @@ export default function StaffProfileDashboard({ staff, onLogout }: StaffProfileD
   ) : activeTab === "classes" ? (
     <ClassManagementPanel />
   ) : activeTab === "materials" ? (
-    <MaterialManagementPanel />
+    <StaffMaterialManagementPanel staffName={staff.fullName} staffId={staff.id} defaultSubTab="manage" />
   ) : activeTab === "teachers" ? (
     <TeacherApprovalPanel onStatsChange={handleTeacherStatsChange} />
   ) : activeTab === "examPosts" ? (
     <StaffExamManagementPanel staffName={staff.fullName} staffId={staff.id} />
+  ) : activeTab === "materialPosts" ? (
+    <StaffMaterialManagementPanel staffName={staff.fullName} staffId={staff.id} defaultSubTab="create" />
   ) : (
     <PlaceholderPanel
       title={{
@@ -1764,20 +2771,43 @@ export default function StaffProfileDashboard({ staff, onLogout }: StaffProfileD
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#f8faf8]">
       <div className="hidden h-full shrink-0 lg:flex">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} collapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} pendingCount={pendingTeacherCount} />
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          collapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          pendingCount={pendingTeacherCount}
+          staff={staff}
+        />
       </div>
 
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileSidebarOpen(false)} />
-          <div className="relative z-10 h-full w-72">
-            <Sidebar activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setIsMobileSidebarOpen(false); }} collapsed={false} onToggle={() => setIsMobileSidebarOpen(false)} pendingCount={pendingTeacherCount} />
+          <div className="relative z-10 h-full w-64">
+            <Sidebar
+              activeTab={activeTab}
+              onTabChange={(tab) => {
+                setActiveTab(tab);
+                setIsMobileSidebarOpen(false);
+              }}
+              collapsed={false}
+              onToggle={() => setIsMobileSidebarOpen(false)}
+              pendingCount={pendingTeacherCount}
+              staff={staff}
+            />
           </div>
         </div>
       )}
 
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-        <Header staff={staff} onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)} onLogout={onLogout} />
+        <Header
+          staff={staff}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
+          onLogout={onLogout}
+          onNavigate={setActiveTab}
+          pendingTeacherCount={pendingTeacherCount}
+        />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-[1500px]">{content}</div>
         </main>

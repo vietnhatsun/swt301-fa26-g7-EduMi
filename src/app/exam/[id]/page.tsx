@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { MOCK_EXAMS, ExamItem, ExamQuestion, getExamQuestions } from "@/components/exam/exam-data";
+import { MOCK_EXAMS, ExamItem } from "@/components/exam/exam-data";
 import ExamRoomClient from "@/components/exam/ExamRoomClient";
 import { createServiceClient } from "@/lib/supabase";
 
@@ -20,14 +20,12 @@ async function getExamById(id: string): Promise<ExamItem | null> {
   // 2. Tra cứu cơ sở dữ liệu Supabase
   try {
     const supabase = createServiceClient();
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    let examQuery = supabase.from("exams").select("*").eq("status", "published");
-    if (isUuid) {
-      examQuery = examQuery.or(`id.eq.${id},exam_code.eq.${id.toUpperCase()}`);
-    } else {
-      examQuery = examQuery.eq("exam_code", id.toUpperCase());
-    }
-    const { data: dbExam } = await examQuery.maybeSingle();
+    const { data: dbExam } = await supabase
+      .from("exams")
+      .select("*")
+      .or(`id.eq.${id},exam_code.eq.${id.toUpperCase()}`)
+      .eq("status", "published")
+      .maybeSingle();
 
     if (dbExam) {
       return {
@@ -58,40 +56,39 @@ async function getExamById(id: string): Promise<ExamItem | null> {
   return null;
 }
 
-async function getExamQuestionsForExam(exam: ExamItem): Promise<ExamQuestion[]> {
+async function getExamQuestionsById(examId: string) {
   try {
     const supabase = createServiceClient();
-    const { data: questions, error } = await supabase
+    const { data: questions } = await supabase
       .from("exam_questions")
       .select("*")
-      .eq("exam_id", exam.id)
+      .eq("exam_id", examId)
       .order("question_number", { ascending: true });
 
-    if (!error && questions && questions.length > 0) {
+    if (questions && questions.length > 0) {
       return questions.map((q) => ({
         id: q.id,
-        questionNumber: Number(q.question_number || 1),
-        type: q.type || "single_choice",
-        part: q.part || "Phần I",
+        questionNumber: q.question_number,
+        type: q.type,
+        part: q.part || (q.type === "true_false" ? "Phần II" : q.type === "short_answer" ? "Phần III" : q.type === "essay" ? "Phần IV" : "Phần I"),
         section: q.section || (q.type === "essay" ? "Tự luận" : "Trắc nghiệm"),
-        instruction: q.instruction || "",
-        content: q.content || "",
-        options: Array.isArray(q.options) ? q.options : [],
-        trueFalseItems: Array.isArray(q.true_false_items) ? q.true_false_items : [],
-        correctAnswer: q.correct_answer || "A",
-        sampleEssayAnswer: q.sample_essay_answer || "",
-        rubricCriteria: Array.isArray(q.rubric_criteria) ? q.rubric_criteria : [],
-        wordLimit: q.word_limit || {},
+        instruction: q.instruction,
+        content: q.content,
+        options: q.options || [],
+        trueFalseItems: q.true_false_items || [],
+        correctAnswer: q.correct_answer || "",
         explanation: q.explanation || "",
-        points: Number(q.points) || 0.25,
+        sampleEssayAnswer: q.sample_essay_answer || "",
+        rubricCriteria: q.rubric_criteria || [],
+        wordLimit: q.word_limit || undefined,
+        points: Number(q.points),
       }));
     }
   } catch (err) {
-    console.warn("[getExamQuestionsForExam] Supabase query failed:", err);
+    console.warn("[ExamRoomPage] Error querying Supabase exam questions:", err);
   }
 
-  // Fallback to mock / generator
-  return getExamQuestions(exam.id);
+  return null;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -130,7 +127,8 @@ export default async function ExamRoomPage({ params, searchParams }: PageProps) 
     );
   }
 
-  const questions = await getExamQuestionsForExam(exam);
+  // Tải câu hỏi từ database nếu là đề thi tạo từ Staff
+  const dbQuestions = await getExamQuestionsById(exam.id);
 
   return (
     <Suspense
@@ -140,7 +138,7 @@ export default async function ExamRoomPage({ params, searchParams }: PageProps) 
         </div>
       }
     >
-      <ExamRoomClient exam={exam} mode={mode} initialQuestions={questions} />
+      <ExamRoomClient exam={exam} mode={mode} initialQuestions={dbQuestions || undefined} />
     </Suspense>
   );
 }

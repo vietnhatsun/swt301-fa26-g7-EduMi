@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
       allowedTypes = ALLOWED_CERTIFICATE_TYPES;
       folder = "certificates";
     } else if (category === "material") {
-      if (user.role !== "teacher" && user.role !== "admin") {
-        return NextResponse.json({ error: "Chỉ giáo viên mới có thể tải lên tài liệu." }, { status: 403 });
+      if (user.role !== "teacher" && user.role !== "admin" && user.role !== "staff") {
+        return NextResponse.json({ error: "Chỉ giáo viên và nhân viên mới có thể tải lên tài liệu." }, { status: 403 });
       }
       maxAllowedSize = MAX_MATERIAL_SIZE;
       allowedTypes = ALLOWED_MATERIAL_TYPES;

@@ -51,11 +51,11 @@ function DropLetterTitle() {
   );
 }
 
-interface ExamLobbyClientProps {
+export default function ExamLobbyClient({
+  initialExams,
+}: {
   initialExams?: ExamItem[];
-}
-
-export default function ExamLobbyClient({ initialExams }: ExamLobbyClientProps) {
+} = {}) {
   const searchParams = useSearchParams();
 
   // Filter States
@@ -77,13 +77,12 @@ export default function ExamLobbyClient({ initialExams }: ExamLobbyClientProps) 
     setIsModalOpen(true);
   };
 
-  // Real exams fetched from Supabase API with server initialExams & MOCK_EXAMS fallback
+  // Real exams fetched from Supabase API with initialExams / MOCK_EXAMS fallback
   const [examsList, setExamsList] = useState<ExamItem[]>(() => {
     if (initialExams && initialExams.length > 0) return initialExams;
     return MOCK_EXAMS;
   });
 
-  // Sync if initialExams updates
   useEffect(() => {
     if (initialExams && initialExams.length > 0) {
       setExamsList(initialExams);
@@ -94,7 +93,10 @@ export default function ExamLobbyClient({ initialExams }: ExamLobbyClientProps) 
     let isMounted = true;
     async function loadExams() {
       try {
-        const res = await fetch("/api/exams", { cache: "no-store" });
+        const res = await fetch("/api/exams", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.success && Array.isArray(data.exams) && data.exams.length > 0 && isMounted) {
@@ -163,6 +165,31 @@ export default function ExamLobbyClient({ initialExams }: ExamLobbyClientProps) 
     );
   }, [searchQuery, examsList]);
 
+// Hàm chuẩn hóa tiếng Việt: bỏ dấu, hỗ trợ i <-> y (ví dụ lí <-> lý, kĩ <-> kỹ), bỏ gạch nối
+function normalizeSearchText(text: string): string {
+  if (!text) return "";
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .replace(/y/g, "i")
+    .trim();
+}
+
+function matchSearch(sourceText: string, query: string): boolean {
+  if (!query) return true;
+  if (!sourceText) return false;
+  const normSource = normalizeSearchText(sourceText);
+  const normQuery = normalizeSearchText(query);
+  if (!normQuery) return true;
+  if (normQuery.length <= 2) {
+    const words = normSource.split(/[^a-z0-9]+/);
+    return words.some((w) => w === normQuery);
+  }
+  return normSource.includes(normQuery);
+}
+
   // Filter & Sort Logic
   const filteredExams = useMemo(() => {
     let list = [...examsList];
@@ -170,17 +197,33 @@ export default function ExamLobbyClient({ initialExams }: ExamLobbyClientProps) 
     // 1. Search Query (Matches PIN, Title, CardCode, Subject, Category, Author)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
+      const qNorm = normalizeSearchText(q);
       const qNoHyphen = q.replace("-", "");
-      list = list.filter(
-        (item) =>
-          item.examCode.toLowerCase().includes(q) ||
-          item.examCode.toLowerCase().replace("-", "").includes(qNoHyphen) ||
+      const qNormNoHyphen = qNorm.replace("-", "");
+
+      list = list.filter((item) => {
+        const itemPin = item.examCode.toLowerCase();
+        const itemPinClean = itemPin.replace("-", "");
+        if (
+          itemPin.includes(q) ||
+          itemPinClean.includes(qNoHyphen) ||
+          itemPinClean.includes(qNormNoHyphen) ||
+          item.id.toLowerCase().includes(q)
+        ) {
+          return true;
+        }
+
+        return (
+          matchSearch(item.title, q) ||
+          matchSearch(item.cardCode, q) ||
+          matchSearch(item.subject, q) ||
+          matchSearch(item.category, q) ||
+          matchSearch(item.author, q) ||
           item.title.toLowerCase().includes(q) ||
           item.cardCode.toLowerCase().includes(q) ||
-          item.subject.toLowerCase().includes(q) ||
-          item.category.toLowerCase().includes(q) ||
-          item.author.toLowerCase().includes(q)
-      );
+          item.subject.toLowerCase().includes(q)
+        );
+      });
     }
 
     // 2. Category
@@ -208,45 +251,35 @@ export default function ExamLobbyClient({ initialExams }: ExamLobbyClientProps) 
     }
 
     // 6. Sort
-    if (selectedSort === "attempts") {
+    if (selectedSort === "newest") {
+      list.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+    } else if (selectedSort === "attempts") {
       list.sort((a, b) => b.attempts - a.attempts);
     } else if (selectedSort === "rating") {
       list.sort((a, b) => b.rating - a.rating);
     } else if (selectedSort === "duration_asc") {
       list.sort((a, b) => a.durationMinutes - b.durationMinutes);
     } else {
-      // Default: "popular"
-      // Ưu tiên:
-      // 1. Đề thi MỚI tạo (isNew: true) và có ngày tạo mới nhất (createdAt) xếp trên cùng
-      // 2. Đề thi HOT (isHot: true)
-      // 3. Lượt thi (attempts)
+      // Mặc định (Phổ biến): Ưu tiên đề có cờ isNew hoặc mới tạo trong vòng 7 ngày lên đầu, sau đó đến đề HOT, và sắp xếp theo ngày tạo mới nhất
       list.sort((a, b) => {
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
 
-        // Nếu a mới và b không mới
-        const isNewA = Boolean(a.isNew);
-        const isNewB = Boolean(b.isNew);
-        if (isNewA && !isNewB) return -1;
-        if (!isNewA && isNewB) return 1;
+        const isRecentA = a.isNew || (timeA > 0 && Date.now() - timeA < 7 * 86400000);
+        const isRecentB = b.isNew || (timeB > 0 && Date.now() - timeB < 7 * 86400000);
 
-        // Nếu cả hai cùng mới, đề nào tạo gần đây hơn xếp trước
-        if (isNewA && isNewB && timeB !== timeA) {
-          return timeB - timeA;
+        if (isRecentB && !isRecentA) return 1;
+        if (isRecentA && !isRecentB) return -1;
+
+        if (b.isHot !== a.isHot) {
+          return (b.isHot ? 1 : 0) - (a.isHot ? 1 : 0);
         }
 
-        // Đề HOT
-        const isHotA = Boolean(a.isHot);
-        const isHotB = Boolean(b.isHot);
-        if (isHotA && !isHotB) return -1;
-        if (!isHotA && isHotB) return 1;
-
-        // Thời gian tạo
-        if (timeB !== timeA) {
-          return timeB - timeA;
-        }
-
-        return (b.attempts || 0) - (a.attempts || 0);
+        return timeB - timeA;
       });
     }
 
@@ -299,7 +332,7 @@ export default function ExamLobbyClient({ initialExams }: ExamLobbyClientProps) 
         width={480}
         height={480}
         priority
-        className="class-hero-mascot-pop pointer-events-none absolute right-[180px] top-[56px] z-[2] hidden h-auto w-[330px] xl:block 2xl:right-[260px] 2xl:w-[380px] drop-shadow-[0_24px_34px_rgba(17,42,25,0.24)]"
+        className="class-hero-mascot-pop pointer-events-none absolute right-[180px] top-[75px] z-[2] hidden h-auto w-[330px] xl:block 2xl:right-[260px] 2xl:w-[380px] drop-shadow-[0_24px_34px_rgba(17,42,25,0.24)]"
       />
 
       {/* Hero Section */}

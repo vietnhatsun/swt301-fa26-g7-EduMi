@@ -32,6 +32,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import CustomSelect from "@/components/common/CustomSelect";
 
 export interface TeacherApplication {
   id: string;
@@ -545,52 +546,31 @@ export default function TeacherApprovalPanel({ onStatsChange }: TeacherApprovalP
             </div>
 
             {/* Dropdown Môn học */}
-            <div className="relative">
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-3.5 pr-8 text-xs font-extrabold text-slate-700 shadow-inner outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 cursor-pointer"
-              >
-                {FILTER_SUBJECTS.map((sub) => (
-                  <option key={sub} value={sub}>
-                    {sub}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            </div>
+            <CustomSelect
+              value={selectedSubject}
+              onChange={setSelectedSubject}
+              options={FILTER_SUBJECTS}
+              className="w-full"
+              buttonClassName="h-11 rounded-xl border-slate-200 bg-slate-50 text-xs font-extrabold text-slate-700"
+            />
 
             {/* Dropdown Khối lớp */}
-            <div className="relative">
-              <select
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(e.target.value)}
-                className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-3.5 pr-8 text-xs font-extrabold text-slate-700 shadow-inner outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 cursor-pointer"
-              >
-                {FILTER_GRADES.map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            </div>
+            <CustomSelect
+              value={selectedGrade}
+              onChange={setSelectedGrade}
+              options={FILTER_GRADES}
+              className="w-full"
+              buttonClassName="h-11 rounded-xl border-slate-200 bg-slate-50 text-xs font-extrabold text-slate-700"
+            />
 
             {/* Dropdown Vai trò */}
-            <div className="relative">
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-3.5 pr-8 text-xs font-extrabold text-slate-700 shadow-inner outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 cursor-pointer"
-              >
-                {FILTER_ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            </div>
+            <CustomSelect
+              value={selectedRole}
+              onChange={setSelectedRole}
+              options={FILTER_ROLES}
+              className="w-full"
+              buttonClassName="h-11 rounded-xl border-slate-200 bg-slate-50 text-xs font-extrabold text-slate-700"
+            />
 
             {/* Nút Reset bộ lọc */}
             {isFiltered && (

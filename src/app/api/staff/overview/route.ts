@@ -70,6 +70,8 @@ export async function GET(req: NextRequest) {
       let displayStatus = "Hoạt động";
       if (u.status === "banned") {
         displayStatus = "Bị khóa";
+      } else if (u.status === "inactive") {
+        displayStatus = "Tạm ngưng";
       } else if (!u.is_verified || u.status === "pending_verification") {
         displayStatus = "Chưa xác thực";
       }
