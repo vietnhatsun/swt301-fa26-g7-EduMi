@@ -12,12 +12,14 @@ import {
   X,
   Check,
   KeyRound,
+  Loader2,
 } from "lucide-react";
 import { ExamCategory, ExamSubject, ExamDifficulty } from "./exam-data";
 
 interface ExamFilterBarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
+  isSearching?: boolean;
   selectedCategory: ExamCategory;
   onCategoryChange: (value: ExamCategory) => void;
   selectedSubject: ExamSubject;
@@ -89,6 +91,7 @@ export default function ExamFilterBar({
   onSortChange,
   onResetFilters,
   hasActiveFilters,
+  isSearching = false,
 }: ExamFilterBarProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -124,7 +127,11 @@ export default function ExamFilterBar({
       <div className="flex min-h-[74px] flex-wrap items-center gap-2.5 rounded-[32px] bg-white p-3 sm:px-6 shadow-[0_12px_34px_rgba(25,60,35,0.12)]">
         {/* Search input */}
         <div className="flex h-[50px] min-w-[280px] flex-1 items-center gap-2.5 rounded-full border border-[#e2e9e2] bg-white px-4 text-[#7a8795] focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-200 transition-all">
-          <Search className="h-5 w-5 shrink-0 text-[#00a66f]" />
+          {isSearching ? (
+            <Loader2 className="h-5 w-5 shrink-0 text-[#00a66f] animate-spin" />
+          ) : (
+            <Search className="h-5 w-5 shrink-0 text-[#00a66f]" />
+          )}
           <input
             suppressHydrationWarning
             type="text"

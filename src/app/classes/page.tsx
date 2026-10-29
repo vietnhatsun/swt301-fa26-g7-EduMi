@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import TypewriterDescription from "@/components/classes/TypewriterDescription";
 import ClassCardReveal from "@/components/classes/ClassCardReveal";
+import ClassesLobbyClient from "@/components/classes/ClassesLobbyClient";
 import { createServiceClient } from "@/lib/supabase";
 import {
   ArrowRight,
@@ -347,21 +348,7 @@ export default async function ClassesPage({ searchParams }: ClassesPageProps) {
           </div>
         </section>
 
-        <FilterBar />
-
-        <section className="relative z-10 mx-auto mt-4 grid max-w-[1390px] grid-cols-3 gap-4 px-3">
-          {approvedClassCards.length > 0 ? (
-            approvedClassCards.map((card, index) => (
-              <ClassCardReveal key={card.id} index={index}>
-                <ClassCard card={card} />
-              </ClassCardReveal>
-            ))
-          ) : (
-            <div className="col-span-3 rounded-[24px] bg-white/95 p-8 text-center text-[16px] font-bold text-[#50627c] shadow-[0_10px_28px_rgba(25,60,35,0.1)]">
-              Chưa có lớp học nào được duyệt để hiển thị công khai.
-            </div>
-          )}
-        </section>
+        <ClassesLobbyClient initialClasses={approvedClassCards} />
       </div>
     </main>
   );

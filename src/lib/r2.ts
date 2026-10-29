@@ -7,14 +7,24 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || "";
 export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || "edumi-storage";
 export const NEXT_PUBLIC_R2_PUBLIC_URL = (process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "").replace(/\/$/, "");
 
+function getR2Env() {
+  const accountId = process.env.R2_ACCOUNT_ID || R2_ACCOUNT_ID;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID || R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || R2_SECRET_ACCESS_KEY;
+  const bucketName = process.env.R2_BUCKET_NAME || R2_BUCKET_NAME || "edumi-storage";
+  const publicUrl = (process.env.NEXT_PUBLIC_R2_PUBLIC_URL || NEXT_PUBLIC_R2_PUBLIC_URL || "").replace(/\/$/, "");
+  return { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl };
+}
+
 let cachedS3Client: S3Client | null = null;
 
 export function isR2Configured(): boolean {
-  return Boolean(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY);
+  const { accountId, accessKeyId, secretAccessKey } = getR2Env();
+  return Boolean(accountId && accessKeyId && secretAccessKey);
 }
 
 export function getR2Client(): S3Client {
-  if (cachedS3Client) return cachedS3Client;
+  const { accountId, accessKeyId, secretAccessKey } = getR2Env();
 
   if (!isR2Configured()) {
     throw new Error(
@@ -22,12 +32,14 @@ export function getR2Client(): S3Client {
     );
   }
 
+  if (cachedS3Client) return cachedS3Client;
+
   cachedS3Client = new S3Client({
     region: "auto",
-    endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
     credentials: {
-      accessKeyId: R2_ACCESS_KEY_ID,
-      secretAccessKey: R2_SECRET_ACCESS_KEY,
+      accessKeyId: accessKeyId,
+      secretAccessKey: secretAccessKey,
     },
   });
 
@@ -38,10 +50,11 @@ export function getR2Client(): S3Client {
  * Tạo URL truy cập public cho các file không yêu cầu bảo mật (như avatar, site-assets)
  */
 export function getR2PublicUrl(key: string): string {
-  if (NEXT_PUBLIC_R2_PUBLIC_URL) {
-    return `${NEXT_PUBLIC_R2_PUBLIC_URL}/${key.replace(/^\//, "")}`;
+  const { bucketName, publicUrl } = getR2Env();
+  if (publicUrl) {
+    return `${publicUrl}/${key.replace(/^\//, "")}`;
   }
-  return `https://${R2_BUCKET_NAME}.r2.cloudflarestorage.com/${key.replace(/^\//, "")}`;
+  return `https://${bucketName}.r2.cloudflarestorage.com/${key.replace(/^\//, "")}`;
 }
 
 interface GenerateUploadUrlOptions {
@@ -57,12 +70,14 @@ interface GenerateUploadUrlOptions {
 export async function generatePresignedUploadUrl({
   key,
   contentType,
-  bucket = R2_BUCKET_NAME,
+  bucket,
   expiresInSeconds = 600, // 10 phút
 }: GenerateUploadUrlOptions): Promise<{ uploadUrl: string; key: string; publicUrl: string }> {
+  const { bucketName } = getR2Env();
+  const targetBucket = bucket || bucketName;
   const client = getR2Client();
   const command = new PutObjectCommand({
-    Bucket: bucket,
+    Bucket: targetBucket,
     Key: key,
     ContentType: contentType,
   });
@@ -89,12 +104,14 @@ interface GenerateDownloadUrlOptions {
  */
 export async function generatePresignedDownloadUrl({
   key,
-  bucket = R2_BUCKET_NAME,
+  bucket,
   expiresInSeconds = 900, // 15 phút
 }: GenerateDownloadUrlOptions): Promise<string> {
+  const { bucketName } = getR2Env();
+  const targetBucket = bucket || bucketName;
   const client = getR2Client();
   const command = new GetObjectCommand({
-    Bucket: bucket,
+    Bucket: targetBucket,
     Key: key,
   });
 
@@ -111,10 +128,12 @@ interface DeleteObjectOptions {
 /**
  * Xóa object khỏi Cloudflare R2 để tránh file mồ côi sau khi xóa metadata trong DB.
  */
-export async function deleteR2Object({ key, bucket = R2_BUCKET_NAME }: DeleteObjectOptions): Promise<void> {
+export async function deleteR2Object({ key, bucket }: DeleteObjectOptions): Promise<void> {
+  const { bucketName } = getR2Env();
+  const targetBucket = bucket || bucketName;
   const client = getR2Client();
   const command = new DeleteObjectCommand({
-    Bucket: bucket,
+    Bucket: targetBucket,
     Key: key,
   });
 

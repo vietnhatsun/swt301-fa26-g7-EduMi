@@ -1,12 +1,6 @@
 import Image from "next/image";
 import { GraduationCap, Mail, MessageCircle, Send, Sprout, User } from "lucide-react";
-import { Baloo_2, Be_Vietnam_Pro } from "next/font/google";
-
-const baloo = Baloo_2({
-  subsets: ["latin", "vietnamese"],
-  weight: ["700", "800"],
-  display: "swap",
-});
+import { Be_Vietnam_Pro } from "next/font/google";
 
 const beVietnam = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
@@ -66,7 +60,7 @@ export default function ConsultationFormSection() {
               <Sprout className="h-5 w-5 fill-[#0f6837] text-[#0f6837]" />
               Để lại thông tin
             </div>
-            <h2 className={`${baloo.className} mt-4 text-[48px] font-extrabold leading-[0.96] tracking-[-0.045em] text-[#0b4520]`}>
+            <h2 className="font-baloo mt-4 text-[48px] font-extrabold leading-[0.96] tracking-[-0.045em] text-[#0b4520]">
               Nhận tư vấn từ <span className="text-[#4a9631]">EduMi</span>
             </h2>
             <p className="mt-2 text-[17px] font-semibold leading-[1.35] text-[#123421]">

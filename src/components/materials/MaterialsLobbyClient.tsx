@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, ReactNode } from "react";
+import React, { useState, useMemo, useEffect, useRef, ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   BookOpen,
+  Check,
   ChevronDown,
   ChevronRight,
   Download,
@@ -21,7 +22,10 @@ import {
   SlidersHorizontal,
   X,
   FolderOpen,
+  Loader2,
 } from "lucide-react";
+import { useDebouncedSearch } from "@/hooks/use-debounced-search";
+import { matchSmartSearch } from "@/lib/search-utils";
 import ClassCardReveal from "@/components/classes/ClassCardReveal";
 import TypewriterDescription from "@/components/classes/TypewriterDescription";
 import {
@@ -163,12 +167,36 @@ const FILE_TYPE_OPTIONS = ["Tất cả", "PDF", "DOCX"];
 export default function MaterialsLobbyClient() {
   const searchParams = useSearchParams();
 
-  // Filter states
-  const [searchQuery, setSearchQuery] = useState("");
+  // Filter states với Debounced Search (300ms)
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    debouncedQuery,
+    isPending: isSearching,
+    clearQuery: clearSearch,
+  } = useDebouncedSearch({ delay: 300 });
+
   const [selectedSubject, setSelectedSubject] = useState("Tất cả");
   const [selectedGrade, setSelectedGrade] = useState("Tất cả");
   const [selectedFileType, setSelectedFileType] = useState("Tất cả");
   const [selectedSort, setSelectedSort] = useState<"newest" | "popular">("newest");
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const filterBarRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to close any open dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterBarRef.current && !filterBarRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleDropdown = (name: string) => {
+    setOpenDropdown((prev) => (prev === name ? null : name));
+  };
 
   // Dữ liệu tài liệu tải từ API (có fallback)
   const [materialsList, setMaterialsList] = useState<PublicMaterialItem[]>(FALLBACK_MATERIALS);
@@ -222,27 +250,28 @@ export default function MaterialsLobbyClient() {
     selectedSort !== "newest";
 
   const handleResetFilters = () => {
-    setSearchQuery("");
+    clearSearch();
     setSelectedSubject("Tất cả");
     setSelectedGrade("Tất cả");
     setSelectedFileType("Tất cả");
     setSelectedSort("newest");
+    setOpenDropdown(null);
   };
 
   // Filtered materials
   const filteredMaterials = useMemo(() => {
     let list = [...materialsList];
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim();
+    // Search filter: Multi-token & Vietnamese accent-insensitive matching
+    if (debouncedQuery.trim()) {
+      const q = debouncedQuery.trim();
       list = list.filter(
         (item) =>
-          matchSearch(item.title, q) ||
-          matchSearch(item.cardCode, q) ||
-          matchSearch(item.subject, q) ||
-          (item.author && matchSearch(item.author, q)) ||
-          item.title.toLowerCase().includes(q.toLowerCase())
+          matchSmartSearch(item.title, q) ||
+          matchSmartSearch(item.cardCode, q) ||
+          matchSmartSearch(item.subject, q) ||
+          (item.author && matchSmartSearch(item.author, q)) ||
+          (item.gradeLevel && matchSmartSearch(item.gradeLevel, q))
       );
     }
 
@@ -338,98 +367,221 @@ export default function MaterialsLobbyClient() {
       </section>
 
       {/* Modern Interactive Filter Bar */}
-      <section className="relative z-10 mx-auto max-w-[1390px] px-6">
-        <div className="flex flex-wrap items-center gap-3 rounded-[32px] bg-white/95 p-3.5 shadow-[0_12px_34px_rgba(25,60,35,0.12)] backdrop-blur-md">
+      <section ref={filterBarRef} className="relative z-30 mx-auto -mt-[18px] max-w-[1390px] px-6">
+        <div className="flex min-h-[74px] flex-wrap items-center gap-2.5 rounded-[32px] bg-white p-3 sm:px-6 shadow-[0_12px_34px_rgba(25,60,35,0.12)]">
           {/* Search Input */}
-          <div className="flex h-12 min-w-[260px] flex-1 items-center gap-3 rounded-full border border-slate-200 bg-slate-50/70 px-4 text-slate-800 transition focus-within:border-emerald-500 focus-within:bg-white">
-            <Search className="h-5 w-5 text-emerald-600 shrink-0" />
+          <div className="flex h-[50px] min-w-[280px] flex-1 items-center gap-2.5 rounded-full border border-[#e2e9e2] bg-white px-4 text-[#7a8795] focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-200 transition-all">
+            {isSearching ? (
+              <Loader2 className="h-5 w-5 shrink-0 text-[#00a66f] animate-spin" />
+            ) : (
+              <Search className="h-5 w-5 shrink-0 text-[#00a66f]" />
+            )}
             <input
+              suppressHydrationWarning
               type="text"
               placeholder="Tìm tài liệu, mã thẻ, môn học, tác giả..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent text-xs sm:text-sm font-bold text-slate-900 outline-none placeholder:text-slate-400"
+              className="w-full bg-transparent text-[14px] sm:text-[15px] font-semibold text-[#10213a] placeholder:text-[#8b98a5] focus:outline-none"
             />
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery("")}
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                onClick={clearSearch}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                title="Xóa tìm kiếm"
               >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
 
-          {/* Khối lớp Dropdown */}
+          {/* 1. Khối lớp Dropdown */}
           <div className="relative">
-            <select
-              value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value)}
-              className="h-12 appearance-none rounded-full border border-slate-200 bg-white pl-4 pr-9 text-xs sm:text-sm font-extrabold text-[#10213a] outline-none transition hover:border-emerald-400 cursor-pointer"
+            <button
+              suppressHydrationWarning
+              type="button"
+              onClick={() => toggleDropdown("grade")}
+              className={`flex h-[50px] items-center gap-2 rounded-full border px-4 sm:px-5 text-[14px] font-extrabold transition cursor-pointer select-none ${
+                selectedGrade !== "Tất cả"
+                  ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                  : "border-[#e2e9e2] bg-white text-[#10213a] hover:border-emerald-400 hover:bg-emerald-50/60"
+              }`}
             >
-              <option value="Tất cả">🎓 Khối lớp: Tất cả</option>
-              {GRADE_FILTER_OPTIONS.filter((g) => g !== "Tất cả").map((gr) => (
-                <option key={gr} value={gr}>
-                  Khối: {gr}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-4 h-4 w-4 text-slate-500" />
+              <GraduationCap className={`h-4 w-4 ${selectedGrade !== "Tất cả" ? "text-emerald-600" : "text-[#2e466b]"}`} />
+              <span className="truncate max-w-[120px]">
+                {selectedGrade === "Tất cả" ? "Khối lớp" : selectedGrade}
+              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openDropdown === "grade" ? "rotate-180" : ""}`} />
+            </button>
+
+            {openDropdown === "grade" && (
+              <div className="absolute left-0 top-[56px] z-50 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-1.5 text-xs font-bold uppercase text-slate-400">Chọn Khối lớp</div>
+                {GRADE_FILTER_OPTIONS.map((gr) => (
+                  <button
+                    key={gr}
+                    type="button"
+                    onClick={() => {
+                      setSelectedGrade(gr);
+                      setOpenDropdown(null);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition cursor-pointer ${
+                      selectedGrade === gr
+                        ? "bg-emerald-50 text-emerald-700 font-bold"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{gr === "Tất cả" ? "Tất cả khối lớp" : gr}</span>
+                    {selectedGrade === gr && <Check className="h-4 w-4 text-emerald-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Môn học Dropdown */}
+          {/* 2. Môn học Dropdown */}
           <div className="relative">
-            <select
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="h-12 appearance-none rounded-full border border-slate-200 bg-white pl-4 pr-9 text-xs sm:text-sm font-extrabold text-[#10213a] outline-none transition hover:border-emerald-400 cursor-pointer"
+            <button
+              suppressHydrationWarning
+              type="button"
+              onClick={() => toggleDropdown("subject")}
+              className={`flex h-[50px] items-center gap-2 rounded-full border px-4 sm:px-5 text-[14px] font-extrabold transition cursor-pointer select-none ${
+                selectedSubject !== "Tất cả"
+                  ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                  : "border-[#e2e9e2] bg-white text-[#10213a] hover:border-emerald-400 hover:bg-emerald-50/60"
+              }`}
             >
-              <option value="Tất cả">📚 Môn học: Tất cả</option>
-              {SUBJECT_FILTER_OPTIONS.filter((s) => s !== "Tất cả").map((sub) => (
-                <option key={sub} value={sub}>
-                  Môn: {sub}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-4 h-4 w-4 text-slate-500" />
+              <LibraryBig className={`h-4 w-4 ${selectedSubject !== "Tất cả" ? "text-emerald-600" : "text-[#2e466b]"}`} />
+              <span className="truncate max-w-[110px]">
+                {selectedSubject === "Tất cả" ? "Môn học" : selectedSubject}
+              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openDropdown === "subject" ? "rotate-180" : ""}`} />
+            </button>
+
+            {openDropdown === "subject" && (
+              <div className="absolute left-0 top-[56px] z-50 w-52 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-1.5 text-xs font-bold uppercase text-slate-400">Chọn Môn học</div>
+                {SUBJECT_FILTER_OPTIONS.map((sub) => (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubject(sub);
+                      setOpenDropdown(null);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition cursor-pointer ${
+                      selectedSubject === sub
+                        ? "bg-emerald-50 text-emerald-700 font-bold"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{sub === "Tất cả" ? "Tất cả môn học" : sub}</span>
+                    {selectedSubject === sub && <Check className="h-4 w-4 text-emerald-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Loại tệp tin Dropdown */}
+          {/* 3. Định dạng Dropdown */}
           <div className="relative">
-            <select
-              value={selectedFileType}
-              onChange={(e) => setSelectedFileType(e.target.value)}
-              className="h-12 appearance-none rounded-full border border-slate-200 bg-white pl-4 pr-9 text-xs sm:text-sm font-extrabold text-[#10213a] outline-none transition hover:border-emerald-400 cursor-pointer"
+            <button
+              suppressHydrationWarning
+              type="button"
+              onClick={() => toggleDropdown("fileType")}
+              className={`flex h-[50px] items-center gap-2 rounded-full border px-4 sm:px-5 text-[14px] font-extrabold transition cursor-pointer select-none ${
+                selectedFileType !== "Tất cả"
+                  ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                  : "border-[#e2e9e2] bg-white text-[#10213a] hover:border-emerald-400 hover:bg-emerald-50/60"
+              }`}
             >
-              <option value="Tất cả">📄 Định dạng: Tất cả</option>
-              <option value="PDF">Tệp PDF</option>
-              <option value="DOCX">Tệp Word (DOCX)</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-4 h-4 w-4 text-slate-500" />
+              <FileText className={`h-4 w-4 ${selectedFileType !== "Tất cả" ? "text-emerald-600" : "text-[#2e466b]"}`} />
+              <span className="truncate max-w-[120px]">
+                {selectedFileType === "Tất cả" ? "Định dạng" : selectedFileType}
+              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openDropdown === "fileType" ? "rotate-180" : ""}`} />
+            </button>
+
+            {openDropdown === "fileType" && (
+              <div className="absolute left-0 top-[56px] z-50 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-1.5 text-xs font-bold uppercase text-slate-400">Chọn Định dạng</div>
+                {FILE_TYPE_OPTIONS.map((ft) => (
+                  <button
+                    key={ft}
+                    type="button"
+                    onClick={() => {
+                      setSelectedFileType(ft);
+                      setOpenDropdown(null);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition cursor-pointer ${
+                      selectedFileType === ft
+                        ? "bg-emerald-50 text-emerald-700 font-bold"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{ft === "Tất cả" ? "Tất cả định dạng" : ft === "PDF" ? "Tệp PDF (.pdf)" : "Tệp Word (.docx)"}</span>
+                    {selectedFileType === ft && <Check className="h-4 w-4 text-emerald-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Sắp xếp */}
+          {/* Divider */}
+          <div className="hidden lg:block mx-1 h-9 w-px bg-slate-200" />
+
+          {/* 4. Sắp xếp Dropdown */}
           <div className="relative">
-            <select
-              value={selectedSort}
-              onChange={(e) => setSelectedSort(e.target.value as "newest" | "popular")}
-              className="h-12 appearance-none rounded-full border border-slate-200 bg-white pl-4 pr-9 text-xs sm:text-sm font-extrabold text-[#10213a] outline-none transition hover:border-emerald-400 cursor-pointer"
+            <button
+              suppressHydrationWarning
+              type="button"
+              onClick={() => toggleDropdown("sort")}
+              className="flex h-[50px] items-center gap-2 rounded-full border border-[#e2e9e2] bg-white px-4 sm:px-5 text-[14px] font-extrabold text-[#10213a] transition hover:border-emerald-400 hover:bg-emerald-50/60 cursor-pointer select-none"
             >
-              <option value="newest">⚡ Mới nhất</option>
-              <option value="popular">🔥 Phổ biến</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-4 h-4 w-4 text-slate-500" />
+              <SlidersHorizontal className="h-4 w-4 text-[#2e466b]" />
+              <span>{selectedSort === "newest" ? "Mới nhất" : "Phổ biến"}</span>
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${openDropdown === "sort" ? "rotate-180" : ""}`} />
+            </button>
+
+            {openDropdown === "sort" && (
+              <div className="absolute right-0 top-[56px] z-50 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-1.5 text-xs font-bold uppercase text-slate-400">Sắp xếp theo</div>
+                {[
+                  { label: "Mới nhất", value: "newest" },
+                  { label: "Phổ biến nhất", value: "popular" },
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSort(s.value as "newest" | "popular");
+                      setOpenDropdown(null);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition cursor-pointer ${
+                      selectedSort === s.value
+                        ? "bg-emerald-50 text-emerald-700 font-bold"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{s.label}</span>
+                    {selectedSort === s.value && <Check className="h-4 w-4 text-emerald-600" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Xóa lọc */}
+          {/* Reset button if active */}
           {hasActiveFilters && (
             <button
+              suppressHydrationWarning
               type="button"
               onClick={handleResetFilters}
-              className="flex h-12 items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-4 text-xs font-black text-rose-700 hover:bg-rose-100 transition cursor-pointer"
+              className="flex h-[50px] items-center gap-1.5 rounded-full bg-slate-100 hover:bg-rose-50 hover:text-rose-600 px-4 text-xs font-bold text-slate-600 transition cursor-pointer"
+              title="Đặt lại toàn bộ bộ lọc"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
               <span>Xóa lọc</span>
             </button>
           )}

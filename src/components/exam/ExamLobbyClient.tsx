@@ -9,6 +9,8 @@ import TypewriterDescription from "@/components/classes/TypewriterDescription";
 import ExamFilterBar from "./ExamFilterBar";
 import ExamCardItem from "./ExamCardItem";
 import ExamStartModal from "./ExamStartModal";
+import { useDebouncedSearch } from "@/hooks/use-debounced-search";
+import { matchSmartSearch } from "@/lib/search-utils";
 import {
   MOCK_EXAMS,
   ExamItem,
@@ -58,8 +60,15 @@ export default function ExamLobbyClient({
 } = {}) {
   const searchParams = useSearchParams();
 
-  // Filter States
-  const [searchQuery, setSearchQuery] = useState("");
+  // Filter States với Debounced Search (300ms)
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    debouncedQuery,
+    isPending: isSearching,
+    clearQuery: clearSearch,
+  } = useDebouncedSearch({ delay: 300 });
+
   const [selectedCategory, setSelectedCategory] = useState<ExamCategory>("Tất cả");
   const [selectedSubject, setSelectedSubject] = useState<ExamSubject>("Tất cả");
   const [selectedDuration, setSelectedDuration] = useState("all");
@@ -146,7 +155,7 @@ export default function ExamLobbyClient({
     selectedSort !== "popular";
 
   const handleResetFilters = () => {
-    setSearchQuery("");
+    clearSearch();
     setSelectedCategory("Tất cả");
     setSelectedSubject("Tất cả");
     setSelectedDuration("all");
@@ -194,34 +203,26 @@ function matchSearch(sourceText: string, query: string): boolean {
   const filteredExams = useMemo(() => {
     let list = [...examsList];
 
-    // 1. Search Query (Matches PIN, Title, CardCode, Subject, Category, Author)
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const qNorm = normalizeSearchText(q);
-      const qNoHyphen = q.replace("-", "");
-      const qNormNoHyphen = qNorm.replace("-", "");
+    // 1. Search Query: Smart multi-token + PIN matching (e.g., EDM-8899 / EDM8899)
+    if (debouncedQuery.trim()) {
+      const q = debouncedQuery.trim();
 
       list = list.filter((item) => {
-        const itemPin = item.examCode.toLowerCase();
-        const itemPinClean = itemPin.replace("-", "");
+        // Khớp PIN hoặc ID
         if (
-          itemPin.includes(q) ||
-          itemPinClean.includes(qNoHyphen) ||
-          itemPinClean.includes(qNormNoHyphen) ||
-          item.id.toLowerCase().includes(q)
+          matchSmartSearch(item.examCode, q) ||
+          item.id.toLowerCase() === q.toLowerCase()
         ) {
           return true;
         }
 
+        // Khớp Tiêu đề, Mã thẻ, Môn học, Thể loại, Tác giả
         return (
-          matchSearch(item.title, q) ||
-          matchSearch(item.cardCode, q) ||
-          matchSearch(item.subject, q) ||
-          matchSearch(item.category, q) ||
-          matchSearch(item.author, q) ||
-          item.title.toLowerCase().includes(q) ||
-          item.cardCode.toLowerCase().includes(q) ||
-          item.subject.toLowerCase().includes(q)
+          matchSmartSearch(item.title, q) ||
+          matchSmartSearch(item.cardCode, q) ||
+          matchSmartSearch(item.subject, q) ||
+          matchSmartSearch(item.category, q) ||
+          matchSmartSearch(item.author, q)
         );
       });
     }
@@ -352,6 +353,7 @@ function matchSearch(sourceText: string, query: string): boolean {
       <ExamFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        isSearching={isSearching}
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
         selectedSubject={selectedSubject}
