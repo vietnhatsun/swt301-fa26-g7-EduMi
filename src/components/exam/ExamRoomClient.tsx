@@ -34,6 +34,7 @@ import {
   isShortAnswerCorrect,
   TrueFalseItem,
 } from "./exam-data";
+import MathRenderer from "@/components/common/MathRenderer";
 import ExamExitConfirmModal from "./ExamExitConfirmModal";
 import ExamSubmitConfirmModal from "./ExamSubmitConfirmModal";
 import ExamResultView from "./ExamResultView";
@@ -1177,9 +1178,9 @@ export default function ExamRoomClient({ exam, mode, initialQuestions }: ExamRoo
 
             {/* Question Content Body */}
             <div className="py-4 sm:py-6">
-              <h3 className={`${scaleConfig.contentSize} font-bold leading-relaxed text-slate-900 transition-all whitespace-pre-line`}>
-                {currentQuestion?.content}
-              </h3>
+              <div className={`${scaleConfig.contentSize} font-bold leading-relaxed text-slate-900 transition-all whitespace-pre-line`}>
+                <MathRenderer text={currentQuestion?.content} />
+              </div>
             </div>
 
             {/* ── CASE 1: Multiple Choice Options (A, B, C, D) ── */}
@@ -1212,7 +1213,7 @@ export default function ExamRoomClient({ exam, mode, initialQuestions }: ExamRoo
 
                       {/* Option Text */}
                       <span className={`flex-1 ${scaleConfig.optionTextSize} leading-relaxed transition-all`}>
-                        {opt.text}
+                        <MathRenderer text={opt.text} />
                       </span>
 
                       {/* Selected Checkmark Indicator */}
@@ -1270,7 +1271,7 @@ export default function ExamRoomClient({ exam, mode, initialQuestions }: ExamRoo
                             {item.id})
                           </span>
                           <div className="text-sm sm:text-base font-semibold leading-relaxed text-slate-800 pt-0.5">
-                            {item.content}
+                            <MathRenderer text={item.content} />
                           </div>
                         </div>
 

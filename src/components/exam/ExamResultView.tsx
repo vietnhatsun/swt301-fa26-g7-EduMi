@@ -31,6 +31,7 @@ import {
   isShortAnswerCorrect,
   TrueFalseItem,
 } from "./exam-data";
+import MathRenderer from "@/components/common/MathRenderer";
 
 function parseUserTf(raw?: string): Record<string, boolean> {
   if (!raw) return {};
@@ -701,7 +702,7 @@ export default function ExamResultView({
 
               {/* Question Content */}
               <div className="mt-3 text-sm sm:text-base font-bold text-slate-800 leading-relaxed whitespace-pre-line">
-                {q.content}
+                <MathRenderer text={q.content} />
               </div>
 
               {/* ── CASE 1: Multiple Choice Options Display (A, B, C, D) ── */}
@@ -734,7 +735,9 @@ export default function ExamResultView({
                         >
                           {opt.id}
                         </span>
-                        <span className="flex-1">{opt.text}</span>
+                        <span className="flex-1">
+                          <MathRenderer text={opt.text} />
+                        </span>
                         {isActualCorrect && (
                           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                         )}
@@ -772,7 +775,7 @@ export default function ExamResultView({
                               {item.id})
                             </span>
                             <div className="flex-1 font-semibold text-slate-800 leading-relaxed">
-                              {item.content}
+                              <MathRenderer text={item.content} />
                             </div>
                           </div>
 
@@ -898,7 +901,7 @@ export default function ExamResultView({
                         <span>Dàn ý & Bài viết mẫu tham khảo từ Giáo viên EduMi:</span>
                       </div>
                       <div className="rounded-xl bg-white/90 p-4 text-xs sm:text-sm leading-relaxed text-indigo-950 whitespace-pre-line border border-indigo-100">
-                        {q.sampleEssayAnswer}
+                        <MathRenderer text={q.sampleEssayAnswer} />
                       </div>
                     </div>
                   )}
@@ -919,7 +922,9 @@ export default function ExamResultView({
                             <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-black mt-0.5">
                               {crIdx + 1}
                             </span>
-                            <span>{criterion}</span>
+                            <span>
+                              <MathRenderer text={criterion} />
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -953,7 +958,7 @@ export default function ExamResultView({
                     <strong className="text-emerald-900 font-black block mb-1">
                       💡 Hướng dẫn giải chi tiết từ tổ chuyên môn:
                     </strong>
-                    {q.explanation}
+                    <MathRenderer text={q.explanation} />
                   </div>
                 )}
               </div>

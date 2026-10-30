@@ -28,6 +28,7 @@ import {
   StopCircle,
 } from "lucide-react";
 import { ExamQuestion } from "@/components/exam/exam-data";
+import MathRenderer from "@/components/common/MathRenderer";
 
 interface ExamScannerModalProps {
   isOpen: boolean;
@@ -217,9 +218,9 @@ const ScannedQuestionCard = React.memo(function ScannedQuestionCard({
       </div>
 
       {/* Nội dung câu hỏi đã phục hồi */}
-      <p className="text-xs font-semibold text-slate-800 leading-relaxed whitespace-pre-line">
-        {q.content}
-      </p>
+      <div className="text-xs font-semibold text-slate-800 leading-relaxed whitespace-pre-line">
+        <MathRenderer text={q.content} />
+      </div>
 
       {/* Hiển thị options trắc nghiệm ABCD */}
       {isSingle && q.options && q.options.length > 0 && (
@@ -240,7 +241,9 @@ const ScannedQuestionCard = React.memo(function ScannedQuestionCard({
                 }`}>
                   {opt.id}
                 </span>
-                <span>{opt.text}</span>
+                <span className="leading-relaxed">
+                  <MathRenderer text={opt.text} />
+                </span>
               </div>
             );
           })}
@@ -259,7 +262,9 @@ const ScannedQuestionCard = React.memo(function ScannedQuestionCard({
                 <span className="font-black text-purple-700 uppercase">
                   {item.id})
                 </span>
-                <span className="text-slate-700 font-medium">{item.content}</span>
+                <span className="text-slate-700 font-medium leading-relaxed">
+                  <MathRenderer text={item.content} />
+                </span>
               </div>
               <span
                 className={`rounded-md px-2 py-0.5 text-[10px] font-black ${
@@ -280,7 +285,7 @@ const ScannedQuestionCard = React.memo(function ScannedQuestionCard({
         <div className="inline-flex items-center gap-2 rounded-xl bg-sky-50 border border-sky-200 px-3 py-1.5 text-xs text-sky-900">
           <span className="font-bold">Đáp án chuẩn:</span>
           <span className="font-mono font-black text-sky-700 text-sm">
-            {q.correctAnswer || "Chưa có"}
+            <MathRenderer text={q.correctAnswer || "Chưa có"} />
           </span>
         </div>
       )}
@@ -299,7 +304,7 @@ const ScannedQuestionCard = React.memo(function ScannedQuestionCard({
                     key={i}
                     className="inline-flex items-center rounded-lg bg-amber-100/90 text-amber-900 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold"
                   >
-                    ✓ {c}
+                    ✓ <MathRenderer text={c} />
                   </span>
                 ))}
               </div>
@@ -310,9 +315,9 @@ const ScannedQuestionCard = React.memo(function ScannedQuestionCard({
               <p className="font-bold text-amber-950 mb-0.5">
                 Dàn ý & Lời giải gợi ý:
               </p>
-              <p className="text-slate-700 text-[11px] whitespace-pre-line bg-white/80 rounded-lg p-2 border border-amber-200/50 leading-relaxed">
-                {q.sampleEssayAnswer}
-              </p>
+              <div className="text-slate-700 text-[11px] whitespace-pre-line bg-white/80 rounded-lg p-2 border border-amber-200/50 leading-relaxed">
+                <MathRenderer text={q.sampleEssayAnswer} />
+              </div>
             </div>
           )}
         </div>
@@ -320,9 +325,9 @@ const ScannedQuestionCard = React.memo(function ScannedQuestionCard({
 
       {/* Lời giải thích */}
       {q.explanation && !isEssay && (
-        <p className="text-[11px] text-slate-500 italic bg-slate-50 rounded-lg p-2">
-          💡 <strong>Giải thích:</strong> {q.explanation}
-        </p>
+        <div className="text-[11px] text-slate-500 italic bg-slate-50 rounded-lg p-2 leading-relaxed">
+          💡 <strong>Giải thích:</strong> <MathRenderer text={q.explanation} />
+        </div>
       )}
     </div>
   );

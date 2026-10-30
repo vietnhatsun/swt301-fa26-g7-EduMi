@@ -40,6 +40,7 @@ import {
   X,
 } from "lucide-react";
 import CustomSelect from "@/components/common/CustomSelect";
+import MathRenderer, { hasMathFormula } from "@/components/common/MathRenderer";
 import ExamCardItem from "@/components/exam/ExamCardItem";
 import ExamScannerModal from "./ExamScannerModal";
 import { generateExamTemplateByCategoryAndSubject } from "@/lib/subject-exam-templates";
@@ -1968,6 +1969,19 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
                             onChange={(e) => handleUpdateQuestion(rawIndex, "content", e.target.value)}
                             className="w-full rounded-xl border border-slate-200 bg-slate-50/30 p-2.5 text-xs font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:bg-white leading-relaxed resize-y"
                           />
+
+                          {/* Xem trước công thức LaTeX tức thì khi có ký hiệu toán */}
+                          {hasMathFormula(q.content) && (
+                            <div className="rounded-xl border border-indigo-200/80 bg-indigo-50/50 p-2.5 text-xs text-slate-800 shadow-2xs">
+                              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 mb-1">
+                                <Sparkles className="h-3 w-3 text-indigo-500" />
+                                <span>Xem trước công thức trực quan:</span>
+                              </div>
+                              <div className="font-medium leading-relaxed">
+                                <MathRenderer text={q.content} />
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* ── CASE 1: TRẮC NGHIỆM 4 LỰA CHỌN (A, B, C, D) ── */}
@@ -2004,13 +2018,20 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
                                     >
                                       {optId}
                                     </button>
-                                    <input
-                                      type="text"
-                                      placeholder={`Nội dung phương án ${optId}...`}
-                                      value={opt?.text || ""}
-                                      onChange={(e) => handleUpdateOption(rawIndex, optId, e.target.value)}
-                                      className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
-                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <input
+                                        type="text"
+                                        placeholder={`Nội dung phương án ${optId}...`}
+                                        value={opt?.text || ""}
+                                        onChange={(e) => handleUpdateOption(rawIndex, optId, e.target.value)}
+                                        className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
+                                      />
+                                      {hasMathFormula(opt?.text) && (
+                                        <div className="text-[11px] font-medium text-emerald-950 bg-white/80 rounded px-1.5 py-0.5 mt-1 border border-emerald-200/60 shadow-2xs">
+                                          <MathRenderer text={opt?.text} />
+                                        </div>
+                                      )}
+                                    </div>
                                     {isCorrect && (
                                       <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600 mr-1" />
                                     )}
@@ -2088,6 +2109,15 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
                                         </button>
                                       </div>
                                     </div>
+
+                                    {/* Xem trước công thức cho ý đúng sai nếu có */}
+                                    {hasMathFormula(item.content) && (
+                                      <div className="text-[11px] font-medium text-purple-950 bg-purple-50/70 rounded-lg p-2 border border-purple-200/50">
+                                        <span className="text-[10px] font-bold text-purple-600 block mb-0.5">👁️ Xem trước ý {subId}:</span>
+                                        <MathRenderer text={item.content} />
+                                      </div>
+                                    )}
+
                                     {/* Lời giải thích riêng cho từng ý */}
                                     <input
                                       type="text"
@@ -2251,6 +2281,14 @@ export default function StaffExamManagementPanel({ staffName = "Staff EduMi", st
                             onChange={(e) => handleUpdateQuestion(rawIndex, "explanation", e.target.value)}
                             className="w-full rounded-xl border border-slate-200 bg-slate-50/40 p-2.5 text-xs font-medium text-slate-800 outline-none transition focus:border-indigo-500 focus:bg-white"
                           />
+                          {hasMathFormula(q.explanation) && (
+                            <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-2.5 text-xs text-slate-800 shadow-2xs mt-1.5">
+                              <span className="text-[10px] font-bold text-amber-800 block mb-0.5">👁️ Xem trước giải thích:</span>
+                              <div className="font-medium leading-relaxed">
+                                <MathRenderer text={q.explanation} />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
